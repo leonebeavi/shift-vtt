@@ -1,0 +1,52 @@
+{{!-- SHIFT VTT — reusable Trait tiles (die + name + Keyword/Drawback pips) with
+      an expand-to-detail drawer. Used by the Roster member cards and the Codex
+      mini-sheet so both look and behave the same.
+      Params: traits (tile-context array), ownerUuid (toggle key + drawer scope). --}}
+<div class="pm-traits" data-member-uuid="{{ownerUuid}}">
+  {{#each traits}}
+    <button type="button"
+            class="trait-tile status-{{statusKey}}{{#if hasDetail}} has-detail{{/if}}{{#if open}} is-open{{/if}}{{#if exhausted}} is-exhausted{{/if}}"
+            data-tile-id="{{id}}"{{#if hasDetail}} data-action="toggleTile"{{/if}}
+            data-tooltip="{{name}} &middot; {{statusLabel}} &middot; {{localize 'SHIFT.Trait.Max'}} {{maxLabel}}">
+      <span class="tt-die">{{#if dieImg}}<img src="{{dieImg}}" alt="{{statusLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}</span>
+      <span class="tt-info"><span class="tt-name">{{name}}</span><span class="tt-status">{{statusLabel}}</span></span>
+      {{#if hasDetail}}
+        <span class="tt-pips">
+          {{#if kw}}<span class="pip kw" data-tooltip="{{kw}} {{localize 'SHIFT.Keywords.Title'}}"><i class="fa-solid fa-star"></i>{{kw}}</span>{{/if}}
+          {{#if db}}<span class="pip db" data-tooltip="{{db}} {{localize 'SHIFT.Drawbacks.Title'}}"><i class="fa-solid fa-bolt"></i>{{db}}</span>{{/if}}
+        </span>
+      {{/if}}
+    </button>
+  {{/each}}
+</div>
+{{!-- All drawers are rendered (hidden unless open) so expanding/collapsing is a
+      pure DOM toggle in #onToggleTile — no re-render, so the codex detail never
+      flashes and an open Field-Notes editor is never destroyed. --}}
+<div class="pm-detail{{#if (shiftSome traits 'open')}} is-open{{/if}}">
+  <div class="pm-detail-inner">
+    {{#each traits}}
+      {{#if hasDetail}}
+        <div class="detail-card status-{{statusKey}}" data-detail-for="{{id}}"{{#unless open}} hidden{{/unless}}>
+          <div class="detail-head">
+            <span class="dh-die">{{#if dieImg}}<img src="{{dieImg}}" alt="{{statusLabel}}"/>{{/if}}</span>
+            <span class="dh-name">{{name}}</span>
+            <span class="dh-sub"><b>{{statusLabel}}</b> &middot; {{localize 'SHIFT.Trait.Max'}} {{maxLabel}}</span>
+          </div>
+          {{#if desc}}<div class="detail-desc">{{{desc}}}</div>{{/if}}
+          {{#if keywords.length}}
+            <div class="dp-group">
+              <span class="dp-label kw">{{localize "SHIFT.Keywords.Title"}}</span>
+              <div class="dp-pills">{{#each keywords}}<span class="dpill kw"{{#if desc}} data-tooltip="{{desc}}"{{/if}}><span class="dpill-dot"></span>{{name}}</span>{{/each}}</div>
+            </div>
+          {{/if}}
+          {{#if drawbacks.length}}
+            <div class="dp-group">
+              <span class="dp-label db">{{localize "SHIFT.Drawbacks.Title"}}</span>
+              <div class="dp-pills">{{#each drawbacks}}<span class="dpill db"{{#if desc}} data-tooltip="{{desc}}"{{/if}}><span class="dpill-dot"></span>{{name}}</span>{{/each}}</div>
+            </div>
+          {{/if}}
+        </div>
+      {{/if}}
+    {{/each}}
+  </div>
+</div>

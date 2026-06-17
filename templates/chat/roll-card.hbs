@@ -1,0 +1,109 @@
+<div class="shift-vtt chat-card roll-card outcome-{{outcome.css}}">
+  <header class="card-header">
+    <img src="{{actor.img}}" alt="{{actor.name}}"/>
+    <div class="card-title">
+      <h3>{{actor.name}}</h3>
+      <div class="card-tags">
+        {{#if isSpecialType}}<span class="roll-tag {{rollType}}">{{rollTypeLabel}}</span>{{/if}}
+        {{#if turnOrder}}<span class="roll-tag turn-order"><i class="fa-solid fa-flag"></i> {{localize "SHIFT.Combat.TurnOrderRoll"}}</span>{{/if}}
+        {{#if groupRoll}}<span class="roll-tag group"><i class="fa-solid fa-people-arrows"></i> {{localize "SHIFT.Group.Title"}}</span>{{/if}}
+        {{#if showScaleTag}}<span class="roll-tag scale" data-scale="{{scale}}" data-tooltip="{{localize 'SHIFT.Trait.Scale'}} {{scale}}">{{localize "SHIFT.Trait.Scale"}} {{scale}}</span>{{/if}}
+      </div>
+    </div>
+    <div class="outcome-badge">
+      <i class="fa-solid {{outcome.icon}}"></i>
+    </div>
+  </header>
+
+  <div class="dice-row">
+    {{#each entries}}
+      <div class="die-result{{#if showOwner}} has-owner{{/if}}{{#if isOne}} is-one{{/if}}{{#if isSuccess}} is-success{{/if}}{{#if isMax}} is-max{{/if}}{{#if willShift}} will-shift{{/if}}">
+        {{#if showOwner}}<span class="die-owner">{{owner}}</span>{{/if}}
+        <span class="die-trait">{{#if traitName}}{{traitName}}{{else}}{{name}}{{/if}}{{#if isScaled}}<span class="die-scale-pill" data-scale="{{scale}}" data-tooltip="{{localize 'SHIFT.Trait.Scale'}} {{scale}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{scale}}</span>{{/if}}</span>
+        <span class="die-type" data-die="{{die}}">{{dieLabel}}</span>
+        <span class="die-face">{{value}}</span>
+        {{#if willShift}}<span class="shift-arrow" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftDown'}}"><i class="fa-solid fa-arrow-down"></i></span>{{/if}}
+      </div>
+    {{/each}}
+  </div>
+
+  <div class="outcome-line">
+    <i class="fa-solid {{outcome.icon}}"></i> <b>{{outcome.label}}</b>
+  </div>
+
+  {{#if phase}}
+    <div class="phase-line">
+      <i class="fa-solid fa-flag-checkered"></i> {{phase.label}}
+    </div>
+  {{/if}}
+
+  {{#if shifts.length}}
+    <ul class="shift-list">
+      {{#each shifts}}
+        <li>
+          <i class="fa-solid fa-arrow-down"></i>
+          <b>{{name}}</b>:
+          {{#if applied}}
+            {{from}} <i class="fa-solid fa-angles-right"></i>
+            {{#if exhausted}}<span class="exhausted-tag">{{localize "SHIFT.DiceStatus.exhausted"}}</span>{{else}}{{to}}{{/if}}
+          {{else}}
+            {{from}} <span class="pending">({{localize "SHIFT.Roll.ApplyManually"}})</span>
+          {{/if}}
+        </li>
+      {{/each}}
+    </ul>
+  {{/if}}
+
+  {{#if xp.granted}}
+    <p class="xp-note"><i class="fa-solid fa-arrow-trend-up"></i> {{localize "SHIFT.Xp.Title"}} +{{xp.granted}}{{#if xp.capped}} <span class="muted">({{localize "SHIFT.Xp.CapReached"}})</span>{{/if}}</p>
+  {{else}}
+    {{#if xp.capped}}<p class="xp-note muted">{{localize "SHIFT.Xp.CapReached"}}</p>{{/if}}
+  {{/if}}
+  {{#if xp.allies}}<p class="xp-note"><i class="fa-solid fa-arrow-trend-up"></i> {{localize "SHIFT.Xp.AllyGain"}} +{{xp.allies}}</p>{{/if}}
+
+  {{#if apply.show}}
+    <div class="target-panel" data-targets="{{apply.targetUuids}}">
+      <i class="fa-solid fa-crosshairs target-icon"></i>
+      <span class="target-chips"></span>
+      <button type="button" class="target-retarget" data-shift-retarget
+              data-tooltip="{{localize 'SHIFT.Target.RetargetHint'}}">
+        <i class="fa-solid fa-arrows-rotate"></i> {{localize "SHIFT.Target.Retarget"}}
+      </button>
+    </div>
+    <div class="action-row">
+      <button type="button" class="card-action" data-shift-apply data-steps="1"
+              data-tooltip="{{localize 'SHIFT.Target.ApplyHint'}}">
+        <i class="fa-solid fa-crosshairs"></i> {{localize "SHIFT.Roll.ApplyTarget"}}
+      </button>
+    </div>
+  {{/if}}
+
+  {{#if scaleUp.show}}
+    <div class="action-row scale-up">
+      <button type="button" class="card-action" data-shift-scaleup
+              data-tooltip="{{localize 'SHIFT.Scale.ScaleUpHint'}}">
+        <i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize "SHIFT.Scale.ScaleUp"}}
+      </button>
+    </div>
+  {{/if}}
+
+  {{#if crit.show}}
+    <div class="crit-bonus">
+      <p class="crit-hint">{{localize "SHIFT.CritBonus.Choose"}}{{#if (shiftNeq crit.count 1)}} ×{{crit.count}}{{/if}}</p>
+      <div class="crit-buttons">
+        <button type="button" data-shift-crit="own" data-tooltip="{{localize 'SHIFT.CritBonus.OwnHint'}}">
+          <i class="fa-solid fa-circle-arrow-up"></i> {{localize "SHIFT.CritBonus.Own"}}
+        </button>
+        <button type="button" data-shift-crit="ally" data-tooltip="{{localize 'SHIFT.CritBonus.AllyHint'}}">
+          <i class="fa-solid fa-hand-holding-heart"></i> {{localize "SHIFT.CritBonus.Ally"}}
+        </button>
+        <button type="button" data-shift-crit="enemy" data-tooltip="{{localize 'SHIFT.CritBonus.EnemyHint'}}">
+          <i class="fa-solid fa-angles-down"></i> {{localize "SHIFT.CritBonus.Enemy"}}
+        </button>
+        <button type="button" data-shift-crit="narrative" data-tooltip="{{localize 'SHIFT.CritBonus.NarrativeHint'}}">
+          <i class="fa-solid fa-feather"></i> {{localize "SHIFT.CritBonus.Narrative"}}
+        </button>
+      </div>
+    </div>
+  {{/if}}
+</div>

@@ -1,0 +1,18 @@
+<section class="tab biography{{#if (shiftEq activeTab 'biography')}} active{{/if}}" data-tab="biography" data-group="primary">
+  {{#if canViewNotes}}
+  {{#if editable}}
+    <prose-mirror name="system.description" value="{{source.description}}" toggled
+                  document-uuid="{{actor.uuid}}" class="bio-prose">
+      {{{enrichedDescription}}}
+    </prose-mirror>
+  {{else}}
+    <div class="bio-display">
+      {{#if enrichedDescription}}
+        {{{enrichedDescription}}}
+      {{else}}
+        <p class="empty">{{localize "SHIFT.Common.Empty"}}</p>
+      {{/if}}
+    </div>
+  {{/if}}
+  {{/if}}
+</section>

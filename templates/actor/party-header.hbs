@@ -1,0 +1,134 @@
+{{!-- SHIFT VTT — Party header: crest banner + identity + party-wide actions +
+      the Location strip + the tab nav (Roster · Traits · Codex · Quests). The nav
+      uses class "party-tabs" (NOT "tabs"); ShiftPartySheet overrides `_onClickTab`
+      to switch tabs by re-rendering (each section gates on `activeTab`).
+      The crest `data-edit="img"` MUST live on the <img> (core form serialization
+      reads an IMG's src but a wrapper element's innerHTML — which is invalid). --}}
+<div class="sheet-top party-top">
+  <header class="party-banner">
+    <div class="party-crest">
+      <img class="party-crest-img" src="{{actor.img}}" alt="{{actor.name}}"
+           data-action="editImage" data-edit="img" data-tooltip="{{localize 'SHIFT.Tooltips.EditImage'}}"/>
+    </div>
+
+    <div class="party-id">
+      <div class="party-id-top">
+        {{#if editMode}}
+          <input class="party-title-edit" type="text" name="name" value="{{actor.name}}"
+                 placeholder="{{localize 'SHIFT.Sheet.Name'}}"/>
+        {{else}}
+          <h1 class="party-title">{{actor.name}}</h1>
+        {{/if}}
+      </div>
+      <div class="party-meta">
+        <span class="party-chip is-type"><i class="fa-solid fa-people-group"></i> {{localize "TYPES.Actor.party"}}</span>
+        <span class="party-chip"><i class="fa-solid fa-user-group"></i> {{memberCount}} {{localize "SHIFT.Party.Members"}}</span>
+        <span class="party-chip"><i class="fa-solid fa-book-skull"></i> {{codexCount}} {{localize "SHIFT.Party.Codex.Label"}}</span>
+      </div>
+    </div>
+
+    {{#if editable}}
+      <div class="party-actions stacked">
+        <button type="button" class="party-btn pa-xp" data-action="grantPartyXp"
+                data-tooltip="{{localize 'SHIFT.Party.GrantXpHint'}}">
+          <i class="fa-solid fa-arrow-trend-up"></i> {{localize "SHIFT.Party.GrantXp"}}
+        </button>
+        {{#if isGM}}
+          <button type="button" class="party-btn pa-roll" data-action="requestPartyRoll"
+                  data-tooltip="{{localize 'SHIFT.Party.RequestRoll.Hint'}}">
+            <i class="fa-solid fa-dice"></i> {{localize "SHIFT.Party.RequestRoll.Button"}}
+          </button>
+        {{/if}}
+        <button type="button" class="party-btn pa-safe" data-action="partySafeRest"
+                data-tooltip="{{localize 'SHIFT.Party.SafeRestHint'}}">
+          <i class="fa-solid fa-campground"></i> {{localize "SHIFT.Rest.Safe"}}
+        </button>
+        <button type="button" class="party-btn pa-unsafe" data-action="partyUnsafeRest"
+                data-tooltip="{{localize 'SHIFT.Party.UnsafeRestHint'}}">
+          <i class="fa-solid fa-fire"></i> {{localize "SHIFT.Rest.Unsafe"}}
+        </button>
+      </div>
+    {{/if}}
+  </header>
+
+  {{!-- Context row: where the party is (Location + landmark, drives Rest rules)
+        and its active Vehicle (crew mirrors the roster), side by side. The
+        landmark dropdown only appears in edit mode — otherwise a clean label. --}}
+  {{#if (shiftOr locationInfo (shiftOr editMode activeVehicle))}}
+    <div class="party-context">
+      {{!-- Location --}}
+      {{#if locationInfo}}
+        <div class="party-location pc-field" data-drop="location">
+          <span class="pl-icon"><i class="fa-solid fa-map-location-dot"></i></span>
+          {{#if locationInfo.img}}<img class="pl-img" src="{{locationInfo.img}}" alt="{{locationInfo.name}}"/>{{/if}}
+          <div class="pl-body">
+            <a class="pl-name" data-action="openLocation" data-tooltip="{{localize 'SHIFT.Party.OpenLocation'}}">{{locationInfo.name}}</a>
+            {{#if locationInfo.hasLandmarks}}
+              {{#if editMode}}
+                <select class="pl-landmark" data-landmark-select>
+                  <option value=""{{#unless locationInfo.landmarkId}} selected{{/unless}}>{{localize "SHIFT.Party.NoLandmark"}}</option>
+                  {{#each locationInfo.landmarks}}
+                    <option value="{{id}}"{{#if (shiftEq id @root.locationInfo.landmarkId)}} selected{{/if}}>{{name}}{{#unless safe}} &#9888;{{/unless}}</option>
+                  {{/each}}
+                </select>
+              {{else if locationInfo.landmarkName}}
+                <span class="pl-landmark-label">{{locationInfo.landmarkName}}</span>
+              {{/if}}
+            {{/if}}
+          </div>
+          {{#if (shiftNeq locationInfo.landmarkSafe null)}}
+            <span class="pl-safe{{#unless locationInfo.landmarkSafe}} unsafe{{/unless}}"
+                  data-tooltip="{{#if locationInfo.landmarkSafe}}{{localize 'SHIFT.Party.Codex.Safe'}}{{else}}{{localize 'SHIFT.Party.Codex.Unsafe'}}{{/if}}">
+              <i class="fa-solid {{#if locationInfo.landmarkSafe}}fa-shield-heart{{else}}fa-triangle-exclamation{{/if}}"></i>
+            </span>
+          {{/if}}
+          {{#if editMode}}<a class="pl-clear edit-only" data-action="clearLocation" data-tooltip="{{localize 'SHIFT.Party.ClearLocation'}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+        </div>
+      {{else if editMode}}
+        <div class="party-location pc-field empty edit-only" data-drop="location">
+          <i class="fa-solid fa-map-location-dot"></i> {{localize "SHIFT.Party.DropLocation"}}
+        </div>
+      {{/if}}
+
+      {{!-- Active Vehicle (crew auto-mirrors the roster) --}}
+      {{#if activeVehicle}}
+        <div class="roster-vehicle pc-field" data-drop="vehicle">
+          <span class="rv-icon"><i class="fa-solid fa-car-side"></i></span>
+          {{#if activeVehicle.img}}<img class="rv-img" src="{{activeVehicle.img}}" alt="{{activeVehicle.name}}"/>{{/if}}
+          <div class="rv-body">
+            <span class="rv-label">{{localize "SHIFT.Party.ActiveVehicle"}}</span>
+            <span class="rv-name">{{activeVehicle.name}}</span>
+          </div>
+          <span class="rv-crew" data-tooltip="{{localize 'SHIFT.Party.Codex.Crew'}}"><i class="fa-solid fa-users"></i> {{activeVehicle.crewCount}}</span>
+          {{#if editMode}}<a class="rv-clear edit-only" data-action="clearVehicle" data-tooltip="{{localize 'SHIFT.Party.ClearVehicle'}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+        </div>
+      {{else if editMode}}
+        <div class="roster-vehicle pc-field empty edit-only" data-drop="vehicle">
+          <i class="fa-solid fa-car-side"></i> {{localize "SHIFT.Party.DropVehicle"}}
+        </div>
+      {{/if}}
+    </div>
+  {{/if}}
+
+  <nav class="party-tabs">
+    {{#each tabs}}
+      <a class="party-tab{{#if (shiftEq @root.activeTab id)}} active{{/if}}"
+         data-action="tab" data-group="primary" data-tab="{{id}}">
+        <i class="fa-solid {{icon}}"></i> {{localize label}}
+        {{#if badge}}<span class="tab-badge">{{badge}}</span>{{/if}}
+      </a>
+    {{/each}}
+    {{#if editable}}
+      <span class="tab-tools">
+        {{#if editMode}}
+          <a class="party-tab-tool recharge" data-action="rechargeAll" data-tooltip="{{localize 'SHIFT.Tooltips.RechargeAll'}}">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </a>
+        {{/if}}
+        <a class="party-tab-tool{{#if editMode}} active{{/if}}" data-action="toggleEdit" data-tooltip="{{localize 'SHIFT.Tooltips.EditToggle'}}">
+          <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
+        </a>
+      </span>
+    {{/if}}
+  </nav>
+</div>

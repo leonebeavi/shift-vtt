@@ -1,0 +1,54 @@
+{{!-- SHIFT VTT — GM "Request an Action Roll" dialog. Standardised to match the
+      player Action-Roll dialog (same .action-roll-dialog / .trait-opt / roll-type
+      styling). Character chosen via portrait cards (no dropdown); allowed Traits
+      as trait-opt cards (none ticked = all allowed); roll type as radios. --}}
+<div class="shift-vtt action-roll-dialog request-roll-dialog">
+  <div class="form-group rr-chars">
+    <label>{{localize "SHIFT.Party.RequestRoll.Character"}}</label>
+    <div class="rr-char-grid">
+      {{#each characters}}
+        <label class="rr-char{{#if @first}} selected{{/if}}">
+          <input type="radio" name="character" value="{{id}}"{{#if @first}} checked{{/if}}/>
+          <span class="rr-char-body">
+            {{#if img}}<img src="{{img}}" alt="{{name}}"/>{{else}}<i class="fa-solid fa-user"></i>{{/if}}
+            <span class="rr-char-name">{{name}}</span>
+          </span>
+        </label>
+      {{/each}}
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>{{localize "SHIFT.Party.RequestRoll.Traits"}}</label>
+    <p class="roll-hint">{{localize "SHIFT.Party.RequestRoll.TraitsHint"}}</p>
+    <div class="rr-trait-area">
+      {{#each characters}}
+        <div class="rr-traits trait-opts" data-char="{{id}}"{{#unless @first}} hidden{{/unless}}>
+          {{#each traits}}
+            <label class="trait-opt">
+              <input type="checkbox" name="trait" value="{{uuid}}"/>
+              <span class="opt-body">
+                {{#if img}}<img src="{{img}}" alt=""/>{{/if}}
+                <span class="opt-name">{{name}}</span>
+                <span class="opt-die">{{dieLabel}}</span>
+              </span>
+            </label>
+          {{/each}}
+          {{#unless traits.length}}<p class="prr-none">{{localize "SHIFT.Warnings.NoRollableTraits"}}</p>{{/unless}}
+        </div>
+      {{/each}}
+    </div>
+  </div>
+
+  <div class="form-group roll-type-group">
+    <label>{{localize "SHIFT.Roll.RollType"}}</label>
+    <div class="roll-type-options">
+      {{#each rollTypes}}
+        <label class="roll-type-option {{key}}">
+          <input type="radio" name="rollType" value="{{key}}"{{#if (shiftEq key "normal")}} checked{{/if}}/>
+          <span>{{label}}</span>
+        </label>
+      {{/each}}
+    </div>
+  </div>
+</div>

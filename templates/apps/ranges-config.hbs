@@ -1,0 +1,40 @@
+<section class="ranges-config-body">
+  <p class="hint">{{localize "SHIFT.Settings.RangesMenu.Hint"}}</p>
+
+  <label class="setting-row select">
+    <span class="setting-text"><b>{{localize "SHIFT.Settings.RangesMenu.Mode"}}</b></span>
+    <select name="rangeMode">
+      {{#each modeOptions}}
+        <option value="{{value}}" {{#if selected}}selected{{/if}}>{{localize label}}</option>
+      {{/each}}
+    </select>
+  </label>
+
+  <div class="range-rows-head">
+    <span class="rh-label">{{localize "SHIFT.Settings.RangesMenu.Band"}}</span>
+    <span class="rh-min">{{localize "SHIFT.Settings.RangesMenu.Min"}} ({{unitsLabel}})</span>
+    <span class="rh-max">{{localize "SHIFT.Settings.RangesMenu.Max"}} ({{unitsLabel}})</span>
+    <span class="rh-del"></span>
+  </div>
+  <ul class="range-rows">
+    {{#each rows}}
+      <li class="range-row" data-index="{{@index}}">
+        <input type="text" name="label" value="{{label}}" placeholder="{{localize 'SHIFT.Settings.RangesMenu.Band'}}"/>
+        <input type="number" name="min" value="{{min}}" min="0" step="1"/>
+        <input type="number" name="max" value="{{max}}" min="0" step="1" placeholder="∞"/>
+        <a class="ta-btn danger" data-action="deleteRow" data-index="{{@index}}" data-tooltip="{{localize 'SHIFT.Settings.RangesMenu.Delete'}}"><i class="fa-solid fa-trash"></i></a>
+      </li>
+    {{/each}}
+  </ul>
+
+  <div class="ranges-config-actions">
+    <a class="ta-btn" data-action="addRow" data-tooltip="{{localize 'SHIFT.Settings.RangesMenu.Add'}}"><i class="fa-solid fa-plus"></i></a>
+    <a class="ta-btn" data-action="resetDefaults" data-tooltip="{{localize 'SHIFT.Settings.RangesMenu.Reset'}}"><i class="fa-solid fa-rotate-left"></i></a>
+  </div>
+
+  <footer class="form-footer">
+    {{#each buttons}}
+      <button type="{{type}}"><i class="{{icon}}"></i> {{localize label}}</button>
+    {{/each}}
+  </footer>
+</section>

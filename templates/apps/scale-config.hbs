@@ -1,0 +1,41 @@
+<section class="settings-config-body scale-config-body">
+  <p class="hint">{{localize "SHIFT.Settings.ScaleMenu.Hint"}}</p>
+
+  <label class="setting-row check master">
+    <input type="checkbox" name="enableScale" {{checked enableScale}}/>
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.EnableScale.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.EnableScale.Hint"}}</em>
+    </span>
+  </label>
+
+  <label class="setting-row check">
+    <input type="checkbox" name="enableScaledUp" {{checked enableScaledUp}}/>
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.EnableScaledUp.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.EnableScaledUp.Hint"}}</em>
+    </span>
+  </label>
+
+  <label class="setting-row check">
+    <input type="checkbox" name="enableXpScaleUp" {{checked enableXpScaleUp}}/>
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.EnableXpScaleUp.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.EnableXpScaleUp.Hint"}}</em>
+    </span>
+  </label>
+
+  <label class="setting-row num">
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.XpPerScaleStep.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.XpPerScaleStep.Hint"}}</em>
+    </span>
+    <input type="number" name="xpPerScaleStep" value="{{xpPerScaleStep}}" min="0" step="1"/>
+  </label>
+
+  <footer class="form-footer">
+    {{#each buttons}}
+      <button type="{{type}}"><i class="{{icon}}"></i> {{localize label}}</button>
+    {{/each}}
+  </footer>
+</section>

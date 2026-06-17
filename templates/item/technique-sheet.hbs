@@ -1,0 +1,116 @@
+{{!-- Technique item sheet. The type pill toggles Narrative / Mechanical /
+      Scaled Up (click). An owner sees the lock toggle; locked shows the
+      observer (player) view. --}}
+<div class="item-sheet technique-sheet minimal">
+  <header class="item-header">
+    <img class="item-img" src="{{item.img}}" alt="{{item.name}}" data-action="editImage" data-edit="img"/>
+    <div class="item-id">
+      <input class="item-name" type="text" name="name" value="{{item.name}}" {{#unless editMode}}disabled{{/unless}}/>
+      <div class="item-subline">
+        {{#if editable}}
+          <a class="item-lock{{#if editMode}} active{{/if}}" data-action="toggleEdit" data-tooltip="{{localize 'SHIFT.Tooltips.EditToggle'}}">
+            <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
+          </a>
+        {{/if}}
+        {{#if editMode}}
+          <a class="recharge-pill type-toggle {{system.techniqueType}}" data-action="toggleTechniqueType"
+             data-tooltip="{{localize 'SHIFT.ItemSheet.ToggleType'}}"><span>{{typeLabel}}</span></a>
+        {{else}}
+          <span class="recharge-pill type-toggle {{system.techniqueType}}"><span>{{typeLabel}}</span></span>
+        {{/if}}
+        {{!-- Compact "treated as Scale" pip next to the Scaled Up pill: click to
+              cycle 2 → 3 → 4 (Scale 1 is meaningless for a Scaled Up). --}}
+        {{#if isScaledUp}}
+          {{#if editMode}}
+            <a class="scaledup-pip" data-action="cycleFocusScale" data-scale="{{focusScale}}"
+               data-tooltip="{{localize 'SHIFT.ItemSheet.FocusScale'}}: {{focusScale}}">{{focusScale}}</a>
+          {{else}}
+            <span class="scaledup-pip" data-scale="{{focusScale}}"
+                  data-tooltip="{{localize 'SHIFT.ItemSheet.FocusScale'}}: {{focusScale}}">{{focusScale}}</span>
+          {{/if}}
+        {{/if}}
+      </div>
+    </div>
+    {{!-- Compact uses on the right of the header (replaces the old big bar).
+          At Will Techniques have no counter — just an infinity glyph. --}}
+    {{#if isAtWill}}
+      <div class="uses-chip infinite" data-tooltip="{{localize 'SHIFT.Recharge.AtWillHint'}}">
+        <span class="uses-inf"><i class="fa-solid fa-infinity"></i></span>
+      </div>
+    {{else}}
+      <div class="uses-chip{{#if editMode}} editable{{/if}}" data-tooltip="{{localize 'SHIFT.Tooltips.Uses'}}">
+        {{#if editMode}}{{#unless isScaledUp}}<a class="uses-step" data-action="useTechnique" data-tooltip="{{localize 'SHIFT.Tooltips.UseTechnique'}}"><i class="fa-solid fa-minus"></i></a>{{/unless}}{{/if}}
+        <span class="uses-val">{{system.uses.value}}</span>
+        <span class="uses-div">/</span>
+        {{#if editMode}}
+          <input class="uses-max" type="number" name="system.uses.max" value="{{system.uses.max}}" min="1" step="1" data-tooltip="{{localize 'SHIFT.ItemSheet.MaxUses'}}"/>
+        {{else}}
+          <span class="uses-maxn">{{system.uses.max}}</span>
+        {{/if}}
+        {{#if editMode}}<a class="uses-step" data-action="resetTechnique" data-tooltip="{{localize 'SHIFT.Tooltips.ResetTechnique'}}"><i class="fa-solid fa-rotate-left"></i></a>{{/if}}
+      </div>
+    {{/if}}
+  </header>
+
+  <section class="recharge-block">
+    <span class="pill-label">{{localize "SHIFT.ItemSheet.Recharge"}}</span>
+    <div class="recharge-opts">
+      {{#if editMode}}
+        {{#each recharges}}
+          <a class="recharge-pill recharge-{{key}}{{#if checked}} on{{/if}}" data-action="toggleRecharge" data-key="{{key}}">
+            <span><i class="fa-solid {{icon}}"></i> {{label}}</span>
+          </a>
+        {{/each}}
+      {{else}}
+        {{!-- View-only: echo just the chosen recharge(s) — At Will collapses to
+              its single pill — or a Manual pill when nothing is set. --}}
+        {{#each recharges}}
+          {{#if checked}}<span class="recharge-pill recharge-{{key}} on"><span><i class="fa-solid {{icon}}"></i> {{label}}</span></span>{{/if}}
+        {{/each}}
+        {{#if isCustomRecharge}}<span class="recharge-pill"><span>{{localize "SHIFT.Recharge.Manual"}}</span></span>{{/if}}
+      {{/if}}
+    </div>
+    {{#if editMode}}{{#if isCustomRecharge}}
+      <p class="hint">{{localize "SHIFT.Recharge.CustomHint"}}</p>
+    {{/if}}{{/if}}
+  </section>
+
+  {{!-- Scaled Up · Focus binding. The Focus Trait can only be picked on a
+        character, so the whole block is hidden when the Technique is unowned
+        (compendium / items directory) — the header still carries the Scale pip.
+        The treated-as Scale lives in the header pip, not here. --}}
+  {{#if isScaledUp}}{{#unless focusUnowned}}
+    <section class="scaledup-block">
+      <div class="scaledup-focus">
+        <span class="pill-label">{{localize "SHIFT.ItemSheet.FocusTrait"}}</span>
+        {{#if editMode}}
+          <select class="focus-select" name="system.focus.traitId">
+            <option value="">{{localize "SHIFT.ItemSheet.FocusTraitNone"}}</option>
+            {{#each focusOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
+          </select>
+        {{else}}
+          {{#if focusBoundName}}
+            <span class="focus-name">{{focusBoundName}}</span>
+          {{else}}
+            <span class="focus-name none">{{localize "SHIFT.ItemSheet.FocusTraitNone"}}</span>
+          {{/if}}
+        {{/if}}
+      </div>
+    </section>
+  {{/unless}}{{/if}}
+
+  {{#if (shiftOr enrichedDescription editMode)}}
+    <section class="item-description">
+      {{#if editMode}}
+        <prose-mirror name="system.description" value="{{source.description}}" toggled
+                      document-uuid="{{item.uuid}}" class="bio-prose">
+          {{{enrichedDescription}}}
+        </prose-mirror>
+      {{else}}
+        <div class="bio-display">{{{enrichedDescription}}}</div>
+      {{/if}}
+    </section>
+  {{/if}}
+
+  {{> "shift.item-source"}}
+</div>

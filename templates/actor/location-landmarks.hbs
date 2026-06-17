@@ -1,0 +1,51 @@
+<section class="tab landmarks{{#if (shiftEq activeTab 'landmarks')}} active{{/if}}" data-tab="landmarks" data-group="primary">
+  <div class="trait-group" data-group-key="landmarks">
+    <header class="group-header">
+      <h2>{{localize "SHIFT.Location.Landmarks"}}</h2>
+      {{#if editMode}}
+        <a class="group-add" data-action="createItem" data-type="landmark"
+           data-tooltip="{{localize 'SHIFT.Location.AddLandmark'}}">
+          <i class="fa-solid fa-plus"></i>
+        </a>
+      {{/if}}
+    </header>
+
+    <ul class="landmark-list">
+      {{#each landmarks}}
+        <li class="landmark-row{{#if safe}} is-safe{{else}} is-unsafe{{/if}}"
+            data-item-id="{{id}}" data-draggable="true" data-action="toggleExpand">
+          <img class="landmark-img" src="{{img}}" alt="{{name}}"/>
+          <div class="landmark-main">
+            <a class="landmark-name" data-action="toggleExpand">{{name}}</a>
+            {{#if source}}<span class="landmark-source">{{source}}</span>{{/if}}
+          </div>
+          <a class="landmark-safe {{#if safe}}safe{{else}}unsafe{{/if}}" data-action="toggleLandmarkSafe"
+             data-tooltip="{{#if safe}}{{localize 'SHIFT.Location.SafeToggle'}}{{else}}{{localize 'SHIFT.Location.UnsafeToggle'}}{{/if}}">
+            <i class="fa-solid {{#if safe}}fa-campground{{else}}fa-fire{{/if}}"></i>
+            {{#if safe}}{{localize "SHIFT.Location.Safe"}}{{else}}{{localize "SHIFT.Location.Unsafe"}}{{/if}}
+          </a>
+          {{#if @root.editable}}
+            <div class="landmark-actions">
+              <a class="ta-btn expand" data-action="toggleExpand"
+                 data-tooltip="{{localize 'SHIFT.Tooltips.Expand'}}"><i class="fa-solid {{#if expanded}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i></a>
+              {{#if @root.editMode}}
+                <a class="ta-btn" data-action="editItem"
+                   data-tooltip="{{localize 'SHIFT.Tooltips.Edit'}}"><i class="fa-solid fa-pen-to-square"></i></a>
+                <a class="ta-btn danger" data-action="deleteItem"
+                   data-tooltip="{{localize 'SHIFT.Tooltips.Delete'}}"><i class="fa-solid fa-trash"></i></a>
+              {{/if}}
+            </div>
+          {{/if}}
+          {{#if (shiftAnd expanded @root.canViewNotes)}}
+            <div class="landmark-description">
+              {{#if enrichedDescription}}{{{enrichedDescription}}}{{else}}<p class="empty">{{localize "SHIFT.Common.Empty"}}</p>{{/if}}
+            </div>
+          {{/if}}
+        </li>
+      {{/each}}
+      {{#unless landmarks.length}}
+        <li class="empty">{{localize "SHIFT.Common.Empty"}}</li>
+      {{/unless}}
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,21 @@
+<section class="adv-config-body">
+  <p class="hint">{{localize "SHIFT.Settings.Advancements.Hint"}}</p>
+  <ul class="adv-rows">
+    {{#each rows}}
+      <li class="adv-row">
+        <input type="text" name="label" value="{{label}}" placeholder="{{localize 'SHIFT.Settings.Advancements.Label'}}"/>
+        <input type="number" name="cost" value="{{cost}}" min="0" step="1"/>
+        <a class="ta-btn danger" data-action="deleteRow" data-index="{{@index}}"><i class="fa-solid fa-trash"></i></a>
+      </li>
+    {{/each}}
+  </ul>
+  <div class="adv-config-actions">
+    <a class="ta-btn" data-action="addRow" data-tooltip="{{localize 'SHIFT.Settings.Advancements.Add'}}"><i class="fa-solid fa-plus"></i></a>
+    <a class="ta-btn" data-action="resetDefaults" data-tooltip="{{localize 'SHIFT.Settings.Advancements.Reset'}}"><i class="fa-solid fa-rotate-left"></i></a>
+  </div>
+  <footer class="form-footer">
+    {{#each buttons}}
+      <button type="{{type}}"><i class="{{icon}}"></i> {{localize label}}</button>
+    {{/each}}
+  </footer>
+</section>

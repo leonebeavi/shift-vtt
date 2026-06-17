@@ -1,0 +1,41 @@
+{{!-- SHIFT VTT — Party groups, rendered as folder-like rows and relocated to
+      the top of the Actors directory list by ShiftActorDirectory#_onRender.
+      Each party <li> carries BOTH `data-party` (discriminator) and
+      `data-entry-id` (so it drags as the party Actor and gets the entry
+      context menu). The `<i class="fa-folder-open">` direct child of the header
+      lets core's own folder CSS handle the open/closed icon + collapse. Members
+      reuse the standard actor-row markup so core's click-to-open + drag
+      handlers apply for free.
+      Wrapped in a host <li> because this block is relocated to the top of the
+      directory's <ol>, where a bare <ol> child would be invalid markup. --}}
+<li class="shift-parties-host">
+  <ol class="shift-parties plain">
+  {{#each parties}}
+    <li class="directory-item folder shift-party flexcol{{#if expanded}} expanded{{/if}}"
+        data-party data-entry-id="{{id}}" data-uuid="{{uuid}}" data-folder-depth="1">
+      <header class="folder-header shift-party-header" data-action="toggleFolder">
+        <i class="fa-solid fa-folder-open fa-fw shift-party-icon" inert></i>
+        {{!-- Hidden image: source for the actor drag preview only. --}}
+        <img class="shift-party-drag" src="{{img}}" alt="{{name}}" hidden/>
+        <span class="folder-name ellipsis">{{name}}</span>
+        <a class="shift-party-ctl shift-party-open" data-action="openPartySheet" data-tooltip="{{localize 'SHIFT.Party.OpenSheet'}}">
+          <i class="fa-solid fa-up-right-from-square"></i>
+        </a>
+        <span class="shift-party-count" data-tooltip="{{localize 'SHIFT.Party.MemberCount'}}">{{members.length}}</span>
+      </header>
+      <ol class="subdirectory plain">
+        {{#each members}}
+          <li class="directory-item entry document actor flexrow" data-entry-id="{{id}}" data-uuid="{{uuid}}">
+            <img class="thumbnail" src="{{img}}" alt="{{name}}" loading="lazy"/>
+            <a class="entry-name ellipsis" data-action="activateEntry">{{name}}</a>
+          </li>
+        {{else}}
+          <li class="blank shift-party-empty" data-entry-id="">
+            <i class="fa-solid fa-hand-pointer"></i> {{localize "SHIFT.Party.NoMembers"}}
+          </li>
+        {{/each}}
+      </ol>
+    </li>
+  {{/each}}
+  </ol>
+</li>

@@ -1,0 +1,17 @@
+{{!-- Sheet source citation, shared by every item sheet: an editable input in
+      edit mode, a discreet read-only line otherwise. Inherits editMode and
+      system.source from the item sheet context. --}}
+{{#if editMode}}
+  <div class="sheet-source">
+    <i class="fa-solid fa-feather" data-tooltip="{{localize 'SHIFT.ItemSheet.Source'}}"></i>
+    <input type="text" name="system.source" value="{{system.source}}"
+           placeholder="{{localize 'SHIFT.ItemSheet.Source'}}" aria-label="{{localize 'SHIFT.ItemSheet.Source'}}"/>
+  </div>
+{{else}}
+  {{#if system.source}}
+    <div class="sheet-source readonly">
+      <i class="fa-solid fa-feather" data-tooltip="{{localize 'SHIFT.ItemSheet.Source'}}"></i>
+      <span class="source-text">{{system.source}}</span>
+    </div>
+  {{/if}}
+{{/if}}

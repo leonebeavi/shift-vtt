@@ -1,0 +1,171 @@
+{{!-- Trait item sheet. Header + die-hero, then two internal tabs (Description /
+      Customize). An owner sees the lock toggle; locked shows the observer
+      (player) view — editing inputs become read-only and the Customize tab hides. --}}
+<div class="item-sheet trait-sheet minimal">
+  <header class="item-header">
+    <img class="item-img" src="{{item.img}}" alt="{{item.name}}" data-action="editImage" data-edit="img"/>
+    <div class="item-id">
+      <input class="item-name" type="text" name="name" value="{{item.name}}" {{#unless editMode}}disabled{{/unless}}/>
+      <div class="item-subline">
+        {{#if editable}}
+          <a class="item-lock{{#if editMode}} active{{/if}}" data-action="toggleEdit" data-tooltip="{{localize 'SHIFT.Tooltips.EditToggle'}}">
+            <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
+          </a>
+        {{/if}}
+        <span class="category-pill">{{categoryLabel}}</span>
+        {{#if showScaleTag}}
+          <span class="scale-pip inline" data-scale="{{effectiveScale}}" data-tooltip="{{scaleTooltip}}">{{effectiveScale}}</span>
+        {{/if}}
+        {{#if system.temporary}}<span class="tag temporary" data-tooltip="{{localize 'SHIFT.Tooltips.Temporary'}}"><i class="fa-solid fa-hourglass-half"></i></span>{{/if}}
+      </div>
+    </div>
+  </header>
+
+  <section class="die-hero status-{{statusKey}}">
+    {{#if dieImg}}
+      {{#if editable}}
+        <a class="die-badge img hero" data-die="{{statusKey}}" data-action="rollTrait"
+           data-tooltip="{{statusLabel}}{{#if canRoll}} &middot; {{localize 'SHIFT.Tooltips.RollIcon'}}{{/if}}">
+          <img src="{{dieImg}}" alt="{{currentLabel}}"/>
+        </a>
+      {{else}}
+        {{!-- View-only: a non-owner sees the die status but cannot roll. --}}
+        <span class="die-badge img hero" data-die="{{statusKey}}" data-tooltip="{{statusLabel}}">
+          <img src="{{dieImg}}" alt="{{currentLabel}}"/>
+        </span>
+      {{/if}}
+    {{else}}
+      <span class="die-badge exhausted-x hero" data-tooltip="{{statusLabel}}"><i class="fa-solid fa-xmark"></i></span>
+    {{/if}}
+    <div class="die-meta">
+      <span class="die-status">{{statusLabel}}</span>
+      <span class="die-max">{{localize "SHIFT.Trait.Max"}} {{maxLabel}}</span>
+    </div>
+    {{#if editable}}
+      <div class="die-controls">
+        <a class="ta-btn up{{#unless canShiftUp}} disabled{{/unless}}" data-action="shiftUp" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftUp'}}"><i class="fa-solid fa-circle-arrow-up"></i></a>
+        <a class="ta-btn down{{#unless canShiftDown}} disabled{{/unless}}" data-action="shiftDown" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftDown'}}"><i class="fa-solid fa-circle-arrow-down"></i></a>
+        {{#unless system.exhausted}}
+          <a class="ta-btn exhaust" data-action="exhaustTrait" data-tooltip="{{localize 'SHIFT.Tooltips.Exhaust'}}"><i class="fa-solid fa-skull"></i></a>
+        {{/unless}}
+      </div>
+    {{/if}}
+  </section>
+
+  {{!-- Tabs (Description | Customize) — only in edit mode, when there is a
+        second tab to switch to. --}}
+  {{#if editMode}}
+    <nav class="item-tabs">
+      <a class="item-tab{{#unless (shiftEq activeTab 'custom')}} active{{/unless}}" data-action="itemTab" data-tab="desc"><i class="fa-solid fa-align-left"></i> {{localize "SHIFT.ItemSheet.TabDescription"}}</a>
+      <a class="item-tab{{#if (shiftEq activeTab 'custom')}} active{{/if}}" data-action="itemTab" data-tab="custom"><i class="fa-solid fa-sliders"></i> {{localize "SHIFT.ItemSheet.TabCustomize"}}</a>
+    </nav>
+  {{/if}}
+
+  {{!-- TAB: Description --}}
+  <div class="item-tab-panel{{#unless (shiftAnd editMode (shiftEq activeTab 'custom'))}} active{{/unless}}" data-tab="desc">
+    {{#if system.features.usesKeywords}}
+      {{#if (shiftOr system.keywords.length editMode)}}
+        {{> "shift.pill-list" items=system.keywords kind="keyword"
+            label=(localize "SHIFT.Keywords.Title")
+            addAction="addKeyword" removeAction="removeKeyword"
+            canEdit=canEditPills addTooltip=(localize "SHIFT.Keywords.Add")}}
+      {{/if}}
+    {{/if}}
+    {{#if system.features.usesDrawbacks}}
+      {{#if (shiftOr system.drawbacks.length editMode)}}
+        {{> "shift.pill-list" items=system.drawbacks kind="drawback"
+            label=(localize "SHIFT.Drawbacks.Title")
+            addAction="addDrawback" removeAction="removeDrawback"
+            canEdit=canEditPills addTooltip=(localize "SHIFT.Drawbacks.Add")}}
+      {{/if}}
+    {{/if}}
+    {{#if isPackLike}}
+      {{#if (shiftOr system.loadout editMode)}}
+        <div class="loadout-row sheet">
+          <span class="pill-label">{{localize "SHIFT.Sheet.Loadout"}}</span>
+          {{#if editMode}}
+            <textarea name="system.loadout" rows="1" placeholder="{{localize 'SHIFT.Sheet.LoadoutPlaceholder'}}">{{system.loadout}}</textarea>
+          {{else}}
+            <span class="loadout-text">{{system.loadout}}</span>
+          {{/if}}
+        </div>
+      {{/if}}
+    {{/if}}
+    {{#if (shiftOr enrichedDescription editMode)}}
+      <section class="item-description">
+        {{#if editMode}}
+          <prose-mirror name="system.description" value="{{source.description}}" toggled
+                        document-uuid="{{item.uuid}}" class="bio-prose">
+            {{{enrichedDescription}}}
+          </prose-mirror>
+        {{else}}
+          <div class="bio-display">{{{enrichedDescription}}}</div>
+        {{/if}}
+      </section>
+    {{/if}}
+  </div>
+
+  {{!-- TAB: Customize (edit mode only) — one dense panel. --}}
+  {{#if editMode}}
+  <div class="item-tab-panel{{#if (shiftEq activeTab 'custom')}} active{{/if}}" data-tab="custom">
+    <section class="cfg-dense">
+      <div class="config-grid">
+
+        <span class="cfg-group-label">{{localize "SHIFT.ItemSheet.DiceConfig"}}</span>
+        <label class="cfg">
+          <span>{{localize "SHIFT.ItemSheet.MaxDie"}}</span>
+          <select name="system.maxDie">
+            {{#each diceList}}<option value="{{this}}" {{#if (shiftEq this @root.system.maxDie)}}selected{{/if}}>{{shiftDieLabel this}}</option>{{/each}}
+          </select>
+        </label>
+        <label class="cfg">
+          <span>{{localize "SHIFT.ItemSheet.CurrentDie"}}</span>
+          {{!-- Disabled while Exhausted: the die is stored separately from the
+                exhausted flag; editing here desyncs it. Recover via shift-up. --}}
+          <select name="system.currentDie" {{#if system.exhausted}}disabled data-tooltip="{{statusLabel}}"{{/if}}>
+            {{#each diceList}}<option value="{{this}}" {{#if (shiftEq this @root.system.currentDie)}}selected{{/if}}>{{shiftDieLabel this}}</option>{{/each}}
+          </select>
+        </label>
+        <label class="cfg">
+          <span>{{localize "SHIFT.ItemSheet.Category"}}</span>
+          <select name="system.category">
+            {{#each categories}}<option value="{{key}}" {{#if (shiftEq key @root.system.category)}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+        </label>
+        <label class="cfg check"><input type="checkbox" name="system.rollable" {{checked system.rollable}}/> {{localize "SHIFT.ItemSheet.Rollable"}}</label>
+        <label class="cfg check"><input type="checkbox" name="system.autoShiftOnRoll" {{checked system.autoShiftOnRoll}}/> {{localize "SHIFT.ItemSheet.AutoShift"}}</label>
+        <label class="cfg check"><input type="checkbox" name="system.temporary" {{checked system.temporary}}/> {{localize "SHIFT.ItemSheet.Temporary"}}</label>
+        <label class="cfg check"><input type="checkbox" name="system.features.usesKeywords" {{checked system.features.usesKeywords}}/> {{localize "SHIFT.Keywords.Title"}}</label>
+        <label class="cfg check span2"><input type="checkbox" name="system.features.usesDrawbacks" {{checked system.features.usesDrawbacks}}/> {{localize "SHIFT.Drawbacks.Title"}}</label>
+
+        {{#if enableScale}}
+          <span class="cfg-group-label">{{localize "SHIFT.ItemSheet.ScaleConfig"}}</span>
+          <label class="cfg check"><input type="checkbox" name="system.scale.custom" {{checked system.scale.custom}}/> {{localize "SHIFT.ItemSheet.ScaleOverride"}}</label>
+          <label class="cfg">
+            <span>{{localize "SHIFT.Trait.Scale"}}</span>
+            <select name="system.scale.value">
+              {{#each scaleOptions}}<option value="{{this}}" {{#if (shiftEq this @root.system.scale.value)}}selected{{/if}}>{{this}}</option>{{/each}}
+            </select>
+          </label>
+        {{/if}}
+
+        <span class="cfg-group-label">{{localize "SHIFT.ItemSheet.EncounterConfig"}}</span>
+        <label class="cfg check"><input type="checkbox" name="system.defeat.counts" {{checked system.defeat.counts}}/> {{localize "SHIFT.ItemSheet.DefeatCounts"}}</label>
+        <label class="cfg check"><input type="checkbox" name="system.defeat.mustBeExhaustedFirst" {{checked system.defeat.mustBeExhaustedFirst}}/> {{localize "SHIFT.ItemSheet.MustFirst"}}</label>
+        <label class="cfg">
+          <span>{{localize "SHIFT.ItemSheet.ExtraRequired"}}</span>
+          <input type="number" name="system.defeat.extraRequired" value="{{system.defeat.extraRequired}}" min="0" step="1"/>
+        </label>
+        <label class="cfg">
+          <span>{{localize "SHIFT.ItemSheet.ExtraActions"}}</span>
+          <input type="number" name="system.adversary.extraActions" value="{{system.adversary.extraActions}}" min="0" step="1"/>
+        </label>
+        <label class="cfg check span2"><input type="checkbox" name="system.adversary.countsTowardTraitLimit" {{checked system.adversary.countsTowardTraitLimit}}/> {{localize "SHIFT.ItemSheet.CountsLimit"}}</label>
+
+      </div>
+    </section>
+  </div>
+  {{/if}}
+
+  {{> "shift.item-source"}}
+</div>

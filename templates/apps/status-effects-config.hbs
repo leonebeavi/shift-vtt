@@ -1,0 +1,26 @@
+<section class="status-config-body">
+  <p class="hint">{{localize "SHIFT.Settings.StatusEffects.Hint"}}</p>
+  <ul class="status-rows">
+    {{#each rows}}
+      <li class="status-row" data-index="{{@index}}" data-id="{{id}}">
+        <input type="text" name="label" value="{{label}}" placeholder="{{localize 'SHIFT.Settings.StatusEffects.Label'}}"/>
+        <input type="hidden" name="color" value="{{color}}"/>
+        <div class="swatch-picker">
+          {{#each @root.palette}}
+            <a class="swatch{{#if (shiftEq this ../color)}} selected{{/if}}" style="--sw: {{this}};" data-action="pickColor" data-color="{{this}}" data-tooltip="{{this}}"></a>
+          {{/each}}
+        </div>
+        <a class="ta-btn danger" data-action="deleteRow" data-index="{{@index}}" data-tooltip="{{localize 'SHIFT.Settings.StatusEffects.Delete'}}"><i class="fa-solid fa-trash"></i></a>
+      </li>
+    {{/each}}
+  </ul>
+  <div class="status-config-actions">
+    <a class="ta-btn" data-action="addRow" data-tooltip="{{localize 'SHIFT.Settings.StatusEffects.Add'}}"><i class="fa-solid fa-plus"></i></a>
+    <a class="ta-btn" data-action="resetDefaults" data-tooltip="{{localize 'SHIFT.Settings.StatusEffects.Reset'}}"><i class="fa-solid fa-rotate-left"></i></a>
+  </div>
+  <footer class="form-footer">
+    {{#each buttons}}
+      <button type="{{type}}"><i class="{{icon}}"></i> {{localize label}}</button>
+    {{/each}}
+  </footer>
+</section>

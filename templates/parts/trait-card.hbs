@@ -1,0 +1,121 @@
+{{!-- Trait card. Die rolls; the chevron expands only the description.
+     Exert is a fixed top control; edit/delete appear at top in edit mode. --}}
+<div class="trait-card cat-{{category}} status-{{statusKey}}{{#if exhausted}} is-exhausted{{/if}}{{#if temporary}} is-temporary{{/if}}{{#if hidden}} is-hidden{{/if}}"
+     data-item-id="{{id}}" data-draggable="true" data-action="toggleExpand">
+
+  {{!-- Overridden Scale shows as a corner notification pip (standardized with
+        the HUD / picker / global-trait pips), hover for "Scale N". --}}
+  {{#if showScaleTag}}<span class="scale-pip" data-scale="{{effectiveScale}}" data-tooltip="{{scaleTooltip}}">{{effectiveScale}}</span>{{/if}}
+
+  <header class="trait-head">
+    {{#if dieImg}}
+      {{#if @root.editable}}
+        <a class="die-badge img" data-die="{{statusKey}}" data-action="rollTrait"
+           data-tooltip="{{statusLabel}}{{#if canRoll}} &middot; {{localize 'SHIFT.Tooltips.RollIcon'}}{{/if}}">
+          <img src="{{dieImg}}" alt="{{currentLabel}}"/>
+        </a>
+      {{else}}
+        {{!-- View-only: a non-owner sees the die status but cannot roll. --}}
+        <span class="die-badge img" data-die="{{statusKey}}" data-tooltip="{{statusLabel}}">
+          <img src="{{dieImg}}" alt="{{currentLabel}}"/>
+        </span>
+      {{/if}}
+    {{else}}
+      <span class="die-badge exhausted-x" data-tooltip="{{statusLabel}}"><i class="fa-solid fa-xmark"></i></span>
+    {{/if}}
+
+    <div class="trait-title">
+      {{#if @root.editMode}}
+        <a class="trait-name" data-action="editItem">{{name}}</a>
+      {{else}}
+        <span class="trait-name">{{name}}</span>
+      {{/if}}
+      <div class="trait-sub">
+        <span class="status-text">{{statusLabel}}</span>
+        <span class="max-die" data-tooltip="{{localize 'SHIFT.Tooltips.MaxDie'}}">{{localize "SHIFT.Trait.Max"}} {{maxLabel}}</span>
+        {{#if fromPack}}
+          <span class="tag from-pack" data-tooltip="{{localize 'SHIFT.Temporary.Source'}}"><i class="fa-solid fa-box-open"></i></span>
+        {{/if}}
+        {{#if temporary}}<span class="tag temporary" data-tooltip="{{localize 'SHIFT.Tooltips.Temporary'}}"><i class="fa-solid fa-hourglass-half"></i></span>{{/if}}
+        {{#if hidden}}<span class="tag hidden-tag" data-tooltip="{{localize 'SHIFT.Tooltips.Hidden'}}"><i class="fa-solid fa-eye-slash"></i></span>{{/if}}
+        {{#unless rollable}}<span class="tag no-roll" data-tooltip="{{localize 'SHIFT.Tooltips.NotRollable'}}"><i class="fa-solid fa-ban"></i></span>{{/unless}}
+      </div>
+    </div>
+
+    {{#if @root.editable}}
+      <div class="trait-actions">
+        {{#if isPack}}
+          <a class="ta-btn temp-pack" data-action="makeTemporary" data-tooltip="{{localize 'SHIFT.Tooltips.MakeTemporary'}}"><i class="fa-solid fa-box-open"></i></a>
+        {{/if}}
+        <a class="ta-btn up{{#unless canUp}} disabled{{/unless}}" data-action="shiftUp" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftUp'}}"><i class="fa-solid fa-circle-arrow-up"></i></a>
+        <a class="ta-btn down{{#unless canDown}} disabled{{/unless}}" data-action="shiftDown" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftDown'}}"><i class="fa-solid fa-circle-arrow-down"></i></a>
+        {{#if (shiftAnd canDown (shiftEq @root.actor.type "character"))}}
+          <a class="ta-btn exert" data-action="exertTrait" data-tooltip="{{localize 'SHIFT.Tooltips.Exert'}}"><i class="fa-solid fa-hand-fist"></i></a>
+        {{/if}}
+        {{#if @root.editMode}}
+          {{#if canDown}}
+            <a class="ta-btn exhaust" data-action="exhaustTrait" data-tooltip="{{localize 'SHIFT.Tooltips.Exhaust'}}"><i class="fa-solid fa-skull"></i></a>
+          {{/if}}
+          <a class="ta-btn edit" data-action="editItem" data-tooltip="{{localize 'SHIFT.Tooltips.Edit'}}"><i class="fa-solid fa-pen-to-square"></i></a>
+          <a class="ta-btn danger" data-action="deleteItem" data-tooltip="{{localize 'SHIFT.Tooltips.Delete'}}"><i class="fa-solid fa-trash"></i></a>
+        {{/if}}
+      </div>
+    {{/if}}
+  </header>
+
+  {{#if isPack}}
+    <div class="loadout-row">
+      <span class="pill-label">{{localize "SHIFT.Sheet.Loadout"}}</span>
+      {{#if @root.editMode}}
+        <textarea data-loadout rows="1" placeholder="{{localize 'SHIFT.Sheet.LoadoutPlaceholder'}}">{{loadout}}</textarea>
+      {{else}}
+        <span class="loadout-text">{{loadout}}</span>
+      {{/if}}
+    </div>
+  {{/if}}
+
+  {{#if usesKeywords}}
+    {{> "shift.pill-list" items=keywords kind="keyword"
+        label=(localize "SHIFT.Keywords.Title")
+        addAction="addKeyword" removeAction="removeKeyword"
+        canEdit=@root.editMode addTooltip=(localize "SHIFT.Keywords.Add")}}
+  {{/if}}
+
+  {{#if usesDrawbacks}}
+    {{#if (shiftOr drawbacks.length @root.editMode)}}
+      {{> "shift.pill-list" items=drawbacks kind="drawback"
+          label=(localize "SHIFT.Drawbacks.Title")
+          addAction="addDrawback" removeAction="removeDrawback"
+          canEdit=@root.editMode addTooltip=(localize "SHIFT.Drawbacks.Add")}}
+    {{/if}}
+  {{/if}}
+
+  {{#if showAdversaryMeta}}
+    {{#if (shiftOr (shiftOr defeat.extraRequired defeat.mustBeExhaustedFirst) (shiftOr extraActions (shiftEq defeat.counts false)))}}
+      <div class="adversary-meta">
+        {{#unless defeat.counts}}
+          <span class="meta-chip" data-tooltip="{{localize 'SHIFT.Tooltips.NoCount'}}"><i class="fa-regular fa-circle"></i> {{localize "SHIFT.Adversary.NoCount"}}</span>
+        {{/unless}}
+        {{#if defeat.extraRequired}}
+          <span class="meta-chip" data-tooltip="{{localize 'SHIFT.Tooltips.ExtraRequired'}}"><i class="fa-solid fa-shield-halved"></i> +{{defeat.extraRequired}}</span>
+        {{/if}}
+        {{#if defeat.mustBeExhaustedFirst}}
+          <span class="meta-chip warn" data-tooltip="{{localize 'SHIFT.Tooltips.MustFirst'}}"><i class="fa-solid fa-lock"></i> {{localize "SHIFT.Adversary.First"}}</span>
+        {{/if}}
+        {{#if extraActions}}
+          <span class="meta-chip" data-tooltip="{{localize 'SHIFT.Tooltips.ExtraActions'}}"><i class="fa-solid fa-bolt"></i> +{{extraActions}}</span>
+        {{/if}}
+      </div>
+    {{/if}}
+  {{/if}}
+
+  {{#if (shiftAnd expanded @root.canViewNotes)}}
+    <div class="trait-extra">
+      {{#if enrichedDescription}}
+        <div class="trait-description">{{{enrichedDescription}}}</div>
+      {{else}}
+        <p class="empty">{{localize "SHIFT.Common.Empty"}}</p>
+      {{/if}}
+    </div>
+  {{/if}}
+</div>

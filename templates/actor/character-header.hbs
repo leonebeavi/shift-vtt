@@ -1,0 +1,104 @@
+{{!-- SHIFT VTT — Character header (REDESIGN)
+     Substitui templates/actor/character-header.hbs
+     Mudanças: avatar emoldurado maior + scale-badge (clicável p/ ciclar em edição),
+     coluna direita com XP compacto (sessão abaixo do número) e ações empilhadas
+     (Action Roll / Work Together / Unsafe Rest + Safe Rest). --}}
+<div class="sheet-top character-top">
+  <header class="sheet-header character-header">
+
+    <div class="portrait">
+      <img class="portrait-img" src="{{actor.img}}" alt="{{actor.name}}" data-action="editImage" data-edit="img"
+           data-tooltip="{{localize 'SHIFT.Tooltips.EditImage'}}"/>
+      {{#if enableScale}}
+        <span class="scale-badge" data-scale="{{system.scale}}"
+              {{#if editMode}}data-action="cycleScale"{{/if}}
+              data-tooltip="{{localize 'SHIFT.Trait.Scale'}} {{system.scale}}">{{system.scale}}{{#if editMode}}<i class="fa-solid fa-pen scale-edit-badge"></i>{{/if}}</span>
+      {{/if}}
+    </div>
+
+    <div class="header-main">
+      <div class="identity">
+        <div class="name-row">
+          {{#if editMode}}
+            <input class="char-name" type="text" name="name" value="{{actor.name}}"
+                   placeholder="{{localize 'SHIFT.Sheet.Name'}}"/>
+            <input class="char-pronouns" type="text" name="system.pronouns" value="{{system.pronouns}}"
+                   placeholder="{{localize 'SHIFT.Sheet.Pronouns'}}"/>
+          {{else}}
+            <span class="char-name-text">{{actor.name}}</span>
+            {{#if system.pronouns}}<span class="char-pronouns-text">({{system.pronouns}})</span>{{/if}}
+          {{/if}}
+        </div>
+        {{#if editMode}}
+          <textarea class="char-concept" name="system.concept" rows="1"
+                    placeholder="{{localize 'SHIFT.Sheet.Concept'}}">{{system.concept}}</textarea>
+        {{else}}
+          {{#if (shiftAnd system.concept canViewNotes)}}<div class="char-concept-text">{{system.concept}}</div>{{/if}}
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="header-side">
+      <div class="xp-widget{{#if hasXp}} has-xp{{/if}}" data-tooltip="{{localize 'SHIFT.Tooltips.Xp'}}">
+        <span class="xp-label">{{localize "SHIFT.Xp.Title"}}</span>
+        <div class="xp-value">
+          {{#if editable}}<a class="xp-btn" data-action="adjustXp" data-delta="-1"><i class="fa-solid fa-minus"></i></a>{{/if}}
+          <input class="xp-number" type="number" name="system.xp.value" value="{{system.xp.value}}" min="0" step="1" {{#unless editable}}disabled{{/unless}}/>
+          {{#if editable}}<a class="xp-btn" data-action="adjustXp" data-delta="1"><i class="fa-solid fa-plus"></i></a>{{/if}}
+        </div>
+        <span class="xp-dots" data-tooltip="{{localize 'SHIFT.Tooltips.XpSession'}} {{system.xp.session}}/{{xpLimit}}">
+          {{#each xpDots}}<i class="{{#if this.on}}on{{/if}}"></i>{{/each}}
+        </span>
+      </div>
+
+      {{#if editable}}
+        <div class="header-actions">
+          <button type="button" class="shift-btn primary" data-action="actionRoll">
+            <i class="fa-solid fa-dice"></i> {{localize "SHIFT.Roll.ActionRoll"}}
+          </button>
+          <button type="button" class="shift-btn" data-action="workTogether"
+                  data-tooltip="{{localize 'SHIFT.Group.Hint'}}">
+            <i class="fa-solid fa-people-arrows"></i> {{localize "SHIFT.Group.Title"}}
+          </button>
+          <div class="action-rest">
+            <button type="button" class="shift-btn" data-action="unsafeRest"
+                    data-tooltip="{{localize 'SHIFT.Tooltips.UnsafeRest'}}">
+              <i class="fa-solid fa-fire"></i> {{localize "SHIFT.Rest.Unsafe"}}
+            </button>
+            <button type="button" class="shift-btn" data-action="safeRest"
+                    data-tooltip="{{localize 'SHIFT.Tooltips.SafeRest'}}">
+              <i class="fa-solid fa-campground"></i> {{localize "SHIFT.Rest.Safe"}}
+            </button>
+          </div>
+        </div>
+      {{/if}}
+    </div>
+  </header>
+
+  <div class="advancement-strip">
+    {{#each advancements}}
+      <span class="adv-chip{{#if affordable}} afford{{/if}}">{{label}} <b>{{cost}} XP</b></span>
+    {{/each}}
+  </div>
+
+  <nav class="sheet-tabs tabs" data-group="primary">
+    {{#each tabs}}
+      <a class="tab-link{{#if (shiftEq @root.activeTab id)}} active{{/if}}"
+         data-action="tab" data-group="primary" data-tab="{{id}}">
+        <i class="fa-solid {{icon}}"></i> {{localize label}}
+      </a>
+    {{/each}}
+    {{#if editable}}
+      <span class="tab-tools">
+        {{#if editMode}}
+          <a class="tab-tool recharge" data-action="rechargeAll" data-tooltip="{{localize 'SHIFT.Tooltips.RechargeAll'}}">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </a>
+        {{/if}}
+        <a class="tab-tool{{#if editMode}} active{{/if}}" data-action="toggleEdit" data-tooltip="{{localize 'SHIFT.Tooltips.EditToggle'}}">
+          <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
+        </a>
+      </span>
+    {{/if}}
+  </nav>
+</div>

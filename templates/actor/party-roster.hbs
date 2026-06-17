@@ -1,0 +1,43 @@
+{{!-- SHIFT VTT — Roster tab: one game-menu slot per member, with Trait tiles
+      that own their Keyword/Drawback counts (pips) and expand to a detail card.
+      Trait state is read LIVE from each referenced Actor. --}}
+<section class="party-page roster{{#if (shiftEq activeTab 'roster')}} active{{/if}}"
+         data-page="roster" data-tab="roster" data-group="primary">
+  <div class="party-roster layout-compact">
+    <span class="roster-count">{{localize "SHIFT.Tabs.Roster"}} &middot; {{memberCount}}</span>
+
+    {{#each members}}
+      <article class="party-member" data-member-uuid="{{uuid}}" data-actor-id="{{id}}">
+        <div class="pm-portrait" data-action="openMember" data-tooltip="{{localize 'SHIFT.Party.OpenMember'}}">
+          <img src="{{img}}" alt="{{name}}"/>
+          <span class="pm-open-hint"><i class="fa-solid fa-up-right-from-square"></i></span>
+        </div>
+        <div class="pm-body">
+          <div class="pm-head">
+            <a class="pm-name" data-action="openMember">{{name}}</a>
+            <span class="pm-type">{{typeLabel}}</span>
+            {{#if @root.editMode}}
+              <a class="pm-remove edit-only" data-action="removeMember" data-tooltip="{{localize 'SHIFT.Party.RemoveMember'}}">
+                <i class="fa-solid fa-xmark"></i>
+              </a>
+            {{/if}}
+          </div>
+
+          {{#if hasTraits}}
+            {{> "shift.party-traits" traits=traits ownerUuid=uuid}}
+          {{else}}
+            <span class="pm-empty">{{localize "SHIFT.Party.MemberNoTraits"}}</span>
+          {{/if}}
+        </div>
+      </article>
+    {{/each}}
+
+    {{#unless members.length}}
+      <div class="party-empty"><i class="fa-solid fa-hand-pointer"></i><p>{{localize "SHIFT.Party.DropHint"}}</p></div>
+    {{/unless}}
+
+    {{#if editMode}}
+      <div class="party-dropzone edit-only"><i class="fa-solid fa-hand-pointer"></i> {{localize "SHIFT.Party.AddMember"}}</div>
+    {{/if}}
+  </div>
+</section>

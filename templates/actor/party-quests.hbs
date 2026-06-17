@@ -1,0 +1,27 @@
+{{!-- SHIFT VTT — Quests tab. A Quest IS a Trait (category "quest"): the die is
+      its clock (rollable, shifts up/down, exhausts), it can carry Keywords/
+      Drawbacks + a description, and the GM hides it from players with the single
+      eye toggle (the Trait's `revealed` flag). Cards render via the shared
+      shift.ptrait-card partial; drag a card onto another to reorder. --}}
+<section class="party-page quests{{#if (shiftEq activeTab 'quests')}} active{{/if}}"
+         data-page="quests" data-tab="quests" data-group="primary">
+  <div class="party-quests party-traits-page">
+    {{#if @root.editMode}}
+      <div class="pt-toolbar">
+        <a class="party-btn pt-add" data-action="createItem" data-type="trait" data-category="quest">
+          <i class="fa-solid fa-plus"></i> {{localize "SHIFT.Party.Quests.Add"}}
+        </a>
+        <span class="pt-hint"><i class="fa-solid fa-up-down-left-right"></i> {{localize "SHIFT.Party.Quests.ReorderHint"}}</span>
+      </div>
+    {{/if}}
+
+    <div class="ptrait-grid">
+      {{#each questGroup.traits}}
+        {{> "shift.ptrait-card" this showHide=true}}
+      {{/each}}
+      {{#unless questGroup.traits.length}}
+        <div class="party-empty"><i class="fa-solid fa-scroll"></i><p>{{localize "SHIFT.Party.Quests.Empty"}}</p></div>
+      {{/unless}}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,64 @@
+<div class="shift-vtt action-roll-dialog">
+  {{#if turnOrder}}
+    <p class="turn-order-banner"><i class="fa-solid fa-flag"></i> {{localize "SHIFT.Combat.TurnOrderHint"}}</p>
+    <div class="form-group">
+      <label>{{primaryLabel}}</label>
+      <div class="trait-opts">
+        {{#each primaryOptions}}
+          <label class="trait-opt">
+            <input type="radio" name="primary" value="{{uuid}}" {{#if selected}}checked{{/if}}/>
+            <span class="opt-body">
+              {{#if img}}<img src="{{img}}" alt=""/>{{/if}}
+              <span class="opt-name">{{name}}</span>
+              <span class="opt-die">{{dieLabel}}</span>{{#if isScaled}}<span class="opt-scale-pip" data-scale="{{scale}}" data-tooltip="{{localize 'SHIFT.Trait.Scale'}} {{scale}}">{{scale}}</span>{{/if}}
+            </span>
+          </label>
+        {{/each}}
+      </div>
+    </div>
+  {{else}}
+    {{!-- One pool, grouped by category into columns. Pick up to two
+          different Traits (the same Trait can never roll twice). --}}
+    <p class="roll-hint">{{localize "SHIFT.Roll.PickTraits"}}</p>
+    <div class="trait-group-cols">
+      {{#each multiGroups}}
+        <div class="trait-col">
+          <span class="col-label">{{label}}</span>
+          <div class="trait-opts col">
+            {{#each options}}
+              <label class="trait-opt">
+                <input type="checkbox" name="traits" value="{{uuid}}" {{#if selected}}checked{{/if}}/>
+                <span class="opt-body">
+                  {{#if img}}<img src="{{img}}" alt=""/>{{/if}}
+                  <span class="opt-name">{{name}}</span>
+                  <span class="opt-die">{{dieLabel}}</span>{{#if isScaled}}<span class="opt-scale-pip" data-scale="{{scale}}" data-tooltip="{{localize 'SHIFT.Trait.Scale'}} {{scale}}">{{scale}}</span>{{/if}}
+                </span>
+              </label>
+            {{/each}}
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  {{/if}}
+
+  {{#unless turnOrder}}
+    {{#if forcedRollType}}
+      {{!-- The GM pre-set the roll type; the player just rolls. --}}
+      <p class="roll-type-forced rt-{{forcedRollType}}">
+        <i class="fa-solid fa-user-shield"></i> {{localize "SHIFT.Roll.GMRequested"}} <b>{{forcedRollTypeLabel}}</b>
+      </p>
+    {{else}}
+      <div class="form-group roll-type-group">
+        <label>{{localize "SHIFT.Roll.RollType"}}</label>
+        <div class="roll-type-options">
+          {{#each rollTypes}}
+            <label class="roll-type-option {{key}}">
+              <input type="radio" name="rollType" value="{{key}}" {{#if (shiftEq key "normal")}}checked{{/if}}/>
+              <span>{{label}}</span>
+            </label>
+          {{/each}}
+        </div>
+      </div>
+    {{/if}}
+  {{/unless}}
+</div>

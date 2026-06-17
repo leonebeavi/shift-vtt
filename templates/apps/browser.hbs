@@ -1,0 +1,108 @@
+{{!--
+  SHIFT VTT — Item Browser template · "Combined" layout.
+  Token filter-summary (collapsible drawer) on top + single-line results
+  list with a "Create new" ghost row below. Pairs with the .bx-* rules in
+  shift.less and the filtersOpen / activeFilters / activeCount / total /
+  rowColor context built in module/apps/browser.mjs.
+--}}
+<section class="browser-body">
+
+  {{!-- Search ------------------------------------------------------------ --}}
+  <div class="bx-search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" name="search" value="{{search}}" placeholder="{{localize 'SHIFT.Browser.Search'}}"/>
+  </div>
+
+  {{!-- Filter summary: Filters button + active tokens + Clear ------------- --}}
+  <div class="bx-summary">
+    <button type="button" class="bx-funnel{{#if filtersOpen}} open{{/if}}" data-action="toggleFilters">
+      <i class="fa-solid fa-sliders"></i> {{localize "SHIFT.Browser.Filters"}}
+      {{#if activeCount}}<span class="badge">{{activeCount}}</span>{{/if}}
+    </button>
+
+    <div class="bx-tokens">
+      {{#each activeFilters}}
+        <span class="bx-token {{kind}}">{{label}}
+          <i class="fa-solid fa-xmark" data-action="clearFilter" data-filter="{{filter}}" data-value="{{value}}"></i>
+        </span>
+      {{/each}}
+    </div>
+
+    {{#if activeCount}}
+      <a class="bx-clear" data-action="clearAll">{{localize "SHIFT.Browser.Clear"}}</a>
+    {{/if}}
+  </div>
+
+  {{!-- Filter drawer (only rendered when the Filters button is toggled) --- --}}
+  {{#if filtersOpen}}
+  <div class="bx-drawer">
+    {{#if showCategories}}
+    <div class="bx-frow" data-filter-group="category">
+      <span class="bx-flabel">{{localize "SHIFT.Browser.Category"}}</span>
+      <div class="bx-chips">
+        <a class="bx-chip{{#if categoryAllActive}} active{{/if}}" data-filter="category" data-value="">{{localize "SHIFT.Browser.AllCategories"}}</a>
+        {{#each categories}}
+          <a class="bx-chip{{#if active}} active{{/if}}" data-filter="category" data-value="{{value}}">{{label}}</a>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if sources.length}}
+    <div class="bx-frow" data-filter-group="source">
+      <span class="bx-flabel">{{localize "SHIFT.Browser.Source"}}</span>
+      <div class="bx-chips">
+        <a class="bx-chip{{#if sourceAllActive}} active{{/if}}" data-filter="source" data-value="">{{localize "SHIFT.Browser.AllSources"}}</a>
+        {{#each sources}}
+          <a class="bx-chip{{#if active}} active{{/if}}" data-filter="source" data-value="{{value}}">{{label}}</a>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="bx-frow" data-filter-group="pack">
+      <span class="bx-flabel">{{localize "SHIFT.Browser.Origin"}}</span>
+      <div class="bx-chips">
+        <a class="bx-chip{{#if packAllActive}} active{{/if}}" data-filter="pack" data-value="">{{localize "SHIFT.Browser.AllPacks"}}</a>
+        {{#each origins}}
+          <a class="bx-chip{{#if active}} active{{/if}}" data-filter="pack" data-value="{{value}}">{{label}}</a>
+        {{/each}}
+      </div>
+    </div>
+  </div>
+  {{/if}}
+
+  {{!-- Results: Create-new ghost row, count, then the rows --------------- --}}
+  <ul class="browser-results">
+    <li>
+      <a class="bx-create" data-action="createNew">
+        <i class="fa-solid fa-plus"></i> {{localize "SHIFT.Browser.CreateNew"}}
+      </a>
+    </li>
+
+    {{#if results.length}}
+      <li class="bx-count">{{total}} {{localize "SHIFT.Browser.Results"}}</li>
+    {{/if}}
+
+    {{#each results}}
+      <li class="bx-row" data-uuid="{{uuid}}" data-action="pickEntry" style="--row-color: {{rowColor}}">
+        <span class="bx-ico">
+          {{#if img}}<img src="{{img}}" alt=""/>{{else}}<i class="fa-solid fa-dice-d6"></i>{{/if}}
+        </span>
+        <span class="bx-rmeta">
+          <span class="bx-rname">{{name}}</span>
+          {{#if source}}<span class="bx-rtags"><span class="bx-src">{{source}}</span></span>{{/if}}
+        </span>
+        <span class="bx-origin">{{originLabel}}</span>
+        <i class="fa-solid fa-arrow-right bx-go"></i>
+      </li>
+    {{/each}}
+
+    {{#unless results.length}}
+      <li class="empty">{{localize "SHIFT.Browser.Empty"}}</li>
+    {{/unless}}
+    {{#if truncated}}
+      <li class="empty">{{localize "SHIFT.Browser.Truncated"}}</li>
+    {{/if}}
+  </ul>
+</section>

@@ -1,0 +1,45 @@
+<section class="tab traits{{#if (shiftEq activeTab 'traits')}} active{{/if}}" data-tab="traits" data-group="primary">
+  {{#each traitGroups as |group|}}
+    <div class="trait-group {{group.css}}{{#if group.collapsed}} collapsed{{/if}}" data-group-key="{{group.key}}">
+      <header class="group-header">
+        <a class="group-toggle" data-action="toggleGroup" data-tooltip="{{localize 'SHIFT.Tooltips.CollapseGroup'}}">
+          <i class="fa-solid {{#if group.collapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}"></i>
+        </a>
+        <h2>{{group.label}}</h2>
+        {{#if @root.editMode}}
+          {{#if group.createCategory}}
+            <a class="group-add" data-action="createItem" data-type="trait" data-category="{{group.createCategory}}"
+               data-tooltip="{{localize 'SHIFT.Tooltips.NewTrait'}}">
+              <i class="fa-solid fa-plus"></i>
+            </a>
+          {{/if}}
+        {{/if}}
+      </header>
+      <div class="trait-cards">
+        {{#each group.traits}}
+          {{> "shift.trait-card" this}}
+        {{/each}}
+        {{#unless group.traits.length}}
+          <p class="empty">{{localize "SHIFT.Common.Empty"}}</p>
+        {{/unless}}
+      </div>
+    </div>
+  {{/each}}
+
+  {{!-- Source: a discreet citation pinned to the sheet's bottom-left. Visible to
+        anyone who can see the sheet; editable only by an owner with edit mode unlocked. --}}
+  {{#if editMode}}
+    <div class="sheet-source">
+      <i class="fa-solid fa-feather" data-tooltip="{{localize 'SHIFT.ItemSheet.Source'}}"></i>
+      <input type="text" name="system.source" value="{{system.source}}"
+             placeholder="{{localize 'SHIFT.ItemSheet.Source'}}" aria-label="{{localize 'SHIFT.ItemSheet.Source'}}"/>
+    </div>
+  {{else}}
+    {{#if system.source}}
+      <div class="sheet-source readonly">
+        <i class="fa-solid fa-feather" data-tooltip="{{localize 'SHIFT.ItemSheet.Source'}}"></i>
+        <span class="source-text">{{system.source}}</span>
+      </div>
+    {{/if}}
+  {{/if}}
+</section>

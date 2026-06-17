@@ -1,0 +1,23 @@
+{{!-- Reusable pill list: keywords / drawbacks.
+     Items may be plain strings or { text, tooltip, uuid } objects.
+     Params: items, kind, label, addAction, removeAction, canEdit, addTooltip --}}
+<div class="pill-row {{kind}}-row">
+  <span class="pill-label">{{label}}</span>
+  <div class="pills">
+    {{#each items}}
+      <span class="pill {{../kind}}"{{#if this.tooltip}} data-tooltip="{{this.tooltip}}"{{/if}}>
+        <a class="pill-text{{#if this.linked}} linked{{/if}}" data-action="openDescriptor" data-uuid="{{this.uuid}}">{{#if this.text}}{{this.text}}{{else}}{{this}}{{/if}}</a>
+        {{#if ../canEdit}}
+          <a class="pill-remove" data-action="{{../removeAction}}" data-index="{{@index}}">
+            <i class="fa-solid fa-xmark"></i>
+          </a>
+        {{/if}}
+      </span>
+    {{/each}}
+    {{#if canEdit}}
+      <a class="pill-add" data-action="{{addAction}}" data-tooltip="{{addTooltip}}">
+        <i class="fa-solid fa-plus"></i>
+      </a>
+    {{/if}}
+  </div>
+</div>

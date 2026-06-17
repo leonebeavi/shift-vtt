@@ -1,0 +1,37 @@
+<section class="settings-config-body action-hud-config-body">
+  <p class="hint">{{localize "SHIFT.Settings.ActionHudMenu.Hint"}}</p>
+
+  <label class="setting-row check">
+    <input type="checkbox" name="enableActionHud" {{checked enableActionHud}}/>
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.ActionHud.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.ActionHud.Hint"}}</em>
+    </span>
+  </label>
+
+  <label class="setting-row check">
+    <input type="checkbox" name="hudAlwaysOpen" {{checked hudAlwaysOpen}}/>
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.HudAlwaysOpen.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.HudAlwaysOpen.Hint"}}</em>
+    </span>
+  </label>
+
+  <label class="setting-row select">
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.HudMenuTrigger.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.HudMenuTrigger.Hint"}}</em>
+    </span>
+    <select name="hudMenuTrigger">
+      {{#each triggerOptions}}
+        <option value="{{value}}" {{#if selected}}selected{{/if}}>{{localize label}}</option>
+      {{/each}}
+    </select>
+  </label>
+
+  <footer class="form-footer">
+    {{#each buttons}}
+      <button type="{{type}}"><i class="{{icon}}"></i> {{localize label}}</button>
+    {{/each}}
+  </footer>
+</section>

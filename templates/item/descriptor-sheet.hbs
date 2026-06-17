@@ -1,0 +1,34 @@
+{{!-- Keyword / Drawback item sheet: minimal, edit-focused.
+      An owner sees the lock toggle; locked shows the observer (player) view. --}}
+<section class="item-body descriptor-body">
+  <header class="item-header">
+    <img class="item-img" src="{{item.img}}" alt="{{item.name}}"
+         data-action="editImage" data-edit="img" data-tooltip="{{localize 'SHIFT.Tooltips.EditImage'}}"/>
+    <div class="item-title">
+      <input type="text" name="name" value="{{item.name}}" {{#unless editMode}}disabled{{/unless}}/>
+      <div class="item-subtitle">
+        {{#if editable}}
+          <a class="item-lock{{#if editMode}} active{{/if}}" data-action="toggleEdit" data-tooltip="{{localize 'SHIFT.Tooltips.EditToggle'}}">
+            <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
+          </a>
+        {{/if}}
+        <span class="category-pill {{item.type}}">{{shiftTypeLabel "Item" item.type}}</span>
+      </div>
+    </div>
+  </header>
+
+  {{#if (shiftOr enrichedDescription editMode)}}
+    <div class="item-description">
+      {{#if editMode}}
+        <prose-mirror name="system.description" value="{{source.description}}" toggled
+                      document-uuid="{{item.uuid}}" class="bio-prose">
+          {{{enrichedDescription}}}
+        </prose-mirror>
+      {{else}}
+        <div class="bio-display">{{{enrichedDescription}}}</div>
+      {{/if}}
+    </div>
+  {{/if}}
+
+  {{> "shift.item-source"}}
+</section>

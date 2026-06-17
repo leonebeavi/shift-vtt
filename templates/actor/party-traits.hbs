@@ -1,0 +1,27 @@
+{{!-- SHIFT VTT — Party Traits tab: the party's OWN shared traits, rendered as
+      rich ".ptrait" cards (die · name · status·max · description · Keyword/Drawback
+      pills) via the shared shift.ptrait-card partial. They work like a Location's
+      traits — status, not primarily rolled. --}}
+<section class="party-page traits-page{{#if (shiftEq activeTab 'traits')}} active{{/if}}"
+         data-page="traits" data-tab="traits" data-group="primary">
+  <div class="party-traits-page">
+    {{#each traitGroups as |group|}}
+      {{#if @root.editMode}}
+        <div class="pt-toolbar">
+          <a class="party-btn pt-add" data-action="createItem" data-type="trait" data-category="party">
+            <i class="fa-solid fa-plus"></i> {{localize "SHIFT.Party.AddTrait"}}
+          </a>
+        </div>
+      {{/if}}
+
+      <div class="ptrait-grid">
+        {{#each group.traits}}
+          {{> "shift.ptrait-card" this showHide=false}}
+        {{/each}}
+        {{#unless group.traits.length}}
+          <p class="empty pt-empty">{{localize "SHIFT.Common.Empty"}}</p>
+        {{/unless}}
+      </div>
+    {{/each}}
+  </div>
+</section>

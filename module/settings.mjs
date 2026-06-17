@@ -1,0 +1,243 @@
+/**
+ * SHIFT VTT — settings do sistema.
+ *
+ * Registradas de cima para baixo por público, para a lista nativa de Settings
+ * ler de forma limpa: primeiro as regras de GM/mundo (agrupadas por tema), depois
+ * as settings de interface por jogador (client/local) que cada um controla para si.
+ * As chaves de armazenamento interno (config:false) ficam no fim, escondidas do
+ * menu. Settings de mundo são só do GM por padrão do Foundry; settings de client
+ * são sempre editáveis pelo jogador a quem pertencem.
+ */
+import { SHIFT } from "./config.mjs";
+import { refreshActionHud } from "./apps/action-hud.mjs";
+import { applyStatusEffects } from "./helpers/status-effects.mjs";
+
+export function registerSettings() {
+  const reg = (key, data) => game.settings.register("shift-vtt", key, data);
+
+  /* ============================================================
+     GM · Regras e rolagens, escopo de mundo (só o GM altera)
+     ============================================================ */
+
+  reg("restMode", {
+    name: "SHIFT.Settings.RestMode.Name",
+    hint: "SHIFT.Settings.RestMode.Hint",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: SHIFT.restModes,
+    default: "standard"
+  });
+
+  reg("critRule", {
+    name: "SHIFT.Settings.CritRule.Name",
+    hint: "SHIFT.Settings.CritRule.Hint",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: SHIFT.critRules,
+    default: "standard"
+  });
+
+  reg("rerollTurnOrder", {
+    name: "SHIFT.Settings.RerollTurnOrder.Name",
+    hint: "SHIFT.Settings.RerollTurnOrder.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  reg("promptCoreExhausted", {
+    name: "SHIFT.Settings.PromptCoreExhausted.Name",
+    hint: "SHIFT.Settings.PromptCoreExhausted.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  // Scale é uma regra OPCIONAL. Estas vivem no submenu "Scale"
+  // (config:false → escondidas da lista plana) para lerem como um grupo.
+  // enableScale é a chave-mestra: desligada, esconde todo controle de Scale no sistema.
+  reg("enableScale", {
+    name: "SHIFT.Settings.EnableScale.Name",
+    hint: "SHIFT.Settings.EnableScale.Hint",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: true,
+    onChange: () => { for (const app of foundry.applications.instances.values()) app.render?.(); }
+  });
+
+  reg("enableScaledUp", {
+    name: "SHIFT.Settings.EnableScaledUp.Name",
+    hint: "SHIFT.Settings.EnableScaledUp.Hint",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+
+  reg("enableXpScaleUp", {
+    name: "SHIFT.Settings.EnableXpScaleUp.Name",
+    hint: "SHIFT.Settings.EnableXpScaleUp.Hint",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+
+  reg("xpPerScaleStep", {
+    name: "SHIFT.Settings.XpPerScaleStep.Name",
+    hint: "SHIFT.Settings.XpPerScaleStep.Hint",
+    scope: "world",
+    config: false,
+    type: Number,
+    default: 2
+  });
+
+  /* ============================================================
+     GM · Sessões e advancement, escopo de mundo
+     ============================================================ */
+
+  reg("xpPerSessionLimit", {
+    name: "SHIFT.Settings.XpLimit.Name",
+    hint: "SHIFT.Settings.XpLimit.Hint",
+    scope: "world",
+    config: true,
+    type: Number,
+    default: 5
+  });
+
+  reg("autoXp", {
+    name: "SHIFT.Settings.AutoXp.Name",
+    hint: "SHIFT.Settings.AutoXp.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  reg("promptSessionOnLogin", {
+    name: "SHIFT.Settings.PromptSession.Name",
+    hint: "SHIFT.Settings.PromptSession.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  /* ============================================================
+     Por jogador · Interface, escopo de client (cada um define o
+     seu; sempre editável, independente de ser GM)
+     ============================================================ */
+
+  reg("theme", {
+    name: "SHIFT.Settings.Theme.Name",
+    hint: "SHIFT.Settings.Theme.Hint",
+    scope: "client",
+    config: true,
+    type: String,
+    choices: {
+      dark: "SHIFT.Settings.Theme.dark",
+      light: "SHIFT.Settings.Theme.light"
+    },
+    default: "dark",
+    onChange: () => applyShiftTheme()
+  });
+
+  // As settings do Action HUD vivem no submenu "Action HUD" (config:false →
+  // escondidas da lista plana). Settings config:false ainda disparam onChange no
+  // set(), então a barra se atualiza quando o jogador mexe num toggle do submenu.
+  reg("enableActionHud", {
+    name: "SHIFT.Settings.ActionHud.Name",
+    hint: "SHIFT.Settings.ActionHud.Hint",
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: true,
+    onChange: () => refreshActionHud()
+  });
+
+  reg("hudAlwaysOpen", {
+    name: "SHIFT.Settings.HudAlwaysOpen.Name",
+    hint: "SHIFT.Settings.HudAlwaysOpen.Hint",
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: true,
+    onChange: () => refreshActionHud()
+  });
+
+  reg("hudMenuTrigger", {
+    name: "SHIFT.Settings.HudMenuTrigger.Name",
+    hint: "SHIFT.Settings.HudMenuTrigger.Hint",
+    scope: "client",
+    config: false,
+    type: String,
+    choices: {
+      click: "SHIFT.Settings.HudMenuTrigger.click",
+      hover: "SHIFT.Settings.HudMenuTrigger.hover"
+    },
+    default: "hover",
+    onChange: () => refreshActionHud()
+  });
+
+  /* ============================================================
+     Armazenamento interno, config:false (nunca aparece no menu)
+     ============================================================ */
+
+  // Dados gerenciados pelo GM
+  reg("advancements", { scope: "world", config: false, type: Array, default: [] });
+  reg("statusEffects", {
+    scope: "world",
+    config: false,
+    type: Array,
+    default: [],
+    onChange: () => {
+      applyStatusEffects();
+      // Atualiza um Token HUD já aberto para os swatches refletirem a nova
+      // lista; nunca força a abertura.
+      const hud = canvas?.hud?.token;
+      if (hud?.rendered) hud.render();
+    }
+  });
+  reg("clocks", { scope: "world", config: false, type: Array, default: [] });
+  // Faixas de distância personalizáveis (faixas abstratas do SHIFT, medidas em
+  // unidades de cena). Editadas no submenu "Distance Ranges"; vazio cai nos padrões.
+  reg("ranges", { scope: "world", config: false, type: Array, default: [] });
+  // O que a leitura de hover na cena mostra: o nome da faixa, as unidades numéricas, ou ambos.
+  reg("rangeMode", { scope: "world", config: false, type: String, default: "both" });
+  reg("lastSessionStart", { scope: "world", config: false, type: Number, default: 0 });
+  reg("compendiumSeeded", { scope: "world", config: false, type: Boolean, default: false });
+  reg("techniquesSeeded", { scope: "world", config: false, type: Boolean, default: false });
+  reg("macrosSeeded", { scope: "world", config: false, type: Boolean, default: false });
+  // O gate do seed de Sandbox é por VERSÃO (não um booleano): subir o SEED_VERSION
+  // empacotado re-roda o top-up idempotente, para que mundos de teste já existentes
+  // ganhem fixtures recém-adicionadas sem duplicar nada que já exista por nome.
+  reg("testDummiesSeedVersion", { scope: "world", config: false, type: Number, default: 0 });
+
+  // Estado de UI por jogador (painel Global Traits + posição do Action HUD)
+  reg("clocksPanelOpen", { scope: "client", config: false, type: Boolean, default: true });
+  reg("clocksPanelMinimized", { scope: "client", config: false, type: Boolean, default: false });
+  // Posição custom de arraste do painel Global Traits; null = docado acima dos Players.
+  reg("clocksPanelPos", { scope: "client", config: false, type: Object, default: null });
+  reg("hudPosition", { scope: "client", config: false, type: Object, default: null });
+  // Por jogador: mostra a faixa de distância ao passar o mouse num token na cena.
+  reg("showTokenRanges", { scope: "client", config: false, type: Boolean, default: true });
+
+  // Aplica o tema de ficha escolhido assim que o jogo estiver pronto.
+  Hooks.once("ready", () => applyShiftTheme());
+}
+
+export function applyShiftTheme() {
+  const light = game.settings.get("shift-vtt", "theme") === "light";
+  document.body.classList.toggle("shift-theme-light", light);
+}
+
+/** Se o sistema opcional de Scale está ligado (chave-mestra). Importada onde quer
+ *  que um controle ou marcador de Scale deva sumir quando Scale está desligado. */
+export function scaleEnabled() {
+  return game.settings.get("shift-vtt", "enableScale") !== false;
+}
