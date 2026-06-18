@@ -67,22 +67,22 @@
       "TooSmall": "Target is one Scale level above: regular Successes count as Failures.",
       "CritOnly": "Target is one Scale level above: only this Critical can shiftdown its Traits.",
       "CritExhausts": "You are one Scale level above: this Critical fully Exhausts a target Trait.",
-      "NoEffectTrait": "{trait} is two or more Scale levels above your roll — no effect.",
-      "TooSmallTrait": "{trait} is one Scale level above your roll — only a Critical Success lands.",
+      "NoEffectTrait": "{trait} is two or more Scale levels above your roll · no effect.",
+      "TooSmallTrait": "{trait} is one Scale level above your roll · only a Critical Success lands.",
       "ScaleUp": "Scale Up",
-      "ScaleUpHint": "Shiftdown a Core Trait to treat the linked Focus Trait at a higher Scale for this roll.",
+      "ScaleUpHint": "Shift a Core down to treat the Focus at a higher Scale.",
       "XpScaleUp": "Spend XP to Scale Up",
-      "XpBoostChat": "{actor} spends {xp} XP — this roll counts as Scale {scale}.",
+      "XpBoostChat": "{actor} spends {xp} XP · this roll counts as Scale {scale}.",
       "XpInsufficient": "Not enough Banked XP (need {cost}).",
       "AtMax": "This roll is already at Scale 4.",
       "ScaledUpChat": "{actor} channels {focus} at Scale {scale}, shifting {core} down.",
       "ScaledUpAlready": "This roll has already been Scaled Up.",
       "ScaledUpUnavailable": "No available Scaled Up Technique matches the Traits rolled.",
-      "ScaledUpUseHint": "Apply {trait}'s Scaled Up from the \"Scale Up\" button on an Action Roll.",
-      "ScaledUpPickCore": "Scale Up {focus} — choose a Core Trait to shiftdown",
-      "ScaledUpCoreHint": "Shiftdown a Core Trait to treat the Focus as a higher Scale.",
+      "ScaledUpUseHint": "Apply {trait}'s Scaled Up via the \"Scale Up\" button on a roll.",
+      "ScaledUpPickCore": "Scale Up {focus} · choose a Core Trait to shiftdown",
+      "ScaledUpCoreHint": "Shift a Core down to treat the Focus higher.",
       "BindFocusTitle": "{technique}: link a Focus Trait",
-      "BindFocusHint": "Pick the Focus Trait this Scaled Up Technique upgrades."
+      "BindFocusHint": "Pick the Focus Trait this upgrades."
     },
     "TechniqueTypes": {
       "narrative": "Narrative",
@@ -107,7 +107,7 @@
       "Source": "SHIFT",
       "TechniquesFolder": "Techniques",
       "ScaleUpName": "Scale Up",
-      "ScaleUpDesc": "After rolling the linked Focus Trait, shift one of your Core Traits down to treat the Focus at a higher Scale for that roll — letting you affect targets larger than yourself. Usable once per Safe Rest or session, depending on its recharge."
+      "ScaleUpDesc": "After rolling the linked Focus Trait, shift one of your Core Traits down to treat the Focus at a higher Scale for that roll · letting you affect targets larger than yourself. Usable once per Safe Rest or session, depending on its recharge."
     },
     "Trait": {
       "Body": "Body",
@@ -144,7 +144,6 @@
     "Tabs": {
       "Traits": "Traits",
       "Techniques": "Techniques",
-      "Biography": "Biography",
       "Notes": "Notes",
       "Roster": "Roster",
       "Codex": "Codex",
@@ -172,25 +171,25 @@
     },
     "Party": {
       "Members": "Members",
-      "WorkInProgress": "Work in progress — the party sheet is still under construction.",
+      "WorkInProgress": "Work in progress · the party sheet is still under construction.",
       "MemberCount": "Members in this party",
       "NoMembers": "No members yet",
-      "DropHint": "Drag characters here to add them to the party.",
+      "DropHint": "Drag characters here.",
       "MemberNoTraits": "No Traits to show",
       "OpenSheet": "Open party sheet",
       "OpenMember": "Open character sheet",
       "RemoveMember": "Remove from party",
       "CannotAdd": "That actor can't be added to a party.",
       "Deploy": "Deploy",
-      "DeployHint": "Place a token for every member on the current scene.",
+      "DeployHint": "Place a token for every member.",
       "Recall": "Recall",
-      "RecallHint": "Remove the members' tokens from the current scene.",
+      "RecallHint": "Remove member tokens from the scene.",
       "Deployed": "Deployed {count} member token(s) for {party}.",
       "Recalled": "Recalled {count} member token(s) for {party}.",
       "NothingToRecall": "No member tokens to recall on this scene.",
       "NoScene": "Open a scene first to deploy the party.",
       "NoPermission": "You don't have permission to place tokens on this scene.",
-      "AddMember": "Drag an Actor (or a folder) to add to the party",
+      "AddMember": "Drag an Actor or folder here.",
       "RemoveCodex": "Remove from codex",
       "AddTrait": "Add trait",
       "HideToggle": "Hide from players / show",
@@ -200,38 +199,38 @@
       "SceneControl": "Party",
       "Keybind": {
         "Open": "Open active party",
-        "OpenHint": "Open the obvious party — the one holding your character, or the active party you chose.",
+        "OpenHint": "Open your character's party, or the active one.",
         "SetActive": "Set active party",
-        "SetActiveHint": "Choose which party the Open-Party hotkey and scene button target."
+        "SetActiveHint": "Choose which party the hotkey targets."
       },
       "NoCharacters": "No characters in this party.",
       "ActiveVehicle": "Active vehicle",
       "ClearVehicle": "Remove the active vehicle",
-      "DropVehicle": "Drop a Vehicle here — its crew mirrors the roster",
+      "DropVehicle": "Drop a Vehicle here.",
       "NotVehicle": "Only a Vehicle can be set as the active vehicle.",
       "NotLocation": "Only a Location can be set as the party's location.",
       "OpenLocation": "Open the location sheet",
       "ClearLocation": "Clear the party's location",
-      "DropLocation": "Drop a Location here to set where the party is",
+      "DropLocation": "Drop a Location here.",
       "NoLandmark": "— No landmark —",
-      "UnsafeLandmarkBlock": "{landmark} is Unsafe — a Safe Rest isn't possible here. SHIFT+click Safe Rest to override.",
+      "UnsafeLandmarkBlock": "{landmark} is Unsafe · a Safe Rest isn't possible here. SHIFT+click Safe Rest to override.",
       "GrantXp": "Grant XP",
-      "GrantXpHint": "Award XP — choose the amount and which characters (uncapped).",
+      "GrantXpHint": "Award XP (uncapped).",
       "RequestRoll": {
         "Button": "Request Roll",
-        "Hint": "Ask a player to make an Action Roll (you set the allowed Traits and whether it's Risky or Inspired).",
+        "Hint": "Ask a player for an Action Roll.",
         "Title": "Request an Action Roll",
         "Character": "Character",
         "Traits": "Allowed Traits",
-        "TraitsHint": "Tick the Traits the player may roll. Tick none to allow all of them.",
+        "TraitsHint": "Tick allowed Traits. None = all.",
         "Send": "Send to player",
         "Sent": "Requested an Action Roll from {actor}'s player(s).",
-        "NoOwner": "No online player owns that character — opening the roll here instead."
+        "NoOwner": "No online player owns that character · opening the roll here instead."
       },
       "XpAmount": "XP per character",
       "XpGranted": "Granted {amount} XP to {count} character(s).",
-      "SafeRestHint": "Run a Safe Rest for every member (SHIFT+click to ignore an Unsafe landmark).",
-      "UnsafeRestHint": "Run an Unsafe Rest for every member.",
+      "SafeRestHint": "Safe Rest for all (SHIFT+click ignores Unsafe).",
+      "UnsafeRestHint": "Unsafe Rest for all.",
       "SafeRestConfirm": "Run a Safe Rest for all {count} member(s)?",
       "UnsafeRestConfirm": "Run an Unsafe Rest for all {count} member(s)?",
       "Prefs": {
@@ -266,19 +265,19 @@
         "Unknown": "Unknown",
         "Crew": "Crew",
         "Safe": "Safe to rest",
-        "Unsafe": "Unsafe — resting is risky",
+        "Unsafe": "Unsafe · resting is risky",
         "RevealLandmark": "Reveal this landmark to players",
         "FieldNotes": "Field Notes",
-        "NotesUnavailable": "Shared notes aren't ready yet — ask the GM to open the party once.",
+        "NotesUnavailable": "Shared notes aren't ready yet · ask the GM to open the party once.",
         "NotesFailed": "Couldn't save your note.",
-        "JournalFolder": "SHIFT — Party Field Notes",
-        "JournalName": "{party} — Codex Field Notes",
+        "JournalFolder": "SHIFT · Party Field Notes",
+        "JournalName": "{party} · Codex Field Notes",
         "Locked": "Unknown",
         "Already": "That entry is already in the codex.",
         "PartlyHidden": "Some details are hidden from players",
         "Empty": "No entries match the search.",
         "Notes": "GM Note",
-        "NotesPlaceholder": "What the party knows — weaknesses, behaviour, where it was met…",
+        "NotesPlaceholder": "Weaknesses, behaviour, where you met it…",
         "KnownTraits": "Known traits",
         "RevealTitle": "What players see",
         "OpenSheet": "Open full sheet",
@@ -307,11 +306,10 @@
       },
       "Quests": {
         "Add": "Add quest",
-        "ReorderHint": "Drag a quest onto another to reorder.",
-        "Empty": "No quests yet. Add one to track the party's goals.",
+        "Empty": "No quests yet.",
         "Untitled": "Untitled quest",
         "NamePlaceholder": "Quest name…",
-        "NotesPlaceholder": "Details, stakes, what's needed to advance…",
+        "NotesPlaceholder": "Details, stakes, what's needed…",
         "Advance": "Advance the clock (fill toward exhaust)",
         "Regress": "Step the clock back",
         "Complete": "Complete",
@@ -322,12 +320,12 @@
         "Roll": "Roll this quest's die",
         "ShiftsDown": "rolling fills the clock a step",
         "ShiftToggle": "Toggle whether rolling shifts the die down",
-        "RollFlavor": "{quest} — rolled {die}",
+        "RollFlavor": "{quest} · rolled {die}",
         "Outcome": "{quest}: {result}",
-        "LinkHint": "Drag an Actor, a Codex foe, or a relic Trait onto this card to link it.",
+        "LinkHint": "Drag an Actor, foe, or relic here to link.",
         "ViewLink": "View in the codex",
         "HiddenName": "Hidden objective",
-        "RevealHint": "What players see on this quest (the die-clock is always visible).",
+        "RevealHint": "What players see (the clock always shows).",
         "Field": {
           "Name": "Name",
           "Notes": "Description",
@@ -336,14 +334,14 @@
       },
       "Notes": {
         "Journal": "Session Journal",
-        "JournalPlaceholder": "What happened last session, group decisions, open hooks…",
+        "JournalPlaceholder": "Last session, decisions, open hooks…",
         "Objectives": "Objectives",
         "AddObjective": "Add objective",
         "ObjectivePlaceholder": "New objective…",
         "Clues": "Clues & Secrets",
-        "CluesPlaceholder": "Clues gathered, suspicions, connections…",
+        "CluesPlaceholder": "Clues, suspicions, connections…",
         "Contacts": "Contacts & Favors",
-        "ContactsPlaceholder": "Who owes the party favors, allies, debts…",
+        "ContactsPlaceholder": "Favors owed, allies, debts…",
         "Autosaves": "autosaves"
       }
     },
@@ -366,7 +364,7 @@
       "NoSecondary": "No second Trait",
       "RollType": "Roll Type",
       "GMRequested": "The GM requested a",
-      "TypeHint": "Risky: every die that misses a success shifts down. Inspired: any success counts as a Critical Success.",
+      "TypeHint": "Risky: each die that misses shifts down. Inspired: any success crits.",
       "ApplyManually": "apply manually",
       "AnyTrait": "Trait",
       "AnySecondTrait": "Second Trait (optional)",
@@ -398,8 +396,8 @@
       "Unsafe": "Unsafe Rest",
       "SafeChat": "{actor} takes a Safe Rest. All Traits return to their Max Die and Techniques refresh.",
       "UnsafeChat": "{actor} takes an Unsafe Rest. {pack} shifts down to {die}.",
-      "UnsafeHint": "Shift {pack} ({die}) down one step to restore one Trait to its Max Die.",
-      "WealthHint": "Challenging rests: pick the Location's Wealth die to cap recovery, or no limit.",
+      "UnsafeHint": "Shift {pack} ({die}) down to restore one Trait.",
+      "WealthHint": "Pick the Wealth die to cap recovery, or no limit.",
       "NoLimit": "No limit",
       "ChallengingHint": "Choose how to spend this rest.",
       "OneTwice": "One Trait shifts up twice",
@@ -410,9 +408,9 @@
       "Restored": "{trait} restored to its Max Die.",
       "RaisedTwo": "{trait} shifted up two steps.",
       "RaisedOne": "{trait} shifted up one step.",
-      "ResourceHint": "Choose which die to spend on this rest.",
+      "ResourceHint": "Choose which die to spend.",
       "CargoShared": "{vehicle}'s Cargo supplies the whole crew",
-      "CargoSharedHint": "Each crew member aboard may restore one Trait to its Max Die from this same shiftdown.",
+      "CargoSharedHint": "Each crew member aboard may restore one Trait too.",
       "CrewRestore": "Restore a Trait (crew)",
       "CrewRestored": "{actor} restocks from the Cargo: {trait} returns to its Max Die.",
       "NotCrew": "None of your characters are part of this crew.",
@@ -434,26 +432,26 @@
     "CritBonus": {
       "Choose": "Choose a critical success bonus:",
       "Own": "Shiftup one of your Traits",
-      "OwnHint": "Shift one of your own Traits up one step (never above its Max Die).",
+      "OwnHint": "Up one step, never past Max Die.",
       "OwnChat": "{actor} shifts {trait} up: {from} → {to}.",
       "Ally": "Shiftup an ally's Trait",
-      "AllyHint": "Shift a willing ally's Trait up one step.",
+      "AllyHint": "Shift an ally's Trait up one step.",
       "AllyChat": "{actor} bolsters {ally}: {trait} shifts {from} → {to}.",
       "Enemy": "Shiftdown the target again",
-      "EnemyHint": "Shift the chosen target's Trait down ONE additional step, on top of the base attack. At a larger Scale a Critical Exhausts the Trait outright.",
+      "EnemyHint": "One extra shiftdown on the target. At a larger Scale, the Critical Exhausts it.",
       "EnemyChat": "{actor} hammers {target}: {trait} shifts {from} → {to}.",
       "Narrative": "Narrative boost",
-      "NarrativeHint": "Work with the GM to add a cool twist: remove a Drawback, learn something useful, open an opportunity.",
+      "NarrativeHint": "With the GM: drop a Drawback, learn something, open a door.",
       "NarrativeChat": "{actor} earns a narrative boost! Work out a cool extra effect with the GM."
     },
     "Combat": {
       "TurnOrderRoll": "Turn Order Roll",
-      "TurnOrderHint": "Pick one Core Trait and roll only its die. Success: act before the Adversaries. Failure: act after them. This is a real Action Roll: it can crit and it can shift your die down.",
+      "TurnOrderHint": "Roll one Core Trait. Success: act before Adversaries; Failure: after. It can crit and shift down.",
       "FirstPhase": "Acts in Action Phase 1 (before the Adversaries).",
       "AdversaryPhase": "Adversary Phase",
       "SecondPhase": "Acts in Action Phase 2 (after the Adversaries).",
       "NewRound": "Round {round}",
-      "RerollHint": "Players: roll the turn order for the new round.",
+      "RerollHint": "Roll turn order for the new round.",
       "NotYourTurnOrder": "You do not own {name}; ask their player to roll the turn order.",
       "AllExhausted": "{name} has no usable Trait for the turn order roll and falls to the Second Action Phase.",
       "Phase1": "Action Phase 1",
@@ -462,7 +460,7 @@
       "PhaseUnrolled": "Roll Turn Order",
       "ActionsLeft": "Actions remaining this round",
       "AdvantageTitle": "Encounter Advantage",
-      "AdvantageHint": "Does one side have the advantage? That side acts first this round only.",
+      "AdvantageHint": "The side with the advantage acts first, this round only.",
       "AdvantageNone": "No one",
       "AdvantagePlayers": "Players",
       "AdvantageAdversaries": "Adversaries",
@@ -485,7 +483,7 @@
     },
     "Special": {
       "Add": "Special Trait",
-      "Hint": "Add a Special Trait preset (does not count toward the Trait budget).",
+      "Hint": "Add a Special Trait preset (off-budget).",
       "Armored": "Armored",
       "ArmoredDesc": "Exhaust one additional Trait to overcome this Adversary. This Trait is not rolled and does not count toward the overcome total.",
       "HeavilyArmored": "Heavily Armored",
@@ -542,7 +540,7 @@
       "Uses": "Uses per session",
       "UsesValue": "Remaining",
       "UsesMax": "Maximum",
-      "DescriptorHint": "Drag this item onto a Trait card to attach it.",
+      "DescriptorHint": "Drag onto a Trait to attach.",
       "Recharge": "Recharge",
       "DiceConfig": "Dice & identity",
       "EncounterConfig": "Encounter rules",
@@ -553,9 +551,9 @@
       "ScaleOverride": "Override the actor's Scale",
       "TabDescription": "Description",
       "TabCustomize": "Customize",
-      "ToggleType": "Switch type (Narrative / Mechanical / Scaled Up)",
+      "ToggleType": "Switch type",
       "FocusTrait": "Focus Trait",
-      "FocusTraitNone": "(none — set on a character)",
+      "FocusTraitNone": "(none · set on a character)",
       "FocusScale": "Treated as Scale"
     },
     "Warnings": {
@@ -575,140 +573,134 @@
       "NoGM": "No active GM to apply this action."
     },
     "Tooltips": {
-      "Roll": "Roll this Trait (Shift+click: quick roll without the dialog)",
-      "ShiftUp": "Shiftup: improve this die one step (never past the Max Die)",
-      "ShiftDown": "Shiftdown: worsen this die one step (D12 becomes Exhausted; Ctrl+click ignores Exhausted First)",
-      "Exert": "Exert: shift this die down voluntarily to succeed automatically (+1 XP)",
-      "Exhaust": "Mark this Trait as Exhausted",
-      "Restore": "Restore this Trait to its Max Die",
+      "Roll": "Roll · Shift+click: quick roll",
+      "ShiftUp": "Shift up",
+      "ShiftDown": "Shift down",
+      "Exert": "Exert: automatic success (+1 XP)",
+      "Exhaust": "Exhaust",
       "Expand": "Show details",
       "Edit": "Edit",
       "Delete": "Delete",
-      "MaxDie": "The best die this Trait can reach",
-      "Temporary": "Temporary Trait: disappears on the next Safe Rest",
+      "MaxDie": "Highest die this Trait can reach",
+      "Temporary": "Temporary · gone next Safe Rest",
       "Hidden": "Hidden from players",
-      "NotRollable": "This Trait cannot be rolled",
+      "NotRollable": "Not rollable",
       "Scale": "Scale",
-      "MakeTemporary": "Shift the Pack down one step to improvise a temporary Focus Trait",
-      "UnsafeRest": "Unsafe Rest: shift the Pack down to restore another Trait",
-      "SafeRest": "Safe Rest: restore every Trait and refresh Techniques",
-      "ActionRoll": "Open the Action Roll dialog",
+      "MakeTemporary": "Improvise a temporary Trait (Pack down)",
+      "UnsafeRest": "Unsafe Rest",
+      "SafeRest": "Safe Rest",
       "EditImage": "Change image",
       "EditBio": "Toggle editing",
-      "Xp": "Banked XP for advancements",
-      "XpSession": "XP earned this session / session cap",
-      "Power": "Power: sets actions per round and Traits needed to overcome",
-      "Actions": "Action Rolls this Adversary makes each round",
-      "TraitBudget": "Traits owned / suggested budget (Power + 2)",
-      "Defeat": "Exhausted counting Traits / total required to overcome",
-      "DefeatCounts": "Exhausting this Trait counts toward overcoming",
-      "ExtraRequired": "Additional Traits that must be Exhausted",
-      "MustFirst": "Must be Exhausted before other Traits can shift down",
-      "ExtraActions": "Extra actions granted per round",
-      "NewTrait": "Create a new Trait",
-      "NewTechnique": "Create a new Technique",
-      "Uses": "Remaining uses this session",
-      "UseTechnique": "Spend one use and post to chat",
-      "ResetTechnique": "Reset uses to maximum",
-      "Lock": "Lock: hide configuration and show the pretty view",
-      "Unlock": "Unlock: open the full configuration",
-      "EditToggle": "Edit mode: unlock names, Keywords/Drawbacks and structure",
-      "CollapseGroup": "Collapse / expand this group",
+      "Xp": "Banked XP",
+      "XpSession": "Session XP / cap",
+      "Power": "Sets actions/round and Traits to overcome",
+      "Actions": "Actions per round",
+      "TraitBudget": "Traits / budget (Power+2)",
+      "Defeat": "Exhausted / needed to overcome",
+      "ExtraRequired": "Extra Traits to Exhaust",
+      "MustFirst": "Exhaust before others",
+      "ExtraActions": "Extra actions per round",
+      "NewTrait": "New Trait",
+      "NewTechnique": "New Technique",
+      "Uses": "Uses left",
+      "UseTechnique": "Spend a use",
+      "ResetTechnique": "Reset uses",
+      "EditToggle": "Edit mode",
+      "CollapseGroup": "Collapse / expand",
       "RollIcon": "click to roll",
-      "NoCount": "Exhausting this Trait does not count toward overcoming the Adversary",
-      "LockTrait": "Lock structural editing of this Trait",
-      "RechargeAll": "Recharge every Trait to its Max Die"
+      "NoCount": "Doesn't count toward overcoming",
+      "RechargeAll": "Recharge all Traits"
     },
     "Settings": {
       "RestMode": {
         "Name": "Rest & Recovery Mode",
-        "Hint": "Standard: Unsafe Rest restores one Trait. Simple: Unsafe Rest restores everything and sessions start fresh. Challenging: slower recovery and Safe Rests capped by Location Wealth.",
+        "Hint": "Standard: Unsafe Rest restores one Trait. Simple: restores all, sessions start fresh. Challenging: slower, Safe Rests capped by Wealth.",
         "standard": "Standard",
         "simple": "Simple",
         "challenging": "Challenging"
       },
       "CritRule": {
         "Name": "Critical Success Rule",
-        "Hint": "Standard: any die showing 1 crits. All Ones: every die must show 1. Every One: each 1 grants its own bonus.",
+        "Hint": "Standard: any 1 crits. All Ones: every die must show 1. Every One: each 1 grants a bonus.",
         "standard": "Standard",
         "allOnes": "All Ones",
         "everyOne": "Every One"
       },
       "XpLimit": {
         "Name": "Session XP Cap",
-        "Hint": "Maximum XP a character can earn from shiftdowns and exerts in a single session."
+        "Hint": "Max XP per session from shiftdowns and exerts."
       },
       "AutoXp": {
         "Name": "Automatic XP",
-        "Hint": "Grant XP automatically when dice are forced to shiftdown or a character exerts."
+        "Hint": "Grant XP automatically on forced shiftdowns and exerts."
       },
       "RerollTurnOrder": {
         "Name": "Re-roll Turn Order Each Round",
-        "Hint": "Clear player initiatives at the start of every round so the turn order is rolled again."
+        "Hint": "Clear initiatives each round to re-roll turn order."
       },
       "PromptCoreExhausted": {
         "Name": "Core Trait Exhaustion Prompt",
-        "Hint": "When a character's Core Trait becomes Exhausted, offer the Drawback / Heroic Death choice."
+        "Hint": "On a Core Trait Exhausting, offer Drawback / Heroic Death."
       },
       "EnableScale": {
         "Name": "Enable the Scale System",
-        "Hint": "Scale is an optional rule. Turn it off to hide every Scale control, badge and interaction across the system."
+        "Hint": "Optional rule. Off hides every Scale control and badge."
       },
       "EnableScaledUp": {
         "Name": "Optional Rule: Scaled Up Technique",
-        "Hint": "Allow the Scaled Up Technique type, a Technique bound to a Focus Trait that adds a \"Scale Up\" button to its Action Roll cards."
+        "Hint": "Allow Scaled Up Techniques · bound to a Focus, they add a \"Scale Up\" button to rolls."
       },
       "EnableXpScaleUp": {
         "Name": "Optional Rule: Spend XP to Scale Up",
-        "Hint": "Add a right-click chat option to spend Banked XP and raise a roll's Scale."
+        "Hint": "Right-click chat option to spend XP and raise a roll's Scale."
       },
       "XpPerScaleStep": {
         "Name": "XP per Scale step",
-        "Hint": "Banked XP spent for each +1 Scale via the right-click Scale Up option."
+        "Hint": "Banked XP per +1 Scale."
       },
       "PromptSession": {
         "Name": "Ask to start a session on login",
-        "Hint": "When the GM logs in, ask whether a new session has begun (resets accumulated session XP for every character in the world). Resets daily."
+        "Hint": "On GM login, ask if a new session began (resets session XP world-wide). Daily."
       },
       "XpCost": {
         "Keyword": "XP Cost: New Keyword",
         "Technique": "XP Cost: New Technique",
         "Trait": "XP Cost: New Focus Trait",
         "CoreDie": "XP Cost: Improve Core Max Die",
-        "Hint": "Cost shown on the advancement chips of the character sheet."
+        "Hint": "Cost shown on the sheet's advancement chips."
       },
       "ActionHud": {
         "Name": "Action HUD",
-        "Hint": "Show a quick bar with the controlled token's Traits and Techniques at the bottom of the screen."
+        "Hint": "Bottom-screen bar with the token's Traits and Techniques."
       },
       "HudAlwaysOpen": {
         "Name": "Keep Action HUD always open",
-        "Hint": "If you have a character assigned to your user, keep its Action HUD on-screen even when no token is selected on the canvas."
+        "Hint": "Keep your assigned character's HUD on-screen with no token selected."
       },
       "HudMenuTrigger": {
         "Name": "Action HUD submenus open on",
-        "Hint": "Whether the Action HUD's submenus open when you click the group button or when you hover over it.",
+        "Hint": "Open HUD submenus on click or on hover.",
         "click": "Click",
         "hover": "Hover"
       },
       "Advancements": {
         "Name": "XP Advancements",
-        "Hint": "What XP can buy and how much it costs. Shown as chips on the character sheet.",
+        "Hint": "What XP buys and its cost. Shown as sheet chips.",
         "Label": "Advancement",
         "Add": "Add a row",
         "Reset": "Restore default values"
       },
       "ScaleMenu": {
         "Name": "Scale Rules",
-        "Hint": "The optional Scale system: enable it, allow Scaled Up Techniques, and spend XP to Scale Up."
+        "Hint": "Optional Scale system: enable it, allow Scaled Up, spend XP to Scale Up."
       },
       "ActionHudMenu": {
         "Name": "Action HUD",
-        "Hint": "Your personal Action HUD: turn it on, keep it always open, and choose how its submenus open."
+        "Hint": "Your Action HUD: enable, keep open, choose how submenus open."
       },
       "RangesMenu": {
         "Name": "Distance Ranges",
-        "Hint": "Customize the abstract distance bands and what the on-canvas hover readout shows.",
+        "Hint": "Customize distance bands and the on-canvas hover readout.",
         "Mode": "Hover readout",
         "ModeAbstract": "Band only",
         "ModeUnits": "Units only",
@@ -722,7 +714,7 @@
       },
       "StatusEffects": {
         "Name": "Status Effects",
-        "Hint": "The color markers that replace Foundry's default conditions. Each one is a colored badge you can toggle on a token from its HUD. Edit the name and color of each, add your own, or restore the defaults.",
+        "Hint": "Color markers that replace Foundry's conditions. Toggle them from a token's HUD. Edit, add, or restore defaults.",
         "Label": "Status name",
         "Add": "Add a status",
         "Reset": "Restore default markers",
@@ -730,7 +722,7 @@
       },
       "Theme": {
         "Name": "Theme",
-        "Hint": "Light or dark appearance for all SHIFT sheets and chat messages.",
+        "Hint": "Light or dark for all SHIFT sheets and chat.",
         "dark": "Dark",
         "light": "Light"
       }
@@ -742,23 +734,23 @@
       "atWill": "At Will",
       "custom": "Custom (manual)",
       "Manual": "Manual",
-      "CustomHint": "No trigger selected: this Technique only recharges manually.",
-      "AtWillHint": "At Will — unlimited use, no recharge needed."
+      "CustomHint": "Manual recharge only.",
+      "AtWillHint": "At Will · unlimited use."
     },
     "Target": {
       "Pick": "Choose a target",
       "ApplyTitle": "Shiftdown: {target}",
-      "ApplyHint": "Pick one of the target's Traits and shiftdown.",
+      "ApplyHint": "Pick a target Trait to shift down.",
       "ApplyChat": "{actor} pressures {target}: shiftdown on {trait}, {from} → {to}.",
       "AlreadyApplied": "This roll's effect has already landed on a target.",
       "Retarget": "Retarget",
-      "RetargetHint": "Pick a different target for this roll (or target a token first).",
+      "RetargetHint": "Pick a different target.",
       "None": "No target"
     },
     "Assist": {
       "Title": "Assist",
       "PickTrait": "Assist: {actor}",
-      "Hint": "Opt in to help: pick one of your Traits and roll it. A success supports the action; rolling the maximum still shifts your die down.",
+      "Hint": "Pick a Trait to support the roll. A max roll still shifts you down.",
       "Success": "{actor} lends a hand: the assist succeeds!",
       "Failure": "{actor} tries to help, but the assist falls short.",
       "NeedActor": "Select your token or assign a character to assist.",
@@ -767,14 +759,14 @@
     "Vehicle": {
       "Crew": "Crew",
       "CrewAdded": "{actor} joined {vehicle}'s crew.",
-      "CrewHint": "Drag a Character here to crew this Vehicle."
+      "CrewHint": "Drag a Character here."
     },
     "Clocks": {
       "Title": "Global Traits",
       "Add": "New Global Trait",
       "Edit": "Edit Global Trait",
       "Save": "Save Changes",
-      "AddHint": "Pin a free-floating Trait to the table — everyone sees it update live.",
+      "AddHint": "Pin a Trait everyone can see.",
       "DefaultName": "Global Trait",
       "NameLabel": "Trait name",
       "SegmentsLabel": "Bar segments",
@@ -787,20 +779,20 @@
       "ModeTrait": "Trait",
       "PlayersRoll": "Players can roll it",
       "ShiftsDown": "Shift down on a max roll",
-      "ShiftOnTip": "A max roll shifts this Trait down — click to disable",
-      "ShiftOffTip": "A max roll won't shift this Trait down — click to enable",
-      "StepHint": "Click left half −1, right half +1",
+      "ShiftOnTip": "A max roll shifts this Trait down · click to disable",
+      "ShiftOffTip": "A max roll won't shift this Trait down · click to enable",
+      "StepHint": "Left half −1 · right half +1",
       "Hide": "Hide the panel",
       "Minimize": "Minimize the panel",
       "Restore": "Restore the panel",
-      "Move": "Drag to move · drop over the Players list to dock"
+      "Move": "Drag to move · drop on Players to dock"
     },
     "Group": {
       "Title": "Work Together",
-      "Invite": "{actor} wants to work together using {trait} ({die}). One ally can join with any Trait — Core not required. A Critical needs both dice showing 1.",
+      "Invite": "{actor} wants to work together using {trait} ({die}). One ally can join with any Trait · Core not required. A Critical needs both dice showing 1.",
       "Join": "Join the roll",
       "PickTrait": "Work Together: {actor}",
-      "Hint": "Pick any of your Traits — this is the only roll that can combine two Focus or Pack Traits.",
+      "Hint": "Pick any Trait · the only roll that can pair two Focus/Pack Traits.",
       "NeedActor": "Select your token or assign a character to join.",
       "NotSelf": "You cannot join your own roll."
     },
@@ -813,7 +805,7 @@
       "World": "World",
       "CreateNew": "Create new",
       "Empty": "Nothing found.",
-      "Truncated": "More results available — refine the search.",
+      "Truncated": "More results available · refine the search.",
       "Filters": "Filters",
       "Clear": "Clear",
       "Category": "Category",
@@ -830,8 +822,8 @@
     "Hud": {
       "Rest": "Rest",
       "Tech": "Techniques",
-      "PackShiftHint": "Shift+click: spend for a temporary Focus Trait",
-      "ExertHint": "Ctrl+click: Exert (shift down for an automatic success)",
+      "PackShiftHint": "Shift+click: temporary Trait",
+      "ExertHint": "Ctrl+click: Exert",
       "Drag": "Drag to move"
     },
     "Ranges": {
@@ -851,7 +843,7 @@
       "SelectToken": "Select a token first.",
       "NoCharacters": "No characters you own were found.",
       "GMOnly": "Only the GM can do that.",
-      "Recharged": "Recharged {actors} actor(s) — {traits} Trait(s) restored.",
+      "Recharged": "Recharged {actors} actor(s) · {traits} Trait(s) restored.",
       "GrantXpTitle": "Grant XP",
       "GrantXpHint": "Choose who receives XP and how much.",
       "GrantXpReason": "GM award",
@@ -864,11 +856,11 @@
       "LandmarkName": "Landmark name...",
       "Safe": "Safe",
       "Unsafe": "Unsafe",
-      "SafeToggle": "Safe — click to mark as Unsafe",
-      "UnsafeToggle": "Unsafe — click to mark as Safe",
-      "LandmarksHint": "Significant areas of the Location. Safe Landmarks allow Safe Rests; Unsafe ones make resting dangerous.",
+      "SafeToggle": "Safe · click to mark as Unsafe",
+      "UnsafeToggle": "Unsafe · click to mark as Safe",
+      "LandmarksHint": "Safe Landmarks allow Safe Rests; Unsafe ones don't.",
       "NPCs": "NPCs",
-      "NPCsHint": "Drag any Actor here to tie it to this Location as an NPC.",
+      "NPCsHint": "Drag an Actor here to add an NPC.",
       "NpcAdded": "{actor} was tied to {location}.",
       "OpenNpc": "Open sheet"
     }

@@ -240,8 +240,8 @@ function traitButton(t, canExert = false) {
   // no Shift+clique; toda outra Trait ativa faz Exert no Ctrl/⌘+clique (Exert é um
   // move de personagem, então a dica só aparece quando o Actor dono pode de fato Exert).
   const hint = ["pack", "cargo"].includes(t.system.category)
-    ? ` — ${game.i18n.localize("SHIFT.Hud.PackShiftHint")}`
-    : (canExert && !t.system.exhausted) ? ` — ${game.i18n.localize("SHIFT.Hud.ExertHint")}` : "";
+    ? ` · ${game.i18n.localize("SHIFT.Hud.PackShiftHint")}`
+    : (canExert && !t.system.exhausted) ? ` · ${game.i18n.localize("SHIFT.Hud.ExertHint")}` : "";
   return `
     <button type="button" class="hud-btn trait${t.system.exhausted ? " exhausted" : ""}${t.system.temporary ? " temporary" : ""}"
             data-kind="trait" data-id="${t.id}" aria-label="${name}"

@@ -29,6 +29,31 @@ export async function enrich(html, options = {}) {
   }
 }
 
+/**
+ * Liga os botões "Revelar/Esconder" do Foundry às seções secretas exibidas em
+ * modo de LEITURA (`.bio-display`), que ficam FORA de um `<prose-mirror>`.
+ *
+ * Só o GM precisa disto: enriquecemos a descrição com `secrets: game.user.isGM`,
+ * então o core já removeu as seções não reveladas para todos os outros — elas
+ * nunca chegam ao DOM de um jogador. As seções DENTRO de um `<prose-mirror>` já
+ * são tratadas pelo core (`DocumentSheetV2#_onRevealSecret`); esse handler dá
+ * no-op aqui (uma `.bio-display` não tem `<prose-mirror>` ancestral), então não
+ * há toggle duplicado mesmo quando o evento "change" borbulha até o formulário.
+ *
+ * @param {foundry.applications.api.DocumentSheetV2} app  A ficha já renderizada.
+ * @param {string} [fieldPath="system.description"]       O campo HTML editável.
+ */
+export function bindDescriptionSecrets(app, fieldPath = "system.description") {
+  if (!game.user.isGM || !app?.element) return;
+  new foundry.applications.ux.HTMLSecret({
+    parentSelector: ".bio-display",
+    callbacks: {
+      content: () => foundry.utils.getProperty(app.document, fieldPath),
+      update: (secret, content) => app.document.update({ [fieldPath]: content })
+    }
+  }).bind(app.element);
+}
+
 /* ------------------------------------------------------------------ */
 /* Helpers de dados                                                    */
 /* ------------------------------------------------------------------ */

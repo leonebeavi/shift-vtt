@@ -213,10 +213,6 @@ export function registerSettings() {
   reg("compendiumSeeded", { scope: "world", config: false, type: Boolean, default: false });
   reg("techniquesSeeded", { scope: "world", config: false, type: Boolean, default: false });
   reg("macrosSeeded", { scope: "world", config: false, type: Boolean, default: false });
-  // O gate do seed de Sandbox é por VERSÃO (não um booleano): subir o SEED_VERSION
-  // empacotado re-roda o top-up idempotente, para que mundos de teste já existentes
-  // ganhem fixtures recém-adicionadas sem duplicar nada que já exista por nome.
-  reg("testDummiesSeedVersion", { scope: "world", config: false, type: Number, default: 0 });
 
   // Estado de UI por jogador (painel Global Traits + posição do Action HUD)
   reg("clocksPanelOpen", { scope: "client", config: false, type: Boolean, default: true });

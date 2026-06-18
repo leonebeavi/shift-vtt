@@ -228,7 +228,8 @@ export function renderClocksPanel() {
   el.classList.toggle("minimized", !!minimized);
   el.classList.toggle("player-view", !isGM);
   el.innerHTML = `
-    <header class="clocks-head" data-tooltip="${game.i18n.localize("SHIFT.Clocks.Move")}">
+    <header class="clocks-head">
+      <span class="clocks-grip" data-tooltip="${game.i18n.localize("SHIFT.Clocks.Move")}"><i class="fa-solid fa-grip-vertical"></i></span>
       ${isGM ? `<a class="clocks-add" data-act="add" data-tooltip="${game.i18n.localize("SHIFT.Clocks.Add")}"><i class="fa-solid fa-plus"></i></a>` : ""}
       <span class="clocks-title"><i class="fa-solid fa-dice-d6"></i> ${game.i18n.localize("SHIFT.Clocks.Title")}</span>
       <span class="clocks-actions">

@@ -37,7 +37,6 @@ import {
   ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftLandmarkSheet
 } from "./module/sheets/item-sheets.mjs";
 import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium } from "./module/helpers/migrations.mjs";
-import { seedTestDummies, ensureSandboxFolder } from "./module/helpers/seed-dummies.mjs";
 
 /* ------------------------------------------------------------------ */
 /* Init                                                                */
@@ -230,8 +229,6 @@ Hooks.once("ready", async () => {
     await seedMacros();
     await ensureCompendiumFolder();
     await organizeTraitsCompendium();
-    await seedTestDummies();
-    await ensureSandboxFolder();
   }
 });
 

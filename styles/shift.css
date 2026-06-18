@@ -16,6 +16,7 @@
   --shift-accent: var(--shift-green);
   --shift-accent-soft: rgba(69, 196, 101, 0.14);
   --shift-pink-soft: rgba(255, 95, 162, 0.14);
+  --shift-purple-soft: rgba(154, 92, 240, 0.16);
   --die-d4: #12aa5b;
   --die-d6: #addd27;
   --die-d8: #ffc511;
@@ -2623,6 +2624,218 @@
   background: #2f2730;
   color: #ff5fa2;
 }
+.shift-vtt h1, .shift-vtt h2, .shift-vtt h3, .shift-vtt h4, .shift-vtt h5, .shift-vtt h6 {
+  font-family: "Signika", sans-serif;
+}
+.shift-vtt .bio-display h1, .shift-vtt .bio-display h2, .shift-vtt .bio-display h3, .shift-vtt .bio-display h4, .shift-vtt .bio-display h5, .shift-vtt .bio-display h6, .shift-vtt prose-mirror .editor-content h1, .shift-vtt prose-mirror .editor-content h2, .shift-vtt prose-mirror .editor-content h3, .shift-vtt prose-mirror .editor-content h4, .shift-vtt prose-mirror .editor-content h5, .shift-vtt prose-mirror .editor-content h6, .shift-vtt prose-mirror .ProseMirror h1, .shift-vtt prose-mirror .ProseMirror h2, .shift-vtt prose-mirror .ProseMirror h3, .shift-vtt prose-mirror .ProseMirror h4, .shift-vtt prose-mirror .ProseMirror h5, .shift-vtt prose-mirror .ProseMirror h6 {
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 1em 0 0.4em;
+}
+.shift-vtt .bio-display > :first-child, .shift-vtt prose-mirror .editor-content > :first-child, .shift-vtt prose-mirror .ProseMirror > :first-child {
+  margin-top: 0;
+}
+.shift-vtt .bio-display h1, .shift-vtt prose-mirror .editor-content h1, .shift-vtt prose-mirror .ProseMirror h1 {
+  font-size: 1.7em;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  padding-bottom: 0.2em;
+  background-image: var(--shift-grad);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 2px;
+}
+.shift-vtt .bio-display h2, .shift-vtt prose-mirror .editor-content h2, .shift-vtt prose-mirror .ProseMirror h2 {
+  font-size: 1.45em;
+  padding-bottom: 0.15em;
+  border-bottom: 2px solid var(--shift-border);
+}
+.shift-vtt .bio-display h3, .shift-vtt prose-mirror .editor-content h3, .shift-vtt prose-mirror .ProseMirror h3 {
+  font-size: 1.25em;
+}
+.shift-vtt .bio-display h4, .shift-vtt prose-mirror .editor-content h4, .shift-vtt prose-mirror .ProseMirror h4 {
+  font-size: 1.08em;
+}
+.shift-vtt .bio-display h5, .shift-vtt .bio-display h6, .shift-vtt prose-mirror .editor-content h5, .shift-vtt prose-mirror .editor-content h6, .shift-vtt prose-mirror .ProseMirror h5, .shift-vtt prose-mirror .ProseMirror h6 {
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.78;
+}
+.shift-vtt .bio-display h5, .shift-vtt prose-mirror .editor-content h5, .shift-vtt prose-mirror .ProseMirror h5 {
+  font-size: 0.9em;
+}
+.shift-vtt .bio-display h6, .shift-vtt prose-mirror .editor-content h6, .shift-vtt prose-mirror .ProseMirror h6 {
+  font-size: 0.82em;
+}
+.shift-vtt .bio-display p, .shift-vtt prose-mirror .editor-content p {
+  margin: 0 0 0.7em;
+}
+.shift-vtt .bio-display p:last-child, .shift-vtt prose-mirror .editor-content p:last-child {
+  margin-bottom: 0;
+}
+.shift-vtt .bio-display ul, .shift-vtt .bio-display ol, .shift-vtt prose-mirror .editor-content ul, .shift-vtt prose-mirror .editor-content ol {
+  margin: 0 0 0.7em;
+  padding-left: 1.5em;
+}
+.shift-vtt .bio-display li, .shift-vtt prose-mirror .editor-content li {
+  margin: 0.15em 0;
+}
+.shift-vtt .bio-display li::marker, .shift-vtt prose-mirror .editor-content li::marker {
+  color: var(--shift-pink);
+}
+.shift-vtt .bio-display blockquote, .shift-vtt prose-mirror .editor-content blockquote {
+  margin: 0 0 0.8em;
+  padding: 0.45em 0.9em;
+  border-left: 3px solid var(--shift-pink);
+  background: var(--shift-pink-soft);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+}
+.shift-vtt .bio-display blockquote p:last-child, .shift-vtt prose-mirror .editor-content blockquote p:last-child {
+  margin-bottom: 0;
+}
+.shift-vtt .bio-display hr, .shift-vtt prose-mirror .editor-content hr {
+  border: none;
+  height: 2px;
+  margin: 1em 0;
+  border-radius: 2px;
+  background: var(--shift-grad);
+  opacity: 0.55;
+}
+.shift-vtt .bio-display a:not(.content-link):not([data-action]), .shift-vtt prose-mirror .editor-content a:not(.content-link):not([data-action]) {
+  color: var(--shift-pink);
+  text-decoration: none;
+}
+.shift-vtt .bio-display a:not(.content-link):not([data-action]):hover, .shift-vtt prose-mirror .editor-content a:not(.content-link):not([data-action]):hover {
+  text-decoration: underline;
+}
+.shift-vtt .bio-display code, .shift-vtt prose-mirror .editor-content code {
+  font-size: 0.88em;
+  padding: 0.1em 0.4em;
+  border-radius: 5px;
+  background: var(--shift-bg-raised);
+  border: 1px solid var(--shift-border);
+}
+.shift-vtt .bio-display pre, .shift-vtt prose-mirror .editor-content pre {
+  margin: 0 0 0.8em;
+  padding: 0.7em 0.9em;
+  border-radius: 8px;
+  background: var(--shift-bg-raised);
+  border: 1px solid var(--shift-border);
+  overflow-x: auto;
+}
+.shift-vtt .bio-display pre code, .shift-vtt prose-mirror .editor-content pre code {
+  padding: 0;
+  background: none;
+  border: none;
+}
+.shift-vtt .bio-display img, .shift-vtt prose-mirror .editor-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.shift-vtt .bio-display table, .shift-vtt prose-mirror .editor-content table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0 0 0.9em;
+  font-size: 0.95em;
+  border: 1px solid var(--shift-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.shift-vtt .bio-display th, .shift-vtt .bio-display td, .shift-vtt prose-mirror .editor-content th, .shift-vtt prose-mirror .editor-content td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--shift-border);
+}
+.shift-vtt .bio-display th:not(:last-child), .shift-vtt .bio-display td:not(:last-child), .shift-vtt prose-mirror .editor-content th:not(:last-child), .shift-vtt prose-mirror .editor-content td:not(:last-child) {
+  border-right: 1px solid var(--shift-border);
+}
+.shift-vtt .bio-display tbody tr:last-child td, .shift-vtt prose-mirror .editor-content tbody tr:last-child td {
+  border-bottom: none;
+}
+.shift-vtt .bio-display thead th, .shift-vtt prose-mirror .editor-content thead th {
+  font-family: "Signika", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.85em;
+  text-align: left;
+  color: var(--shift-text);
+  background: var(--shift-bg-raised);
+  border-bottom: 2px solid var(--shift-border);
+}
+.shift-vtt .bio-display tbody tr:hover td, .shift-vtt prose-mirror .editor-content tbody tr:hover td {
+  background: var(--shift-pink-soft);
+}
+.shift-vtt secret-block {
+  display: block;
+}
+.shift-vtt section.secret {
+  margin: 0.6em 0;
+  padding: 0.5em 0.8em;
+  border-radius: 8px;
+  background: var(--shift-purple-soft);
+  border: 1px dashed var(--shift-purple);
+}
+.shift-vtt section.secret.revealed {
+  background: var(--shift-pink-soft);
+  border-style: solid;
+  border-color: var(--shift-pink);
+}
+.shift-vtt section.secret > button.reveal {
+  display: none;
+  align-items: center;
+  width: auto;
+  height: auto;
+  margin: 0 0 0.5em;
+  padding: 2px 12px;
+  line-height: 1.5;
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--shift-purple);
+  background: transparent;
+  border: 1px dashed var(--shift-purple);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.shift-vtt.shift-gm section.secret > button.reveal {
+  display: inline-flex;
+}
+.shift-vtt section.secret > button.reveal:hover {
+  background: var(--shift-purple-soft);
+  border-style: solid;
+}
+.shift-vtt section.secret.revealed > button.reveal {
+  color: var(--shift-pink);
+  border-color: var(--shift-pink);
+}
+.shift-vtt section.secret.revealed > button.reveal:hover {
+  background: var(--shift-pink-soft);
+  border-style: solid;
+}
+body.shift-theme-light .shift-vtt .bio-display a:not(.content-link):not([data-action]), body.shift-theme-light .shift-vtt prose-mirror .editor-content a:not(.content-link):not([data-action]) {
+  color: var(--shift-pink-ink);
+}
+body.shift-theme-light .shift-vtt .bio-display li::marker, body.shift-theme-light .shift-vtt prose-mirror .editor-content li::marker {
+  color: var(--shift-pink-ink);
+}
+body.shift-theme-light .shift-vtt section.secret {
+  border-color: var(--shift-purple-ink);
+}
+body.shift-theme-light .shift-vtt section.secret > button.reveal {
+  color: var(--shift-purple-ink);
+  border-color: var(--shift-purple-ink);
+}
+body.shift-theme-light .shift-vtt section.secret.revealed {
+  border-color: var(--shift-pink-ink);
+}
+body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
+  color: var(--shift-pink-ink);
+  border-color: var(--shift-pink-ink);
+}
 .combat-tracker li.shift-phase-header, #combat li.shift-phase-header {
   list-style: none;
   display: flex;
@@ -2852,9 +3065,25 @@
   padding: 4px 0;
   border-bottom: 1px solid #4d4050;
   font-weight: 600;
-  cursor: move;
+  cursor: grab;
   user-select: none;
   touch-action: none;
+}
+#shift-clocks-panel .clocks-head:active {
+  cursor: grabbing;
+}
+#shift-clocks-panel .clocks-grip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  color: #b5a4b3;
+  cursor: grab;
+  padding: 0 2px 0 4px;
+  touch-action: none;
+}
+#shift-clocks-panel .clocks-grip:active {
+  cursor: grabbing;
+  color: #ff5fa2;
 }
 #shift-clocks-panel .clocks-title {
   position: absolute;
@@ -4356,6 +4585,7 @@ body.shift-theme-light .shift-vtt {
   --shift-accent-soft: rgba(26,143,79,0.16);
   --shift-pink-soft: rgba(255,95,162,0.16);
   --shift-pink-ink: #cf3a80;
+  --shift-purple-ink: #6a3fae;
   --tab-accent: var(--shift-pink-ink);
 }
 body.shift-theme-light .shift-vtt.sheet .window-content {

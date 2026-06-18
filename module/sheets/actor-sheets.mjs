@@ -53,7 +53,7 @@ export class ShiftCharacterSheet extends BaseShiftActorSheet {
     context.tabs = this._visibleTabs([
       { id: "traits", label: "SHIFT.Tabs.Traits", icon: "fa-dice-d20" },
       { id: "techniques", label: "SHIFT.Tabs.Techniques", icon: "fa-wand-sparkles" },
-      { id: "biography", label: "SHIFT.Tabs.Biography", icon: "fa-book-open" }
+      { id: "biography", label: "SHIFT.Tabs.Notes", icon: "fa-book-open" }
     ]);
     return context;
   }
@@ -819,7 +819,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   /** Cria a JournalEntry "Field Notes" compartilhada e de propriedade dos Players para este party. */
   async #createCodexJournal() {
     const folderName = game.i18n.localize("SHIFT.Party.Codex.JournalFolder");
-    let folder = game.folders.find(f => f.type === "JournalEntry" && f.name === folderName);
+    // Tolera pastas criadas antes da troca de separador " — " → " · " (sem duplicar).
+    const legacyName = folderName.replace(" · ", " — ");
+    let folder = game.folders.find(f => f.type === "JournalEntry" && (f.name === folderName || f.name === legacyName));
     if (!folder) folder = await Folder.create({ name: folderName, type: "JournalEntry" });
     const journal = await JournalEntry.create({
       name: game.i18n.format("SHIFT.Party.Codex.JournalName", { party: this.document.name }),

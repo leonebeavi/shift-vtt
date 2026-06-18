@@ -1,7 +1,7 @@
 /**
  * SHIFT VTT, comportamento compartilhado da ficha de Actor (ApplicationV2).
  */
-import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker } from "../helpers/utils.mjs";
+import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker, bindDescriptionSecrets } from "../helpers/utils.mjs";
 import { ShiftBrowser } from "../apps/browser.mjs";
 import { scaleEnabled } from "../settings.mjs";
 
@@ -99,6 +99,10 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       scaleOptions: [1, 2, 3, 4],
       enrichedDescription: this.canViewNotes
         ? await enrich(actor.system.description, {
+            // O GM sempre vê os blocos secretos do Foundry (revelados e ocultos);
+            // o botão Revelar/Esconder do core funciona no <prose-mirror> fechado
+            // mesmo fora do modo de edição. Jogadores só recebem o que foi revelado.
+            secrets: game.user.isGM,
             rollData: actor.getRollData?.() ?? {},
             relativeTo: actor
           })
@@ -240,6 +244,12 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   /** @override */
   async _onRender(context, options) {
     await super._onRender?.(context, options);
+    // Só o GM vê o botão Revelar/Esconder dos blocos secretos do Foundry (a
+    // classe gateia o CSS); evita que um owner não-GM altere o estado revelado
+    // de um segredo pelo botão que o core liga no <prose-mirror>. O bind cobre a
+    // visão de leitura (.bio-display) por simetria com as fichas de Item.
+    this.element?.classList.toggle("shift-gm", game.user.isGM);
+    bindDescriptionSecrets(this);
     if (!this.isEditable) return;
     // Faz o bind uma vez por elemento. Uma renderização parcial (render({parts:[…]}))
     // reexecuta este hook mas mantém em pé os nós das partes não renderizadas; a flag

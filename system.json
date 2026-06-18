@@ -2,7 +2,7 @@
   "id": "shift-vtt",
   "title": "SHIFT VTT",
   "description": "An unofficial Foundry VTT implementation of the SHIFT Roleplaying Game.",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
@@ -118,48 +118,6 @@
         "PLAYER": "OBSERVER",
         "ASSISTANT": "OWNER"
       }
-    },
-    {
-      "name": "shift-test-actors",
-      "label": "Atores · Sandbox | SHIFT",
-      "path": "packs/shift-test-actors",
-      "type": "Actor",
-      "system": "shift-vtt",
-      "ownership": {
-        "PLAYER": "OBSERVER",
-        "ASSISTANT": "OWNER"
-      }
-    },
-    {
-      "name": "shift-test-items",
-      "label": "Itens · Sandbox | SHIFT",
-      "path": "packs/shift-test-items",
-      "type": "Item",
-      "system": "shift-vtt",
-      "ownership": {
-        "PLAYER": "OBSERVER",
-        "ASSISTANT": "OWNER"
-      }
-    }
-  ],
-  "packFolders": [
-    {
-      "name": "SHIFT VTT",
-      "color": "#ff5fa2",
-      "sorting": "a",
-      "packs": [
-        "shift-traits",
-        "shift-macros"
-      ]
-    },
-    {
-      "name": "SHIFT VTT | Sandbox",
-      "color": "#9a5cf0",
-      "sorting": "a",
-      "packs": [
-        "shift-test-actors",
-        "shift-test-items"
-      ]
     }
   ],
   "socket": true,
@@ -169,7 +127,7 @@
   },
   "url": "https://github.com/leonebeavi/shift-vtt",
   "manifest": "https://github.com/leonebeavi/shift-vtt/releases/latest/download/system.json",
-  "download": "https://github.com/leonebeavi/shift-vtt/releases/download/v2.0.0/system.zip",
+  "download": "https://github.com/leonebeavi/shift-vtt/releases/download/v2.0.1/system.zip",
   "license": "LICENSE.md",
   "readme": "README.md",
   "flags": {

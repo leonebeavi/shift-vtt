@@ -1,7 +1,7 @@
 /**
  * SHIFT VTT — Fichas de Item (ApplicationV2).
  */
-import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker } from "../helpers/utils.mjs";
+import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker, bindDescriptionSecrets } from "../helpers/utils.mjs";
 import { ShiftBrowser } from "../apps/browser.mjs";
 import { scaleEnabled } from "../settings.mjs";
 
@@ -45,11 +45,26 @@ class BaseShiftItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       diceList: CONFIG.SHIFT.dice,
       scaleOptions: [1, 2, 3, 4],
       enrichedDescription: await enrich(item.system.description, {
+        // O GM sempre vê os blocos secretos; o botão Revelar/Esconder é ligado
+        // pelo core no <prose-mirror> (modo de edição) e por bindDescriptionSecrets
+        // na visão de leitura (.bio-display, ficha travada). Veja _onRender abaixo.
+        secrets: game.user.isGM,
         rollData: item.actor?.getRollData?.() ?? {},
         relativeTo: item
       })
     });
     return context;
+  }
+
+  /** @override */
+  async _onRender(context, options) {
+    await super._onRender?.(context, options);
+    // Só o GM vê o botão Revelar/Esconder (classe gateia o CSS). Liga o reveal
+    // dos blocos secretos mostrados em leitura (.bio-display, fora de um
+    // <prose-mirror>) para que o GM revele aos jogadores mesmo com a ficha
+    // travada. Subclasses que sobrescrevem _onRender chamam super.
+    this.element?.classList.toggle("shift-gm", game.user.isGM);
+    bindDescriptionSecrets(this);
   }
 
   static async #onEditImage(event, target) {

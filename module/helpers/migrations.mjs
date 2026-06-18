@@ -241,26 +241,27 @@ await game.shift.api.actionRoll(actor);`;
 }
 
 /**
- * Coloca o pack de compêndio embutido dentro de um único folder colorido
- * "SHIFT VTT" na sidebar de Compêndios (rosa do sistema).
+ * Coloca os packs de compêndio embutidos ("SHIFT Traits" + "SHIFT Macros") em um
+ * único folder colorido "SHIFT VTT" na sidebar de Compêndios (rosa do sistema).
  *
- * A entrada `packFolders` do manifesto já faz isso para mundos *novos*, mas o
- * Foundry só arquiva automaticamente um pack cujo `core.compendiumConfiguration`
- * ainda não tem a chave `folder`; então um mundo criado antes desta mudança
- * (onde o pack foi registrado com `folder: null`) silenciosamente nunca ganharia
- * o folder. Este passo idempotente do lado do GM preenche isso retroativamente,
- * mantém a cor em sincronia e aposenta o antigo sub-folder "Items" (re-arquivando
- * o pack sob "SHIFT VTT"). Um pack que o GM arquivou deliberadamente em algum
- * *outro* folder fica intocado.
+ * Esta é a ÚNICA fonte da verdade para o folder: o manifesto NÃO declara mais
+ * `packFolders` (que duplicava o folder ao competir com este passo). Idempotente e
+ * auto-corretivo: adota qualquer folder "SHIFT VTT" existente, consolida nele os
+ * nossos packs, aposenta o antigo sub-folder "Items" e REMOVE folders "SHIFT VTT"
+ * duplicados que ficaram vazios. Um pack que o GM arquivou de propósito em outro
+ * folder fica intocado.
  */
 export async function ensureCompendiumFolder() {
-  const pack = game.packs.get("shift-vtt.shift-traits");
-  if (!pack) return;
+  const ourPacks = ["shift-vtt.shift-traits", "shift-vtt.shift-macros"]
+    .map(id => game.packs.get(id)).filter(Boolean);
+  if (!ourPacks.length) return;
 
   const PINK = "#ff5fa2";
   try {
-    // 1) Um único folder de nível superior "SHIFT VTT", colorido com o rosa do mascote.
-    let root = game.folders.find(f => f.type === "Compendium" && !f.folder && f.name === "SHIFT VTT");
+    // 1) TODOS os folders de topo "SHIFT VTT" (duplicatas podem existir de builds
+    //    que também declaravam packFolders); o primeiro vira o canônico.
+    const roots = game.folders.filter(f => f.type === "Compendium" && !f.folder && f.name === "SHIFT VTT");
+    let root = roots[0];
     if (!root) {
       [root] = await Folder.createDocuments([
         { name: "SHIFT VTT", type: "Compendium", color: PINK, sorting: "a" }
@@ -269,27 +270,31 @@ export async function ensureCompendiumFolder() {
       try { await root.update({ color: PINK }); } catch (e) { /* noop */ }
     }
 
-    // 2) Aposenta o sub-folder "Items" agora indesejado, criado por builds
-    //    anteriores: re-arquiva sob "SHIFT VTT" todo pack ali dentro (para que um
-    //    pack que o GM por acaso arrastou para lá nunca fique órfão), depois
-    //    descarta o folder.
+    // 2) Aposenta o sub-folder "Items" legado: re-arquiva seus packs sob o root e o apaga.
     const items = game.folders.find(f => f.type === "Compendium" && f.folder?.id === root.id && f.name === "Items");
     if (items) {
       for (const p of game.packs) {
-        if (p.config?.folder === items.id) {
-          try { await p.setFolder(root); } catch (e) { /* noop */ }
-        }
+        if (p.config?.folder === items.id) { try { await p.setFolder(root); } catch (e) { /* noop */ } }
       }
-      await items.delete();
+      try { await items.delete(); } catch (e) { /* noop */ }
     }
 
-    // 3) Arquiva nosso pack diretamente sob "SHIFT VTT" quando ele está sem
-    //    folder ou aponta para um folder que não existe mais. Um pack que o GM
-    //    arquivou de propósito em outro lugar fica intocado.
-    const cur = pack.config?.folder;
-    if ((!cur || !game.folders.get(cur)) && cur !== root.id) {
-      await pack.setFolder(root);
-      console.log(`shift-vtt | Filed ${pack.collection} under "SHIFT VTT"`);
+    // 3) Arquiva nossos packs sob o root quando estão sem folder, apontam para um
+    //    folder inexistente, ou estão presos num "SHIFT VTT" duplicado. Um pack que
+    //    o GM arquivou de propósito em outro folder fica intocado.
+    const rootIds = new Set(roots.map(f => f.id));
+    for (const pack of ourPacks) {
+      const cur = pack.config?.folder;
+      if (!cur || !game.folders.get(cur) || (rootIds.has(cur) && cur !== root.id)) {
+        try { await pack.setFolder(root); } catch (e) { /* noop */ }
+      }
+    }
+
+    // 4) Remove os folders "SHIFT VTT" duplicados agora vazios.
+    for (const dup of roots.slice(1)) {
+      const hasPacks = game.packs.some(p => p.config?.folder === dup.id);
+      const hasSubs = game.folders.some(f => f.folder?.id === dup.id);
+      if (!hasPacks && !hasSubs) { try { await dup.delete(); } catch (e) { /* noop */ } }
     }
   } catch (err) {
     console.error("shift-vtt | Placing the compendium in its sidebar folder failed", err);
