@@ -449,6 +449,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onCreateItem(event, target) {
+    if (!this.isEditable) return;
     const type = target.dataset.type ?? "trait";
     const category = target.dataset.category ?? "custom";
 
@@ -494,6 +495,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onDeleteItem(event, target) {
+    if (!this.isEditable) return;
     const item = this.getItem(target);
     if (!item) return;
     const confirmed = await fvtt.DialogV2.confirm({
@@ -515,6 +517,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onAddKeyword(event, target) {
+    if (!this.isEditable) return;
     const item = this.getItem(target);
     if (!item) return;
     const text = await this.#pickDescriptorText("keyword", "SHIFT.Keywords.Add", "SHIFT.Keywords.Label");
@@ -528,12 +531,14 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onRemoveKeyword(event, target) {
+    if (!this.isEditable) return;
     const item = this.getItem(target);
     const index = Number(target.dataset.index);
     if (item && Number.isInteger(index)) await item.removeKeyword(index);
   }
 
   static async #onAddDrawback(event, target) {
+    if (!this.isEditable) return;
     const item = this.getItem(target);
     if (!item) return;
     const text = await this.#pickDescriptorText("drawback", "SHIFT.Drawbacks.Add", "SHIFT.Drawbacks.Label");
@@ -541,6 +546,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onRemoveDrawback(event, target) {
+    if (!this.isEditable) return;
     const item = this.getItem(target);
     const index = Number(target.dataset.index);
     if (item && Number.isInteger(index)) await item.removeDrawback(index);
