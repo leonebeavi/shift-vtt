@@ -172,7 +172,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       categoryLabel: game.i18n.localize(CONFIG.SHIFT.traitCategories[sys.category] ?? ""),
       statusKey: item.statusKey,
       statusLabel: dieStatusLabel(item.statusKey),
-      dieImg: CONFIG.SHIFT.diceImages[item.statusKey] ?? CONFIG.SHIFT.diceImages.exhausted,
+      dieImg: CONFIG.SHIFT.diceImages[item.statusKey] ?? null,
       currentLabel: dieLabel(sys.currentDie),
       maxLabel: dieLabel(sys.maxDie),
       exhausted: sys.exhausted,

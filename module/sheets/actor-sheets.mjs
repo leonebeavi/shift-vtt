@@ -573,8 +573,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       out.push({
         uuid: member.uuid, id: member.id, name: member.name, img: member.img,
         typeLabel: game.i18n.localize(`TYPES.Actor.${member.type}`),
-        traits, hasTraits: traits.length > 0,
-        hasOpenTile: traits.some(t => t.open)
+        traits, hasTraits: traits.length > 0
       });
     }
     return out;

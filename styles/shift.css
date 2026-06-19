@@ -5918,26 +5918,6 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   background: rgba(255, 95, 162, 0.24);
   color: #f4eef3;
 }
-.shift-party-controls {
-  display: inline-flex;
-  gap: 3px;
-  flex: 0 0 auto;
-}
-.shift-party-controls .shift-party-ctl {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  opacity: 0.7;
-  cursor: pointer;
-}
-.shift-party-controls .shift-party-ctl:hover {
-  opacity: 1;
-  color: #ff5fa2;
-  background: rgba(255, 95, 162, 0.18);
-}
 .shift-party > .subdirectory {
   margin: 2px 0 4px 9px;
   padding-left: 8px;
@@ -7677,9 +7657,6 @@ textarea.cd-note-edit:focus {
 }
 .shift-vtt.party[data-atmo="arcade"] .window-content {
   background: radial-gradient(150% 80% at 50% -12%, color-mix(in oklab, var(--party-accent) 30%, #16101a) 0%, #130e16 52%, #0d0913 100%);
-}
-.codex-card[data-role="relic"] {
-  --role: #a06bff;
 }
 .codex-card .cc-hidden-badge {
   position: absolute;

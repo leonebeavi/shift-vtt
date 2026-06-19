@@ -261,7 +261,7 @@ export function registerSettings() {
   });
 }
 
-export function applyShiftTheme() {
+function applyShiftTheme() {
   const light = game.settings.get("shift-vtt", "theme") === "light";
   document.body.classList.toggle("shift-theme-light", light);
   // Bunny Glass é PADRÃO obrigatório: assa direto no tema escuro via CSS
@@ -272,7 +272,7 @@ export function applyShiftTheme() {
  *  (sidebar, chat, HUDs, janelas). Tudo mora num único bloco isolado de
  *  shift.less sob `body.shift-ui-theme` — alternar a classe é reverter por
  *  completo, sem reload. Ver setting "uiTheme". */
-export function applyShiftUiTheme() {
+function applyShiftUiTheme() {
   const on = game.settings.get("shift-vtt", "uiTheme") !== false;
   document.body.classList.toggle("shift-ui-theme", on);
 }

@@ -6,7 +6,7 @@
  * (pelo GM, ou pelos Players quando permitido) e que dá ShiftDown numa rolagem máxima.
  * A visibilidade é por entrada; todos veem as atualizações ao vivo.
  */
-import { DIE_PROGRESSION, dieIndex, dieLabel, fvtt, promptText } from "../helpers/utils.mjs";
+import { DIE_PROGRESSION, dieIndex, dieLabel, fvtt } from "../helpers/utils.mjs";
 import { emitOrRun } from "../helpers/socket.mjs";
 
 let panel = null;

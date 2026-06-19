@@ -85,7 +85,7 @@ function messageFromLi(li) {
  * @param {ChatMessage} message
  * @returns {number} 1..4
  */
-export function effectiveRollerScale(message) {
+function effectiveRollerScale(message) {
   const f = message?.flags?.["shift-vtt"] ?? {};
   const bumps = Number(f.scaleBumps) || 0;
   if (Array.isArray(f.traits) && f.traits.length) {
@@ -520,7 +520,7 @@ async function resolveTargetActor(sourceActor, { candidates = null, title } = {}
  * @param {boolean} [opts.isCrit] o roll foi um Critical Success
  * @returns {Promise<{landed:boolean}>}
  */
-export async function applyShiftDownToTarget(sourceActor, { steps = 1, candidates = null, exhaust = false, rollerScale = null, isCrit = false } = {}) {
+async function applyShiftDownToTarget(sourceActor, { steps = 1, candidates = null, exhaust = false, rollerScale = null, isCrit = false } = {}) {
   const target = await resolveTargetActor(sourceActor, { candidates });
   if (!target) return { landed: false };
 

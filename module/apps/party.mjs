@@ -110,7 +110,7 @@ function visibleParties() {
  *   3. o único party visível, se houver exatamente um.
  * Retorna null quando a escolha é ambígua (o caller deve perguntar).
  */
-export function resolveActiveParty() {
+function resolveActiveParty() {
   const own = partiesWithMember(game.user?.character);
   if (own.length === 1) return own[0];
 
@@ -124,7 +124,7 @@ export function resolveActiveParty() {
 }
 
 /** Abre a sheet do party ativo, ou pergunta para escolher quando não é óbvio. */
-export function openActiveParty() {
+function openActiveParty() {
   const party = resolveActiveParty();
   if (party) return void party.sheet.render(true);
   return promptSetActiveParty(true);
@@ -134,7 +134,7 @@ export function openActiveParty() {
  * Pede ao usuário para escolher (e lembrar) o party ativo. Com um único party a
  * escolha é feita automaticamente. `open` também renderiza a sheet escolhida.
  */
-export async function promptSetActiveParty(open = false) {
+async function promptSetActiveParty(open = false) {
   const parties = visibleParties();
   if (!parties.length) return void ui.notifications.info(L("SHIFT.Party.NoParties"));
   if (parties.length === 1) {
@@ -218,7 +218,7 @@ function membersOnScene(party, scene) {
  * recall se houver algum. Ancorado no Token do party.
  * @param {TokenDocument} partyToken
  */
-export async function togglePartyTokens(partyToken) {
+async function togglePartyTokens(partyToken) {
   const party = partyToken?.actor;
   if (party?.type !== "party") return;
   const scene = partyToken.scene ?? canvas?.scene;
@@ -237,7 +237,7 @@ export async function togglePartyTokens(partyToken) {
  * @param {ShiftActor} party
  * @param {{x?:number, y?:number, token?:TokenDocument}} [anchor]
  */
-export async function deployParty(party, { x, y, token } = {}) {
+async function deployParty(party, { x, y, token } = {}) {
   if (party?.type !== "party") return;
   const scene = token?.scene ?? canvas?.scene;
   if (!scene || !canvas.ready) return void ui.notifications.warn(L("SHIFT.Party.NoScene"));
@@ -291,7 +291,7 @@ export async function deployParty(party, { x, y, token } = {}) {
  * tanto Tokens linked quanto unlinked-da-mesma-base são reunidos.
  * @param {ShiftActor} party
  */
-export async function recallParty(party, scene = canvas?.scene) {
+async function recallParty(party, scene = canvas?.scene) {
   if (party?.type !== "party") return;
   if (!scene || !canvas.ready) return void ui.notifications.warn(L("SHIFT.Party.NoScene"));
 

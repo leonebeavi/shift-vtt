@@ -229,8 +229,8 @@ SHIFT.specialTraitPresets = {
 /* ------------------------------------------------------------------ */
 
 SHIFT.advancements = [
-  { key: "keyword", label: "SHIFT.Advancement.Keyword", cost: 2, setting: "xpCostKeyword" },
-  { key: "technique", label: "SHIFT.Advancement.Technique", cost: 4, setting: "xpCostTechnique" },
-  { key: "trait", label: "SHIFT.Advancement.Trait", cost: 6, setting: "xpCostTrait" },
-  { key: "coreDie", label: "SHIFT.Advancement.CoreDie", cost: 8, setting: "xpCostCoreDie" }
+  { label: "SHIFT.Advancement.Keyword", cost: 2 },
+  { label: "SHIFT.Advancement.Technique", cost: 4 },
+  { label: "SHIFT.Advancement.Trait", cost: 6 },
+  { label: "SHIFT.Advancement.CoreDie", cost: 8 }
 ];

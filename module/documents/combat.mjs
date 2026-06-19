@@ -243,5 +243,4 @@ export class ShiftCombat extends Combat {
   }
 
   _sortCombatants(a, b) { return ShiftCombat.#compare(a, b); }
-  static _sortCombatants(a, b) { return ShiftCombat.#compare(a, b); }
 }
