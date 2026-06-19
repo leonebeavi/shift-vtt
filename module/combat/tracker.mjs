@@ -110,7 +110,10 @@ export function registerTrackerDecorations() {
       ui.combat?.render();
     }
   };
-  Hooks.on("updateItem", refresh);
-  Hooks.on("deleteItem", refresh);
-  Hooks.on("createItem", refresh);
+  // O CRUD de Item de um Adversary em combate pode vir em rajada (vários shifts numa
+  // ação, edição em massa); junta tudo num único re-render, como o Action HUD faz.
+  const debouncedRefresh = foundry.utils.debounce(refresh, 50);
+  Hooks.on("updateItem", debouncedRefresh);
+  Hooks.on("deleteItem", debouncedRefresh);
+  Hooks.on("createItem", debouncedRefresh);
 }

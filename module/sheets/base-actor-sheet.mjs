@@ -337,11 +337,14 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     // grupos seja um no-op limpo em vez de embaralhar silenciosamente o grupo de origem.
     // Techniques e Landmarks são listas planas únicas, então ordenam contra todos os
     // irmãos do seu tipo.
-    const groupKey = this.#traitGroupKeyFor(item);
-    if (item.type === "trait" && this.#traitGroupKeyFor(target) !== groupKey) return false;
+    // Snapshot do spec uma vez: traitGroupSpec é um getter que reconstrói o array a
+    // cada acesso, e #traitGroupKeyFor é chamado para o item, o alvo e cada irmão.
+    const spec = this.traitGroupSpec;
+    const groupKey = this.#traitGroupKeyFor(item, spec);
+    if (item.type === "trait" && this.#traitGroupKeyFor(target, spec) !== groupKey) return false;
 
     const sameGroup = i => i.id !== item.id && i.type === item.type
-      && (item.type !== "trait" || this.#traitGroupKeyFor(i) === groupKey);
+      && (item.type !== "trait" || this.#traitGroupKeyFor(i, spec) === groupKey);
     const siblings = this.document.items.filter(sameGroup);
     const updates = foundry.utils.performIntegerSort(item, { target, siblings })
       .map(u => ({ _id: u.target.id, sort: u.update.sort }));
@@ -351,11 +354,11 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   /** A chave do trait-group que exibe uma dada Trait (conforme {@link traitGroupSpec}),
    *  ou null para items que não são Trait / uma categoria que nenhum grupo reivindica.
    *  Usada para manter um reordenamento por drag dentro do grupo visual do próprio card. */
-  #traitGroupKeyFor(item) {
+  #traitGroupKeyFor(item, spec = this.traitGroupSpec) {
     if (item.type !== "trait") return null;
     const cat = item.system.category;
-    const spec = this.traitGroupSpec.find(s => !s.categories || s.categories.includes(cat));
-    return spec?.key ?? null;
+    const found = spec.find(s => !s.categories || s.categories.includes(cat));
+    return found?.key ?? null;
   }
 
   /** @override */

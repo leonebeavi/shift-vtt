@@ -437,8 +437,9 @@ export class ShiftRoll {
     const scaledUpMatch = (!turnOrder && !isLocation && scaleEnabled()
       && game.settings.get("shift-vtt", "enableScaledUp"))
       ? matchScaledUp(actor, rolledUuids) : null;
-    const canPayScaledUp = actor.traits.some(t => t.system.category === "core" && t.canShiftDown);
-    const showScaleUp = !!scaledUpMatch && canPayScaledUp;
+    // Só percorre os Traits do actor quando há match (short-circuit do &&): em todo
+    // roll sem Scaled Up disponível, evita um filtro sobre todas as Traits.
+    const showScaleUp = !!scaledUpMatch && actor.traits.some(t => t.system.category === "core" && t.canShiftDown);
 
     // Quando mais de um character contribui (Working Together, assistência de
     // aliado, um Trait de Vehicle tripulado), mostra o nome de cada dono ACIMA do

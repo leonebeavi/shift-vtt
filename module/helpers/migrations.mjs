@@ -322,7 +322,10 @@ export async function organizeTraitsCompendium() {
   const folderCat = f => f.getFlag("shift-vtt", "category")
     ?? Object.keys(cats).find(c => nameFor(c) === f.name); // fallback para antes do flag
 
-  const docs = await pack.getDocuments();
+  // Lê só o índice (com system.category + folder) em vez de hidratar cada Item: o
+  // fast-path "needsWork" e o arquivamento precisam apenas de _id, categoria e id da
+  // pasta atual de cada entrada. Evita instanciar N documentos a cada ready do GM.
+  const index = await pack.getIndex({ fields: ["system.category", "folder"] });
   // Folders de categoria existentes no pack, indexados por categoria (nunca duplicados).
   const byCat = new Map();
   for (const f of pack.folders.contents) {
@@ -332,16 +335,17 @@ export async function organizeTraitsCompendium() {
 
   // Categorias presentes entre as entradas que ainda não têm folder.
   const missing = new Set();
-  for (const doc of docs) {
-    const cat = doc.system?.category;
+  for (const e of index) {
+    const cat = e.system?.category;
     if (cat && cats[cat] && !byCat.has(cat)) missing.add(cat);
   }
 
-  // Nada a criar e tudo já arquivado → no-op barato (sem destravar).
-  const needsWork = missing.size || docs.some(doc => {
-    const cat = doc.system?.category;
+  // Nada a criar e tudo já arquivado → no-op barato (sem destravar). No índice,
+  // e.folder já é o id da pasta atual (string) ou null.
+  const needsWork = missing.size || index.some(e => {
+    const cat = e.system?.category;
     const folder = cat && cats[cat] && byCat.get(cat);
-    return folder && doc.folder?.id !== folder.id;
+    return folder && e.folder !== folder.id;
   });
   if (!needsWork) return;
 
@@ -360,12 +364,13 @@ export async function organizeTraitsCompendium() {
         for (const f of created) byCat.set(folderCat(f), f);
       }
 
-      // 2) Arquiva cada entrada categorizada sob seu folder (apenas quando ela se move).
+      // 2) Arquiva cada entrada categorizada sob seu folder (apenas quando ela se move),
+      //    montando os updates direto do índice (sem hidratar os Items).
       const updates = [];
-      for (const doc of docs) {
-        const cat = doc.system?.category;
+      for (const e of index) {
+        const cat = e.system?.category;
         const folder = cat && cats[cat] ? byCat.get(cat) : null;
-        if (folder && doc.folder?.id !== folder.id) updates.push({ _id: doc.id, folder: folder.id });
+        if (folder && e.folder !== folder.id) updates.push({ _id: e._id, folder: folder.id });
       }
       if (updates.length) await Item.updateDocuments(updates, { pack: pack.collection });
 

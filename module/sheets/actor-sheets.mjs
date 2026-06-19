@@ -1553,7 +1553,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const id = target.closest("[data-item-id]")?.dataset.itemId;
     if (!id) return;
     this.#questCollapsed.has(id) ? this.#questCollapsed.delete(id) : this.#questCollapsed.add(id);
-    this.render();
+    this.render({ parts: ["quests"] });   // direcionado → não re-roda _onRender da ficha inteira
   }
 
   /** Expande/recolhe o CORPO da quest (desc + links + desfecho), invertendo o
@@ -1563,7 +1563,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const id = target.closest("[data-item-id]")?.dataset.itemId;
     if (!id) return;
     this.#questFlipped.has(id) ? this.#questFlipped.delete(id) : this.#questFlipped.add(id);
-    this.render();
+    this.render({ parts: ["quests"] });   // direcionado → não re-roda _onRender da ficha inteira
   }
 
   /** Abre a ficha do documento vinculado a uma Quest. Ignora cliques no X de
