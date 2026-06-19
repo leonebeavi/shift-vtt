@@ -11,7 +11,7 @@
     {{#if dieImg}}
       {{#if @root.editable}}
         <a class="die-badge img" data-die="{{statusKey}}" data-action="rollTrait"
-           data-tooltip="{{statusLabel}}{{#if canRoll}} &middot; {{localize 'SHIFT.Tooltips.RollIcon'}}{{/if}}">
+           data-tooltip="{{statusLabel}}">
           <img src="{{dieImg}}" alt="{{currentLabel}}"/>
         </a>
       {{else}}

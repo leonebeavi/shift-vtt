@@ -10,7 +10,7 @@
       <span class="ptrait-state" data-tooltip="{{outcomeWord}}"><i class="fa-solid {{outcomeIcon}}"></i></span>
     {{else if canRoll}}
       <a class="ptrait-die" data-action="{{#if quest}}rollQuest{{else}}rollTrait{{/if}}"
-         data-tooltip="{{statusLabel}} &middot; {{localize 'SHIFT.Tooltips.RollIcon'}}">
+         data-tooltip="{{statusLabel}}">
         {{#if dieImg}}<img src="{{dieImg}}" alt="{{currentLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}
       </a>
     {{else}}

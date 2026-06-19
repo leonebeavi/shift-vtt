@@ -231,7 +231,7 @@ function clockRow(c, isGM) {
   return `
     <li class="clock trait-clock${c.exhausted ? " exhausted" : ""}${c.visible ? "" : " gm-only"}" data-clock-id="${c.id}"${accent ? ` style="--ac:${accent}"` : ""}${isGM ? ' draggable="true"' : ""}>
       <a class="clock-die${canRoll ? " rollable" : ""}" data-act="${canRoll ? "roll" : ""}"
-         data-tooltip="${c.exhausted ? game.i18n.localize("SHIFT.DiceStatus.exhausted") : dieLabel(die)}${canRoll ? " &middot; " + game.i18n.localize("SHIFT.Tooltips.RollIcon") : ""}">
+         data-tooltip="${c.exhausted ? game.i18n.localize("SHIFT.DiceStatus.exhausted") : dieLabel(die)}">
         ${img ? `<img src="${img}" alt=""/>` : `<i class="fa-solid fa-xmark"></i>`}
         ${scalePip}
       </a>
