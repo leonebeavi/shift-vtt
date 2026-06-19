@@ -103,6 +103,6 @@ export async function emitOrRun(data) {
  */
 export function requestPlayerRoll({ userId, actorUuid, allowedTraits = null, rollType = null } = {}) {
   const data = { action: "requestRoll", userId, actorUuid, allowedTraits, rollType };
-  if (game.user.id === userId) return handle(data);
+  if (game.user.id === userId) return handle({ ...data });
   game.socket.emit(CHANNEL, data);
 }

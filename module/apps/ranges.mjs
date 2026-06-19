@@ -22,7 +22,7 @@ export function getRanges() {
   return CONFIG.SHIFT.rangeBands.map(b => ({ label: game.i18n.localize(b.label), min: b.min, max: b.max }));
 }
 
-/** A faixa em que cai uma distância medida (min inclusivo, max exclusivo). */
+/** A faixa em que cai uma distância medida (min inclusivo, max inclusivo). */
 function bandFor(distance) {
   // Ordenado por min crescente; `max` é INCLUSIVO, então um Token exatamente sobre
   // o limite (ex.: a 5 ft num grid de 5 ft) lê como a faixa MAIS PRÓXIMA (Engaged),

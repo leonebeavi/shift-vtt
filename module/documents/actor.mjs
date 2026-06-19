@@ -88,7 +88,7 @@ export class ShiftActor extends Actor {
         );
         break;
       case "location":
-        // Locations: Attitude, Wealth, Security e Safety (pelas regras). Seus dados
+        // Locations: Attitude, Wealth e Security (pelas regras). Seus dados
         // nunca dão ShiftDown a partir das próprias Action Rolls.
         items.push(
           attitude(i18n("SHIFT.Trait.Attitude"), "d6", { autoShiftOnRoll: false }),

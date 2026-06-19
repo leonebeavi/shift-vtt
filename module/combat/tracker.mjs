@@ -8,17 +8,27 @@
  * Characters que ainda não rolaram ficam sob um grupo "Roll Turn Order".
  */
 
-const PHASES = [
-  { key: "advantage", init: 4, icon: "fa-bolt", label: "SHIFT.Combat.AdvantagePhase" },
-  { key: "p1", init: 3, icon: "fa-angles-up", label: "SHIFT.Combat.Phase1" },
-  { key: "adv", init: 2, icon: "fa-shield-halved", label: "SHIFT.Combat.PhaseAdversary" },
-  { key: "p2", init: 1, icon: "fa-angles-down", label: "SHIFT.Combat.Phase2" },
-  { key: "unrolled", init: null, icon: "fa-dice", label: "SHIFT.Combat.PhaseUnrolled" }
+// As keys de fase do tracker (p1/adv/p2) mapeiam para as do CONFIG.SHIFT.phases
+// (first/adversary/second), que carregam os números de iniciativa canônicos — a
+// fonte de verdade única, compartilhada com o combat document e o roll engine.
+const PHASE_META = [
+  { key: "advantage", phase: "advantage", icon: "fa-bolt", label: "SHIFT.Combat.AdvantagePhase" },
+  { key: "p1", phase: "first", icon: "fa-angles-up", label: "SHIFT.Combat.Phase1" },
+  { key: "adv", phase: "adversary", icon: "fa-shield-halved", label: "SHIFT.Combat.PhaseAdversary" },
+  { key: "p2", phase: "second", icon: "fa-angles-down", label: "SHIFT.Combat.Phase2" },
+  { key: "unrolled", phase: null, icon: "fa-dice", label: "SHIFT.Combat.PhaseUnrolled" }
 ];
+
+// Construído lazy: CONFIG.SHIFT.phases só é populado no init, depois deste módulo carregar.
+function phases() {
+  const cfg = CONFIG.SHIFT?.phases ?? {};
+  return PHASE_META.map(p => ({ ...p, init: p.phase ? (cfg[p.phase] ?? null) : null }));
+}
 
 function phaseFor(combatant) {
   const init = combatant?.initiative;
-  return PHASES.find(p => p.init === init) ?? PHASES[4];
+  const all = phases();
+  return all.find(p => p.init === init) ?? all[all.length - 1];
 }
 
 function decorate(app, html) {

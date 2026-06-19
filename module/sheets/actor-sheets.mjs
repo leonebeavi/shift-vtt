@@ -209,7 +209,7 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
   };
 
   /** @override
-   *  Pelas regras, Locations têm Attitude, Wealth, Security e Safety, além de
+   *  Pelas regras, Locations têm Attitude, Wealth e Security, além de
    *  pelo menos um Focus Trait único. */
   get traitGroupSpec() {
     return [

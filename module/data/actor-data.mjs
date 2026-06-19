@@ -80,7 +80,7 @@ export class ShiftAdversaryData extends ShiftActorBase {
 }
 
 /* ------------------------------------------------------------------ */
-/* Vehicle                                                             */
+/* Location                                                            */
 /* ------------------------------------------------------------------ */
 
 export class ShiftLocationData extends ShiftActorBase {
@@ -92,6 +92,10 @@ export class ShiftLocationData extends ShiftActorBase {
     return schema;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Vehicle                                                             */
+/* ------------------------------------------------------------------ */
 
 export class ShiftVehicleData extends ShiftActorBase {
   static defineSchema() {

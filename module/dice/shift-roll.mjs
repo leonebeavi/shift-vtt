@@ -421,12 +421,10 @@ export class ShiftRoll {
     // ----- Chat card ----------------------------------------------------------
     const meta = CONFIG.SHIFT.rollResults[outcome.type];
     const critRollOk = outcome.type === "criticalSuccess";
-    // Botões de bônus de crit nunca aparecem num card de turn-order (sem interação com alvo).
-    // O botão base "Apply to Target" aparece em TODO sucesso, incluindo crit; os
-    // bônus de Critical Success são *somados* ao ataque normal, não uma
-    // substituição dele, então o Player precisa tanto do shift base quanto do bônus.
-    // Botões de bônus de Critical Success sempre aparecem num crit (nunca em cards
-    // de turn-order, que não têm interação com alvo). Eles não podem ser desabilitados.
+    // Botões de bônus de Critical Success aparecem em TODO crit, exceto em cards de
+    // turn-order (sem interação com alvo). O botão base "Apply to Target" aparece em
+    // todo sucesso; os bônus de crit são *somados* ao ataque base (não o substituem),
+    // então o Player precisa do shift base e do bônus, e eles não podem ser desabilitados.
     const showCrit = critRollOk && !turnOrder;
     const showApply = succeeded && !turnOrder;
 

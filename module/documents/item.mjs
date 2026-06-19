@@ -91,9 +91,7 @@ export class ShiftItem extends Item {
           }
         }
       }
-    }
-    // Mantém o nome durável do vínculo de Focus do Scaled Up em sincronia com o id escolhido.
-    if (this.type === "technique") {
+      // Mantém o nome durável do vínculo de Focus do Scaled Up em sincronia com o id escolhido.
       const newFocusId = foundry.utils.getProperty(changed, "system.focus.traitId");
       if (newFocusId !== undefined && this.actor) {
         const t = newFocusId ? this.actor.items.get(newFocusId) : null;

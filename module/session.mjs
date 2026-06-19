@@ -85,7 +85,7 @@ export function registerSession() {
       title: "SHIFT.Session.Title",
       icon: "fa-solid fa-flag-checkered",
       button: true,
-      order: 98,
+      order: 97,
       onChange: () => promptNewSession()
     };
   });
