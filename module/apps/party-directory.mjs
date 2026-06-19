@@ -162,11 +162,14 @@ export class ShiftActorDirectory extends ActorDirectory {
     // qualquer party de origem (um membro vive em uma única party, como numa pasta).
     if (toParty?.type === "party") {
       let actor = await Actor.implementation.fromDropData(data);
-      if (!actor) return;
+      // Rejeita um Actor party ANTES de qualquer import: fromDropData já popula
+      // actor.type pré-create, então checar aqui evita criar uma party duplicada
+      // órfã no mundo (que nunca seria adicionada como membro nem removida).
+      if (!actor || actor.type === "party") return;
       if (actor.inCompendium) {
         actor = await Actor.implementation.create(game.actors.fromCompendium(actor), { fromCompendium: true });
       }
-      if (!actor || actor.type === "party") return;
+      if (!actor) return;
       if (fromParty?.type === "party" && fromParty.id !== toParty.id) {
         await fromParty.removePartyMembers(data.uuid);
       }

@@ -65,6 +65,19 @@ async function handle(data) {
       });
       break;
     }
+    case "commitShift": {
+      // Auto-shift de um contribuinte de group roll cujo Trait o roller não podia
+      // escrever: o GM efetiva o ShiftDown forçado (a decisão de shift já veio do roll
+      // engine) e concede o XP ao dono. Sem chat card: o auto-shift faz parte do roll e
+      // já foi anunciado no card da rolagem.
+      const trait = data.traitUuid ? await fromUuid(data.traitUuid) : null;
+      if (!trait || trait.type !== "trait") return;
+      try { await trait.shiftDown({ steps: data.steps ?? 1, force: true, promptDeath: false }); } catch (err) { /* noop */ }
+      if (data.xp > 0 && trait.actor?.type === "character") {
+        try { await trait.actor.addXP(data.xp, { limited: true }); } catch (err) { /* noop */ }
+      }
+      break;
+    }
   }
 }
 

@@ -537,6 +537,16 @@ export function registerActionHud() {
       if (item.actor?.uuid === currentActorUuid) debouncedRefresh();
     });
   }
+  // Mudanças no próprio Actor (nome, Scale) ou no Vehicle que o tripula (deploy/
+  // recall escrevem system.crew no Vehicle, não no personagem) também precisam
+  // repintar a barra. currentActorUuid é null com a HUD oculta, então o includes()
+  // é no-op seguro nesse estado.
+  Hooks.on("updateActor", a => {
+    if (a.uuid === currentActorUuid ||
+        (a.type === "vehicle" && (a.system.crew ?? []).includes(currentActorUuid))) {
+      debouncedRefresh();
+    }
+  });
   // Mantém a barra acima da hotbar e inteira na tela quando a janela é
   // redimensionada (o que também pode mudar se a barra inline ainda cabe) ou
   // quando a hotbar re-renderiza (sua largura muda com macros / trocas de página).

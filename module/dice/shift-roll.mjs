@@ -21,6 +21,7 @@ import { dieLabel, fvtt, shiftSpeaker } from "../helpers/utils.mjs";
 import { pickTrait, matchScaledUp } from "../chat/chat.mjs";
 import { resolveOutcome, rollScaleOf, computeShift } from "./resolution.mjs";
 import { scaleEnabled } from "../settings.mjs";
+import { emitOrRun } from "../helpers/socket.mjs";
 
 export class ShiftRoll {
 
@@ -365,6 +366,7 @@ export class ShiftRoll {
     };
     const shifts = [];
     const shiftCommit = [];
+    const relayCommit = [];
     for (const entry of entries) {
       if (!entry.willShift) continue;
       const canWrite = entry.item.isOwned && entry.item.actor.canUserModify(game.user, "update");
@@ -374,6 +376,16 @@ export class ShiftRoll {
         entry.shiftApplied = true;
         entry.becameExhausted = exhausted;
         shiftCommit.push(entry.item);
+      } else if (entry.item.system.autoShiftOnRoll && entry.item.isOwned) {
+        // Auto-shift de um contribuinte cujo Actor o roller não pode escrever (ex.: o
+        // Trait do iniciador num Working Together rolado pelo aliado). Sem este ramo o
+        // shift cairia como "pending" sem botão e o XP do dono seria perdido: repassa o
+        // ShiftDown forçado e o XP ao cliente do GM ativo, mantendo o shift como aplicado.
+        const { to, exhausted } = predictShift(entry.die);
+        shifts.push({ name: entry.name, from: dieLabel(entry.die), to, exhausted, applied: true });
+        entry.shiftApplied = true;
+        entry.becameExhausted = exhausted;
+        relayCommit.push(entry.item);
       } else {
         shifts.push({ name: entry.name, from: dieLabel(entry.die), to: null, exhausted: false, applied: false });
         entry.shiftPending = true;
@@ -523,6 +535,11 @@ export class ShiftRoll {
       }, { rollMode });
     } catch (err) { console.warn("shift-vtt | Roll card failed", err); }
 
+    // Se o card não foi criado, NÃO efetiva as mutações adiadas: sem card no chat,
+    // degradar Traits, conceder XP e gastar a ação deixaria o estado persistente e o
+    // log divergentes e sem explicação. Devolve o resultado computado (contrato da função).
+    if (!message) return { roll, entries, outcome, shifts, phase };
+
     // Segura toda revelação de resultado até os dados 3D do Dice So Nice terminarem:
     // o DSN esconde o próprio card até lá, e adiamos para cá as mudanças de dado do
     // Trait (imagens da ficha), o ganho de XP e o shift no alvo. waitFor3DAnimationByMessageID
@@ -538,6 +555,20 @@ export class ShiftRoll {
     }
     for (const { owner, count } of xpCommit) {
       try { await owner.addXP(count, { limited: true }); } catch (err) { /* noop */ }
+    }
+    // Contribuintes não-graváveis: repassa ShiftDown forçado + XP ao cliente do GM
+    // ativo (sem card; o auto-shift já está anunciado no card da rolagem). emitOrRun
+    // avisa se não houver GM ativo, em vez de descartar a mudança em silêncio.
+    if (relayCommit.length) {
+      const autoXpOn = game.settings.get("shift-vtt", "autoXp");
+      for (const item of relayCommit) {
+        emitOrRun({
+          action: "commitShift",
+          traitUuid: item.uuid,
+          steps: 1,
+          xp: (autoXpOn && item.actor?.type === "character") ? 1 : 0
+        });
+      }
     }
 
     // ----- Gasta uma ação no Encounter ativo --------------------------

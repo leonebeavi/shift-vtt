@@ -188,7 +188,7 @@ async function onRetarget(event, message) {
   event.preventDefault();
   const actor = await getMessageActor(message);
   if (!actor) return;
-  if (!(message.isAuthor || game.user.isGM)) {
+  if (!canActOnCard(actor)) {
     return void ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NotOwner"));
   }
   if (message.getFlag("shift-vtt", "applied")) {
@@ -229,51 +229,65 @@ async function noEffectNote(sourceActor, target, gap, trait = null) {
  *  (padrão 2) para este resultado, então re-resolve a Scale do cartão. Uso único
  *  por cartão. */
 async function applyScaledUp(message) {
-  const flags = message.flags?.["shift-vtt"] ?? {};
-  const actor = await getMessageActor(message);
-  if (!actor) return;
-  if (!(message.isAuthor || game.user.isGM)) {
-    return void ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NotOwner"));
-  }
-  if (flags.scaledUp) {
-    return void ui.notifications.info(game.i18n.localize("SHIFT.Scale.ScaledUpAlready"));
-  }
-  const rolledUuids = (flags.traits ?? []).map(t => t.uuid);
-  const match = matchScaledUp(actor, rolledUuids);
-  if (!match) {
-    return void ui.notifications.warn(game.i18n.localize("SHIFT.Scale.ScaledUpUnavailable"));
-  }
+  // Guard de re-entrância síncrono ANTES de qualquer await: dois cliques rápidos
+  // (ou dois clientes) não podem ambos cobrar o custo antes de a flag scaledUp gravar.
+  if (cardActionInFlight.has(message.id)) return;
+  cardActionInFlight.add(message.id);
+  try {
+    const flags = message.flags?.["shift-vtt"] ?? {};
+    const actor = await getMessageActor(message);
+    if (!actor) return;
+    if (!canActOnCard(actor)) {
+      return void ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NotOwner"));
+    }
+    if (flags.scaledUp) {
+      return void ui.notifications.info(game.i18n.localize("SHIFT.Scale.ScaledUpAlready"));
+    }
+    const rolledUuids = (flags.traits ?? []).map(t => t.uuid);
+    const match = matchScaledUp(actor, rolledUuids);
+    if (!match) {
+      return void ui.notifications.warn(game.i18n.localize("SHIFT.Scale.ScaledUpUnavailable"));
+    }
 
-  // Localiza o Focus vinculado no manifesto ANTES de cobrar qualquer coisa: sem um
-  // índice válido o upgrade de Scale seria um no-op, então nunca pague por ele.
-  const index = (flags.traits ?? []).findIndex(t => t.uuid === match.focusUuid);
-  if (index < 0) {
-    return void ui.notifications.warn(game.i18n.localize("SHIFT.Scale.ScaledUpUnavailable"));
+    // Localiza o Focus vinculado no manifesto ANTES de cobrar qualquer coisa: sem um
+    // índice válido o upgrade de Scale seria um no-op, então nunca pague por ele.
+    const index = (flags.traits ?? []).findIndex(t => t.uuid === match.focusUuid);
+    if (index < 0) {
+      return void ui.notifications.warn(game.i18n.localize("SHIFT.Scale.ScaledUpUnavailable"));
+    }
+
+    // Paga o custo: faz ShiftDown de um Core Trait. Aborta (sem gastar nada) se cancelado.
+    const core = await pickTrait(actor, {
+      title: game.i18n.format("SHIFT.Scale.ScaledUpPickCore", { focus: match.focusTrait.name }),
+      hint: game.i18n.localize("SHIFT.Scale.ScaledUpCoreHint"),
+      filter: t => t.system.category === "core" && t.canShiftDown
+    });
+    if (!core) return;
+
+    // O cartão pode ter sido deletado entre o clique e aqui; nesse caso aborta ANTES de
+    // cobrar qualquer custo, para não fazer ShiftDown/gastar uso sem registrar o upgrade.
+    if (!game.messages.get(message.id)) {
+      return void ui.notifications.warn(game.i18n.localize("SHIFT.Scale.ScaledUpUnavailable"));
+    }
+
+    await core.shiftDown({});
+    await match.technique.spendUse();
+
+    const focusScale = match.technique.system.focus?.scale ?? 2;
+    await message.update({
+      "flags.shift-vtt.focusUpgrade": { index, scale: focusScale },
+      "flags.shift-vtt.scaledUp": { traitUuid: match.focusUuid, techniqueUuid: match.technique.uuid }
+    });
+    await reResolveScale(message);
+    await followUp(actor, game.i18n.format("SHIFT.Scale.ScaledUpChat", {
+      actor: foundry.utils.escapeHTML(actor.name),
+      focus: foundry.utils.escapeHTML(match.focusTrait.name),
+      core: foundry.utils.escapeHTML(core.name),
+      scale: focusScale
+    }), "crit");
+  } finally {
+    cardActionInFlight.delete(message.id);
   }
-
-  // Paga o custo: faz ShiftDown de um Core Trait. Aborta (sem gastar nada) se cancelado.
-  const core = await pickTrait(actor, {
-    title: game.i18n.format("SHIFT.Scale.ScaledUpPickCore", { focus: match.focusTrait.name }),
-    hint: game.i18n.localize("SHIFT.Scale.ScaledUpCoreHint"),
-    filter: t => t.system.category === "core" && t.canShiftDown
-  });
-  if (!core) return;
-
-  await core.shiftDown({});
-  await match.technique.spendUse();
-
-  const focusScale = match.technique.system.focus?.scale ?? 2;
-  await message.update({
-    "flags.shift-vtt.focusUpgrade": { index, scale: focusScale },
-    "flags.shift-vtt.scaledUp": { traitUuid: match.focusUuid, techniqueUuid: match.technique.uuid }
-  });
-  await reResolveScale(message);
-  await followUp(actor, game.i18n.format("SHIFT.Scale.ScaledUpChat", {
-    actor: foundry.utils.escapeHTML(actor.name),
-    focus: foundry.utils.escapeHTML(match.focusTrait.name),
-    core: foundry.utils.escapeHTML(core.name),
-    scale: focusScale
-  }), "crit");
 }
 
 /* ------------------------------------------------------------------ */
@@ -289,9 +303,9 @@ function canXpScaleUp(message) {
   if (f?.kind !== "actionRoll") return false;
   if (game.settings.get("shift-vtt", "enableScale") === false) return false;
   if (!game.settings.get("shift-vtt", "enableXpScaleUp")) return false;
-  if (!(message.isAuthor || game.user.isGM)) return false;
   const actor = f.actorUuid ? fromUuidSync(f.actorUuid) : null;
   if (!actor || actor.type !== "character") return false;
+  if (!canActOnCard(actor)) return false;
   const cost = game.settings.get("shift-vtt", "xpPerScaleStep") ?? 2;
   if ((actor.system.xp?.value ?? 0) < cost) return false;
   return effectiveRollerScale(message) < 4;
@@ -301,27 +315,37 @@ function canXpScaleUp(message) {
  *  enquanto o XP permitir e o roll estiver abaixo de Scale 4. */
 async function onXpScaleUp(message) {
   if (!message) return;
-  const flags = message.flags?.["shift-vtt"] ?? {};
-  const actor = await getMessageActor(message);
-  if (!actor || actor.type !== "character") return;
-  if (!(message.isAuthor || game.user.isGM)) {
-    return void ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NotOwner"));
+  // Guard de re-entrância síncrono ANTES de qualquer await (o item de menu de contexto
+  // não tem botão para desabilitar), para não gastar XP duas vezes num duplo-disparo.
+  if (cardActionInFlight.has(message.id)) return;
+  cardActionInFlight.add(message.id);
+  try {
+    const flags = message.flags?.["shift-vtt"] ?? {};
+    const actor = await getMessageActor(message);
+    if (!actor || actor.type !== "character") return;
+    if (!canActOnCard(actor)) {
+      return void ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NotOwner"));
+    }
+    if (effectiveRollerScale(message) >= 4) {
+      return void ui.notifications.info(game.i18n.localize("SHIFT.Scale.AtMax"));
+    }
+    const cost = game.settings.get("shift-vtt", "xpPerScaleStep") ?? 2;
+    // Aborta antes de gastar XP se o cartão sumiu entre o disparo e aqui.
+    if (!game.messages.get(message.id)) return;
+    const spent = await actor.spendXP(cost);
+    if (!spent) {
+      return void ui.notifications.warn(game.i18n.format("SHIFT.Scale.XpInsufficient", { cost }));
+    }
+    await message.update({ "flags.shift-vtt.scaleBumps": (Number(flags.scaleBumps) || 0) + 1 });
+    await reResolveScale(message);
+    await followUp(actor, game.i18n.format("SHIFT.Scale.XpBoostChat", {
+      actor: foundry.utils.escapeHTML(actor.name),
+      xp: spent,
+      scale: effectiveRollerScale(message)
+    }), "xp");
+  } finally {
+    cardActionInFlight.delete(message.id);
   }
-  if (effectiveRollerScale(message) >= 4) {
-    return void ui.notifications.info(game.i18n.localize("SHIFT.Scale.AtMax"));
-  }
-  const cost = game.settings.get("shift-vtt", "xpPerScaleStep") ?? 2;
-  const spent = await actor.spendXP(cost);
-  if (!spent) {
-    return void ui.notifications.warn(game.i18n.format("SHIFT.Scale.XpInsufficient", { cost }));
-  }
-  await message.update({ "flags.shift-vtt.scaleBumps": (Number(flags.scaleBumps) || 0) + 1 });
-  await reResolveScale(message);
-  await followUp(actor, game.i18n.format("SHIFT.Scale.XpBoostChat", {
-    actor: foundry.utils.escapeHTML(actor.name),
-    xp: spent,
-    scale: effectiveRollerScale(message)
-  }), "xp");
 }
 
 /* ------------------------------------------------------------------ */
@@ -332,6 +356,17 @@ async function getMessageActor(message) {
   const uuid = message.getFlag("shift-vtt", "actorUuid");
   return uuid ? fromUuid(uuid) : null;
 }
+
+/** Quem pode operar os botões/ações de um cartão de roll: o owner do Actor rolado
+ *  (convenção OWNER do sistema) ou o GM. Usado por todos os botões EXCETO
+ *  onApplyToTarget, que tem seu próprio gate downstream (canUserModify + relay-GM). */
+function canActOnCard(actor) {
+  return !!(actor?.isOwner || game.user.isGM);
+}
+
+/** Cartões cujo handler de custo está em execução, para impedir re-entrância
+ *  (duplo-clique / clientes concorrentes) entre o check de flag e a gravação. */
+const cardActionInFlight = new Set();
 
 export async function pickTrait(actor, { title, hint, filter, scale = null } = {}) {
   const traits = (actor.traits ?? actor.items.filter(i => i.type === "trait")).filter(filter ?? (() => true));
@@ -577,10 +612,17 @@ async function onApplyToTarget(event, message) {
   // Captura o botão AGORA: event.currentTarget é zerado assim que o handler cede
   // no primeiro await, então não pode mais ser lido depois.
   const btn = event.currentTarget;
+  // Trava o botão de forma SÍNCRONA, antes de qualquer await: senão um duplo-clique
+  // rápido passa pelo check de "applied" duas vezes e um único Success recai duas vezes.
+  // Os caminhos sem-efeito/cancelado reabilitam abaixo; um shift que recai o mantém travado.
+  if (btn) btn.disabled = true;
+  const reenable = () => { if (btn) btn.disabled = false; };
+
   const actor = await getMessageActor(message);
-  if (!actor) return;
+  if (!actor) return reenable();
   const flags = message.flags?.["shift-vtt"] ?? {};
   if (flags.applied) {
+    // Já aplicado: mantém o botão travado e só avisa.
     return void ui.notifications.info(game.i18n.localize("SHIFT.Target.AlreadyApplied"));
   }
   const steps = Number(btn?.dataset?.steps) || 1;
@@ -599,12 +641,13 @@ async function onApplyToTarget(event, message) {
     isCrit: flags.outcome === "criticalSuccess"
   });
 
-  // Trava o botão só quando um shift de fato RECAI: um sem-efeito por Scale o mantém
-  // ativo, para que um boost posterior de XP / Scaled Up possa repetir o mesmo Success
-  // na Scale maior, enquanto um shift real nunca pode ser reaplicado.
+  // Trava o botão só quando um shift de fato RECAI: um sem-efeito por Scale o reabilita,
+  // para que um boost posterior de XP / Scaled Up possa repetir o mesmo Success na Scale
+  // maior, enquanto um shift real nunca pode ser reaplicado.
   if (res?.landed) {
     try { await message.setFlag("shift-vtt", "applied", true); } catch (err) { /* melhor esforço */ }
-    if (btn) btn.disabled = true;
+  } else {
+    reenable();
   }
 }
 

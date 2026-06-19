@@ -67,7 +67,9 @@ export function registerSettings() {
     config: false,
     type: Boolean,
     default: true,
-    onChange: () => { for (const app of foundry.applications.instances.values()) app.render?.(); }
+    // O Action HUD não é ApplicationV2 (é DOM manual), então o loop de instâncias
+    // não o alcança: rebuilda explicitamente para o glow/pip de Scale aparecer/sumir.
+    onChange: () => { refreshActionHud(); for (const app of foundry.applications.instances.values()) app.render?.(); }
   });
 
   reg("enableScaledUp", {

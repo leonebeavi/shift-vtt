@@ -443,10 +443,11 @@ export class ShiftTechniqueSheet extends BaseShiftItemSheet {
     return context;
   }
 
-  static async #onUse() { await this.document.use(); }
-  static async #onReset() { await this.document.resetUses(); }
+  static async #onUse() { if (!this.isEditable) return; await this.document.use(); }
+  static async #onReset() { if (!this.isEditable) return; await this.document.resetUses(); }
 
   static async #onToggleType() {
+    if (!this.isEditable) return;
     // Scaled Up só é oferecido enquanto o sistema de Scale está ativado.
     const order = scaleEnabled() ? ["narrative", "mechanical", "scaledUp"] : ["narrative", "mechanical"];
     const cur = order.indexOf(this.document.system.techniqueType);
@@ -485,6 +486,7 @@ export class ShiftTechniqueSheet extends BaseShiftItemSheet {
 
   /** Cicla o pip de Scale "tratado como": 2 → 3 → 4 → 2 (Scale 1 não faz sentido). */
   static async #onCycleScale() {
+    if (!this.isEditable) return;
     const cur = Math.max(2, this.document.system.focus?.scale ?? 2);
     const next = cur >= 4 ? 2 : cur + 1;
     await this.document.update({ "system.focus.scale": next });

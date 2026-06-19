@@ -310,6 +310,10 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
 
     if (!["trait", "technique", "landmark"].includes(item.type)) return false;
 
+    // Landmarks só são exibidos pela ficha de Location; soltar um em qualquer outro
+    // Actor criaria um Item embutido invisível (lixo órfão). Rejeita fora da Location.
+    if (item.type === "landmark" && this.document.type !== "location") return false;
+
     // Soltar um item que JÁ está neste Actor é um reordenamento: reordena-o em
     // relação ao card onde caiu. Sempre fazemos isso nós mesmos e nunca delegamos
     // ao core aqui (o handler de drop do ActorSheetV2 do core não reordena de forma
@@ -406,14 +410,17 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onShiftUp(event, target) {
+    if (!this.isEditable) return;
     await this.getItem(target)?.shiftUp({});
   }
 
   static async #onShiftDown(event, target) {
+    if (!this.isEditable) return;
     await this.getItem(target)?.shiftDown({ force: event.ctrlKey || event.metaKey });
   }
 
   static async #onExhaustTrait(event, target) {
+    if (!this.isEditable) return;
     await this.getItem(target)?.exhaust({ force: event.ctrlKey || event.metaKey });
   }
 
@@ -424,14 +431,17 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onMakeTemporary(event, target) {
+    if (!this.isEditable) return;
     await this.document.createTemporaryFocus(this.getItem(target));
   }
 
   static async #onSafeRest() {
+    if (!this.isEditable) return;
     await this.document.safeRest();
   }
 
   static async #onUnsafeRest() {
+    if (!this.isEditable) return;
     await this.document.unsafeRest();
   }
 
@@ -497,6 +507,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onResetTechnique(event, target) {
+    if (!this.isEditable) return;
     await this.getItem(target)?.resetUses();
   }
 
@@ -533,6 +544,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onAdjustXp(event, target) {
+    if (!this.isEditable) return;
     const delta = Number(target.dataset.delta) || 0;
     const value = Math.max(0, (this.document.system.xp?.value ?? 0) + delta);
     await this.document.update({ "system.xp.value": value });
