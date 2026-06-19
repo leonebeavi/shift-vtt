@@ -44,7 +44,6 @@
       "adversary": "Trait de Adversário",
       "special": "Special Trait",
       "party": "Traço de Party",
-      "quest": "Quest",
       "custom": "Trait Personalizado"
     },
     "RollTypes": {
@@ -60,14 +59,8 @@
       "criticalFailure": "Falha Crítica!"
     },
     "Scale": {
-      "1": "Escala 1",
-      "2": "Escala 2",
-      "3": "Escala 3",
-      "4": "Escala 4",
       "NoEffect": "O alvo está dois ou mais níveis de Escala acima: sem efeito, o resultado é uma Falha normal.",
       "TooSmall": "O alvo está um nível de Escala acima: Sucessos normais contam como Falhas.",
-      "CritOnly": "O alvo está um nível de Escala acima: só este Crítico pode dar shiftdown nos Traits dele.",
-      "CritExhausts": "Você está um nível de Escala acima: este Crítico Exaure completamente um Trait do alvo.",
       "NoEffectTrait": "{trait} está dois ou mais níveis de Escala acima da sua rolagem · sem efeito.",
       "TooSmallTrait": "{trait} está um nível de Escala acima da sua rolagem · só um Sucesso Crítico acerta.",
       "ScaleUp": "Escalar",
@@ -121,7 +114,6 @@
       "BodyDesc": "Seu Trait físico: força, velocidade, resistência e tudo o que o corpo faz. Role Corpo para feitos de força, atletismo, fôlego e aguentar firme.",
       "MindDesc": "Seu Trait mental: razão, percepção, conhecimento e foco. Role Mente para investigar, lembrar, planejar, resolver problemas e manter a calma.",
       "SoulDesc": "Seu Trait interior e social: presença, força de vontade, empatia e instinto. Role Alma para persuadir, resistir ao medo, pressentir perigo e se conectar com os outros.",
-      "Pack": "Mochila",
       "Attitude": "Atitude",
       "Structure": "Estrutura",
       "Maneuverability": "Manobrabilidade",
@@ -129,9 +121,7 @@
       "Wealth": "Riqueza",
       "Security": "Segurança",
       "Max": "Máx",
-      "Scale": "Escala",
-      "Exhaust": "Exaurir",
-      "Restore": "Restaurar"
+      "Scale": "Escala"
     },
     "Groups": {
       "Core": "Core Traits",
@@ -157,7 +147,6 @@
     "Sheet": {
       "Name": "Nome",
       "Concept": "Conceito",
-      "BiographyPlaceholder": "Escreva aqui...",
       "Pronouns": "Pronomes",
       "Loadout": "Loadout",
       "LoadoutPlaceholder": "O que você carrega..."
@@ -165,7 +154,6 @@
     "SheetLabels": {
       "Character": "Ficha de Personagem SHIFT",
       "Adversary": "Ficha de Adversário SHIFT",
-      "Simple": "Ficha SHIFT",
       "Trait": "Trait SHIFT",
       "Technique": "Técnica SHIFT",
       "Descriptor": "Keyword / Drawback SHIFT",
@@ -177,7 +165,6 @@
     },
     "Party": {
       "Members": "Membros",
-      "WorkInProgress": "Em construção · a ficha de grupo ainda está sendo desenvolvida.",
       "MemberCount": "Membros neste grupo",
       "NoMembers": "Nenhum membro ainda",
       "DropHint": "Arraste personagens aqui.",
@@ -239,21 +226,6 @@
       "UnsafeRestHint": "Descanso Arriscado para todos.",
       "SafeRestConfirm": "Fazer um Descanso Seguro para todos os {count} membro(s)?",
       "UnsafeRestConfirm": "Fazer um Descanso Arriscado para todos os {count} membro(s)?",
-      "Prefs": {
-        "Accent": "Cor da party",
-        "Layout": "Layout do roster",
-        "Atmo": "Atmosfera"
-      },
-      "Layout": {
-        "Slots": "Slots",
-        "Grid": "Grid",
-        "Compact": "Compacto"
-      },
-      "Atmo": {
-        "Sobrio": "Sóbrio",
-        "Nebula": "Nebulosa",
-        "Arcade": "Arcade"
-      },
       "Codex": {
         "Label": "no codex",
         "All": "Tudo",
@@ -264,9 +236,6 @@
         "Vehicles": "Veículos",
         "Traits": "Traits",
         "Techniques": "Técnicas",
-        "Items": "Itens & Técnicas",
-        "Adversaries": "Inimigos",
-        "Relics": "Relíquias & Itens",
         "Search": "Buscar nome ou tag…",
         "Unknown": "Desconhecido",
         "Crew": "Tripulação",
@@ -297,7 +266,6 @@
           "Place": "Lugar",
           "Vehicle": "Veículo",
           "Trait": "Trait",
-          "Relic": "Relíquia",
           "Technique": "Técnica"
         },
         "Field": {
@@ -313,22 +281,15 @@
       "Quests": {
         "Add": "Adicionar quest",
         "Empty": "Nenhuma quest ainda.",
-        "Untitled": "Quest sem título",
         "NamePlaceholder": "Nome da quest…",
-        "NotesPlaceholder": "Detalhes, riscos, o que falta…",
-        "Advance": "Avançar o clock (encher rumo ao exaust)",
-        "Regress": "Recuar o clock",
         "Complete": "Concluir",
         "Fail": "Falhar",
         "Reopen": "Reabrir",
-        "Done": "Concluída",
-        "Failed": "Falhou",
         "Success": "Sucesso",
         "Failure": "Falha",
         "Resolved": "Resolvida",
         "Prerequisites": "Pré-requisitos",
         "Requires": "Requer",
-        "Locked": "Bloqueada · esperando um pré-requisito",
         "AddPrereq": "Adicionar pré-requisito",
         "PickExisting": "Quest existente",
         "CreateNew": "Ou criar uma nova quest",
@@ -336,33 +297,11 @@
         "ParentQuest": "Quest-mãe",
         "NoParent": "Nenhuma (topo)",
         "Subquests": "Sub-quests resolvidas",
-        "Roll": "Rolar o dado desta quest",
-        "ShiftsDown": "rolar enche o clock um passo",
-        "ShiftToggle": "Alternar se rolar dá shiftdown no dado",
-        "RollFlavor": "{quest} · rolou {die}",
-        "Outcome": "{quest}: {result}",
         "LinkHint": "Arraste um Actor, inimigo ou relíquia aqui para vincular.",
         "RemoveLink": "Remover link",
-        "ViewLink": "Ver no codex",
-        "HiddenName": "Objetivo oculto",
-        "RevealHint": "O que os jogadores veem (o clock sempre aparece).",
         "Field": {
-          "Name": "Nome",
-          "Notes": "Descrição",
           "Links": "Vinculados"
         }
-      },
-      "Notes": {
-        "Journal": "Diário de Sessão",
-        "JournalPlaceholder": "Última sessão, decisões, ganchos em aberto…",
-        "Objectives": "Objetivos",
-        "AddObjective": "Adicionar objetivo",
-        "ObjectivePlaceholder": "Novo objetivo…",
-        "Clues": "Pistas & Segredos",
-        "CluesPlaceholder": "Pistas, suspeitas, conexões…",
-        "Contacts": "Contatos & Favores",
-        "ContactsPlaceholder": "Favores devidos, aliados, dívidas…",
-        "Autosaves": "salva automaticamente"
       }
     },
     "Keywords": {
@@ -380,20 +319,14 @@
       "DialogTitle": "Action Roll: {actor}",
       "RollButton": "Rolar!",
       "PrimaryTrait": "Core Trait",
-      "SecondaryTrait": "Focus Trait (opcional)",
-      "NoSecondary": "Sem segundo Trait",
       "RollType": "Tipo de Rolagem",
       "GMRequested": "O mestre pediu uma rolagem",
-      "TypeHint": "Arriscada: cada dado sem sucesso dá shift down. Inspirada: qualquer sucesso vira Crítico.",
       "ApplyManually": "aplicar manualmente",
-      "AnyTrait": "Trait",
-      "AnySecondTrait": "Segundo Trait (opcional)",
       "PickTraits": "Escolha até dois:",
       "ApplyTarget": "Shiftdown nos Traits do alvo"
     },
     "Xp": {
       "Title": "XP",
-      "Session": "Sessão",
       "Gained": "{actor} ganha {amount} XP.",
       "PlusN": "+{n} XP",
       "CapReached": "limite de XP da sessão atingido",
@@ -459,7 +392,6 @@
       "AllyChat": "{actor} fortalece {ally}: {trait} sobe de {from} → {to}.",
       "Enemy": "Shiftdown de novo no alvo",
       "EnemyHint": "Um shift down extra no alvo. Em Escala maior, o Crítico o Exaure.",
-      "EnemyChat": "{actor} castiga {target}: {trait} desce de {from} → {to}.",
       "Narrative": "Impulso narrativo",
       "NarrativeHint": "Com o Mestre: remova um Drawback, descubra algo, abra uma porta.",
       "NarrativeChat": "{actor} ganha um impulso narrativo! Combine com o Mestre um efeito extra interessante."
@@ -495,7 +427,6 @@
       "Power": "Power",
       "Actions": "ações/rodada",
       "Defeat": "Superação",
-      "Counts": "conta",
       "First": "primeiro",
       "Overcome": "Este Adversário foi superado!",
       "BlockedBy": "Deve ser Exaurido primeiro:",
@@ -503,7 +434,6 @@
     },
     "Special": {
       "Add": "Special Trait",
-      "Hint": "Adicione um Special Trait pré-definido (fora do orçamento).",
       "Armored": "Blindado",
       "ArmoredDesc": "Exaura um Trait adicional para superar este Adversário. Este Trait não é rolado e não conta no total de superação.",
       "HeavilyArmored": "Fortemente Blindado",
@@ -511,8 +441,7 @@
       "SmallGroup": "Um Pequeno Grupo de...",
       "SmallGroupDesc": "Este Adversário realiza uma ação extra por rodada e exige um Trait adicional Exaurido.",
       "LargeGroup": "Um Grande Grupo de...",
-      "LargeGroupDesc": "Este Adversário realiza duas ações extras por rodada e exige dois Traits adicionais Exauridos.",
-      "Custom": "Special Trait Personalizado"
+      "LargeGroupDesc": "Este Adversário realiza duas ações extras por rodada e exige dois Traits adicionais Exauridos."
     },
     "Advancement": {
       "Keyword": "Nova Keyword",
@@ -545,9 +474,6 @@
       "Rollable": "Rolável",
       "AutoShift": "Shift down automático no valor máximo",
       "Temporary": "Temporário",
-      "Revealed": "Visível aos jogadores",
-      "UsesKeywords": "Usa Keywords",
-      "UsesDrawbacks": "Usa Drawbacks",
       "Encounter": "Regras de Encontro",
       "DefeatCounts": "Conta para superar",
       "MustFirst": "Deve ser Exaurido primeiro",
@@ -555,18 +481,11 @@
       "ExtraRequired": "Traits extras exigidos",
       "ExtraActions": "Ações extras por rodada",
       "Scale": "Escala",
-      "CustomScale": "Escala própria para este Trait",
-      "Description": "Descrição",
-      "Uses": "Usos por sessão",
-      "UsesValue": "Restantes",
-      "UsesMax": "Máximo",
-      "DescriptorHint": "Arraste sobre um Trait para anexar.",
       "Recharge": "Recarga",
       "DiceConfig": "Dados e identidade",
       "EncounterConfig": "Regras de Encontro",
       "ScaleConfig": "Escala",
       "Category": "Categoria",
-      "Hidden": "Oculto dos jogadores",
       "MaxUses": "Usos máximos",
       "ScaleOverride": "Sobrescrever a Escala do ator",
       "TabDescription": "Descrição",
@@ -593,7 +512,6 @@
       "NoGM": "Nenhum Mestre ativo para aplicar esta ação."
     },
     "Tooltips": {
-      "Roll": "Rolar · Shift+clique: rápido",
       "ShiftUp": "Shift up",
       "ShiftDown": "Shift down",
       "Exert": "Exert: sucesso automático (+1 XP)",
@@ -605,14 +523,11 @@
       "Temporary": "Temporário · some no próximo Safe Rest",
       "Hidden": "Oculto dos jogadores",
       "NotRollable": "Não rolável",
-      "Scale": "Escala",
       "MakeTemporary": "Improvise um Trait temporário (Mochila desce)",
       "EditImage": "Trocar imagem",
-      "EditBio": "Alternar edição",
       "Xp": "XP acumulado",
       "XpSession": "XP da sessão / limite",
       "Power": "Define ações/rodada e Traits para superar",
-      "Actions": "Ações por rodada",
       "TraitBudget": "Traits / orçamento (Power+2)",
       "Defeat": "Exauridos / exigidos p/ superar",
       "ExtraRequired": "Traits extras a Exaurir",
@@ -625,7 +540,6 @@
       "ResetTechnique": "Restaurar usos",
       "EditToggle": "Modo de edição",
       "CollapseGroup": "Recolher / expandir",
-      "RollIcon": "clique para rolar",
       "NoCount": "Não conta para superar",
       "RechargeAll": "Recarregar todos os Traits"
     },
@@ -679,13 +593,6 @@
       "PromptSession": {
         "Name": "Perguntar sobre nova sessão no login",
         "Hint": "No login do GM, pergunta se começou nova sessão (zera o XP de sessão do mundo). Diário."
-      },
-      "XpCost": {
-        "Keyword": "Custo de XP: Nova Keyword",
-        "Technique": "Custo de XP: Nova Técnica",
-        "Trait": "Custo de XP: Novo Focus Trait",
-        "CoreDie": "Custo de XP: Melhorar Max Die de Core",
-        "Hint": "Custo exibido nas pills de avanço da ficha."
       },
       "ActionHud": {
         "Name": "HUD de Ações",
@@ -754,7 +661,6 @@
       "safeRest": "No Safe Rest",
       "unsafeRest": "Em qualquer descanso",
       "atWill": "À Vontade",
-      "custom": "Personalizada (manual)",
       "Manual": "Manual",
       "CustomHint": "Recarrega só manualmente.",
       "AtWillHint": "À Vontade · uso ilimitado."
@@ -769,15 +675,6 @@
       "RetargetHint": "Escolha outro alvo.",
       "None": "Sem alvo"
     },
-    "Assist": {
-      "Title": "Ajudar",
-      "PickTrait": "Ajudar: {actor}",
-      "Hint": "Escolha um Trait para apoiar a rolagem. O valor máximo ainda dá shift down em você.",
-      "Success": "{actor} dá uma força: a ajuda foi um sucesso!",
-      "Failure": "{actor} tenta ajudar, mas a ajuda falha.",
-      "NeedActor": "Selecione seu token ou vincule um personagem para ajudar.",
-      "NotSelf": "Você não pode ajudar a própria rolagem."
-    },
     "Vehicle": {
       "Crew": "Tripulação",
       "CrewAdded": "{actor} entrou na tripulação de {vehicle}.",
@@ -791,20 +688,11 @@
       "AddHint": "Fixe um Trait que todos veem.",
       "DefaultName": "Global Trait",
       "NameLabel": "Nome do Trait",
-      "SegmentsLabel": "Segmentos da barra",
-      "Completed": "Counter completo: {name}",
-      "Empty": "Nenhum Global Trait ainda.",
       "Visible": "Visível aos jogadores",
-      "Hidden": "Oculto dos jogadores",
-      "Mode": "Tipo",
-      "ModeClock": "Barra",
-      "ModeTrait": "Trait",
       "PlayersRoll": "Jogadores podem rolar",
       "ShiftsDown": "Faz Shiftdown ao rolar o valor máximo",
       "ShiftOnTip": "Rolar o valor máximo faz Shiftdown neste Trait · clique para desativar",
       "ShiftOffTip": "Rolar o valor máximo NÃO faz Shiftdown · clique para ativar",
-      "StepHint": "Metade esquerda −1 · direita +1",
-      "Hide": "Ocultar o painel",
       "Minimize": "Minimizar o painel",
       "Restore": "Restaurar o painel",
       "Move": "Arraste para mover · solte em Jogadores para encaixar"
@@ -876,7 +764,6 @@
     "Location": {
       "Landmarks": "Landmarks",
       "AddLandmark": "Adicionar Landmark",
-      "LandmarkName": "Nome do landmark...",
       "Safe": "Safe",
       "Unsafe": "Unsafe",
       "SafeToggle": "Safe · clique para marcar como Unsafe",

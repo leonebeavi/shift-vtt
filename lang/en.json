@@ -44,7 +44,6 @@
       "adversary": "Adversary Trait",
       "special": "Special Trait",
       "party": "Party Trait",
-      "quest": "Quest",
       "custom": "Custom Trait"
     },
     "RollTypes": {
@@ -60,14 +59,8 @@
       "criticalFailure": "Critical Failure!"
     },
     "Scale": {
-      "1": "Scale 1",
-      "2": "Scale 2",
-      "3": "Scale 3",
-      "4": "Scale 4",
       "NoEffect": "Target is two or more Scale levels above: no effect, the result is a normal Failure.",
       "TooSmall": "Target is one Scale level above: regular Successes count as Failures.",
-      "CritOnly": "Target is one Scale level above: only this Critical can shiftdown its Traits.",
-      "CritExhausts": "You are one Scale level above: this Critical fully Exhausts a target Trait.",
       "NoEffectTrait": "{trait} is two or more Scale levels above your roll · no effect.",
       "TooSmallTrait": "{trait} is one Scale level above your roll · only a Critical Success lands.",
       "ScaleUp": "Scale Up",
@@ -121,7 +114,6 @@
       "BodyDesc": "Your physical Trait: strength, speed, toughness and everything your body does. Roll Body for feats of force, athletics, endurance and standing your ground.",
       "MindDesc": "Your mental Trait: reason, perception, knowledge and focus. Roll Mind to investigate, recall, plan, solve problems and keep your cool.",
       "SoulDesc": "Your inner and social Trait: presence, willpower, empathy and instinct. Roll Soul to persuade, resist fear, sense trouble and connect with others.",
-      "Pack": "Pack",
       "Attitude": "Attitude",
       "Structure": "Structure",
       "Maneuverability": "Maneuverability",
@@ -129,9 +121,7 @@
       "Wealth": "Wealth",
       "Security": "Security",
       "Max": "Max",
-      "Scale": "Scale",
-      "Exhaust": "Exhaust",
-      "Restore": "Restore"
+      "Scale": "Scale"
     },
     "Groups": {
       "Core": "Core Traits",
@@ -157,7 +147,6 @@
     "Sheet": {
       "Name": "Name",
       "Concept": "Concept",
-      "BiographyPlaceholder": "Write here...",
       "Pronouns": "Pronouns",
       "Loadout": "Loadout",
       "LoadoutPlaceholder": "What you carry..."
@@ -165,7 +154,6 @@
     "SheetLabels": {
       "Character": "SHIFT Character Sheet",
       "Adversary": "SHIFT Adversary Sheet",
-      "Simple": "SHIFT Sheet",
       "Trait": "SHIFT Trait",
       "Technique": "SHIFT Technique",
       "Descriptor": "SHIFT Keyword / Drawback",
@@ -177,7 +165,6 @@
     },
     "Party": {
       "Members": "Members",
-      "WorkInProgress": "Work in progress · the party sheet is still under construction.",
       "MemberCount": "Members in this party",
       "NoMembers": "No members yet",
       "DropHint": "Drag characters here.",
@@ -239,21 +226,6 @@
       "UnsafeRestHint": "Unsafe Rest for all.",
       "SafeRestConfirm": "Run a Safe Rest for all {count} member(s)?",
       "UnsafeRestConfirm": "Run an Unsafe Rest for all {count} member(s)?",
-      "Prefs": {
-        "Accent": "Party colour",
-        "Layout": "Roster layout",
-        "Atmo": "Atmosphere"
-      },
-      "Layout": {
-        "Slots": "Slots",
-        "Grid": "Grid",
-        "Compact": "Compact"
-      },
-      "Atmo": {
-        "Sobrio": "Sober",
-        "Nebula": "Nebula",
-        "Arcade": "Arcade"
-      },
       "Codex": {
         "Label": "in codex",
         "All": "All",
@@ -264,9 +236,6 @@
         "Vehicles": "Vehicles",
         "Traits": "Traits",
         "Techniques": "Techniques",
-        "Items": "Items & Techniques",
-        "Adversaries": "Adversaries",
-        "Relics": "Relics & Items",
         "Search": "Search name or tag…",
         "Unknown": "Unknown",
         "Crew": "Crew",
@@ -297,7 +266,6 @@
           "Place": "Place",
           "Vehicle": "Vehicle",
           "Trait": "Trait",
-          "Relic": "Relic",
           "Technique": "Technique"
         },
         "Field": {
@@ -313,22 +281,15 @@
       "Quests": {
         "Add": "Add quest",
         "Empty": "No quests yet.",
-        "Untitled": "Untitled quest",
         "NamePlaceholder": "Quest name…",
-        "NotesPlaceholder": "Details, stakes, what's needed…",
-        "Advance": "Advance the clock (fill toward exhaust)",
-        "Regress": "Step the clock back",
         "Complete": "Complete",
         "Fail": "Fail",
         "Reopen": "Reopen",
-        "Done": "Completed",
-        "Failed": "Failed",
         "Success": "Success",
         "Failure": "Failure",
         "Resolved": "Resolved",
         "Prerequisites": "Prerequisites",
         "Requires": "Requires",
-        "Locked": "Locked · waiting on a prerequisite",
         "AddPrereq": "Add prerequisite",
         "PickExisting": "Existing quest",
         "CreateNew": "Or create a new quest",
@@ -336,33 +297,11 @@
         "ParentQuest": "Parent quest",
         "NoParent": "None (top-level)",
         "Subquests": "Sub-quests resolved",
-        "Roll": "Roll this quest's die",
-        "ShiftsDown": "rolling fills the clock a step",
-        "ShiftToggle": "Toggle whether rolling shifts the die down",
-        "RollFlavor": "{quest} · rolled {die}",
-        "Outcome": "{quest}: {result}",
         "LinkHint": "Drag an Actor, foe, or relic here to link.",
         "RemoveLink": "Remove link",
-        "ViewLink": "View in the codex",
-        "HiddenName": "Hidden objective",
-        "RevealHint": "What players see (the clock always shows).",
         "Field": {
-          "Name": "Name",
-          "Notes": "Description",
           "Links": "Linked"
         }
-      },
-      "Notes": {
-        "Journal": "Session Journal",
-        "JournalPlaceholder": "Last session, decisions, open hooks…",
-        "Objectives": "Objectives",
-        "AddObjective": "Add objective",
-        "ObjectivePlaceholder": "New objective…",
-        "Clues": "Clues & Secrets",
-        "CluesPlaceholder": "Clues, suspicions, connections…",
-        "Contacts": "Contacts & Favors",
-        "ContactsPlaceholder": "Favors owed, allies, debts…",
-        "Autosaves": "autosaves"
       }
     },
     "Keywords": {
@@ -380,20 +319,14 @@
       "DialogTitle": "Action Roll: {actor}",
       "RollButton": "Roll!",
       "PrimaryTrait": "Core Trait",
-      "SecondaryTrait": "Focus Trait (optional)",
-      "NoSecondary": "No second Trait",
       "RollType": "Roll Type",
       "GMRequested": "The GM requested a",
-      "TypeHint": "Risky: each die that misses shifts down. Inspired: any success crits.",
       "ApplyManually": "apply manually",
-      "AnyTrait": "Trait",
-      "AnySecondTrait": "Second Trait (optional)",
       "PickTraits": "Choose up to two:",
       "ApplyTarget": "Shiftdown target's Traits"
     },
     "Xp": {
       "Title": "XP",
-      "Session": "Session",
       "Gained": "{actor} gains {amount} XP.",
       "PlusN": "+{n} XP",
       "CapReached": "session XP cap reached",
@@ -459,7 +392,6 @@
       "AllyChat": "{actor} bolsters {ally}: {trait} shifts {from} → {to}.",
       "Enemy": "Shiftdown the target again",
       "EnemyHint": "One extra shiftdown on the target. At a larger Scale, the Critical Exhausts it.",
-      "EnemyChat": "{actor} hammers {target}: {trait} shifts {from} → {to}.",
       "Narrative": "Narrative boost",
       "NarrativeHint": "With the GM: drop a Drawback, learn something, open a door.",
       "NarrativeChat": "{actor} earns a narrative boost! Work out a cool extra effect with the GM."
@@ -495,7 +427,6 @@
       "Power": "Power",
       "Actions": "actions/round",
       "Defeat": "Overcome",
-      "Counts": "counts",
       "First": "first",
       "Overcome": "This Adversary has been overcome!",
       "BlockedBy": "Must be Exhausted first:",
@@ -503,7 +434,6 @@
     },
     "Special": {
       "Add": "Special Trait",
-      "Hint": "Add a Special Trait preset (off-budget).",
       "Armored": "Armored",
       "ArmoredDesc": "Exhaust one additional Trait to overcome this Adversary. This Trait is not rolled and does not count toward the overcome total.",
       "HeavilyArmored": "Heavily Armored",
@@ -511,8 +441,7 @@
       "SmallGroup": "A Small Group of...",
       "SmallGroupDesc": "This Adversary takes one extra action each round and requires one additional Trait to be Exhausted.",
       "LargeGroup": "A Large Group of...",
-      "LargeGroupDesc": "This Adversary takes two extra actions each round and requires two additional Traits to be Exhausted.",
-      "Custom": "Custom Special Trait"
+      "LargeGroupDesc": "This Adversary takes two extra actions each round and requires two additional Traits to be Exhausted."
     },
     "Advancement": {
       "Keyword": "New Keyword",
@@ -545,9 +474,6 @@
       "Rollable": "Rollable",
       "AutoShift": "Auto shift down on max roll",
       "Temporary": "Temporary",
-      "Revealed": "Visible to players",
-      "UsesKeywords": "Uses Keywords",
-      "UsesDrawbacks": "Uses Drawbacks",
       "Encounter": "Encounter Rules",
       "DefeatCounts": "Counts toward overcoming",
       "MustFirst": "Must be Exhausted first",
@@ -555,18 +481,11 @@
       "ExtraRequired": "Extra Traits required",
       "ExtraActions": "Extra actions per round",
       "Scale": "Scale",
-      "CustomScale": "Custom Scale for this Trait",
-      "Description": "Description",
-      "Uses": "Uses per session",
-      "UsesValue": "Remaining",
-      "UsesMax": "Maximum",
-      "DescriptorHint": "Drag onto a Trait to attach.",
       "Recharge": "Recharge",
       "DiceConfig": "Dice & identity",
       "EncounterConfig": "Encounter rules",
       "ScaleConfig": "Scale",
       "Category": "Category",
-      "Hidden": "Hidden from players",
       "MaxUses": "Max uses",
       "ScaleOverride": "Override the actor's Scale",
       "TabDescription": "Description",
@@ -593,7 +512,6 @@
       "NoGM": "No active GM to apply this action."
     },
     "Tooltips": {
-      "Roll": "Roll · Shift+click: quick roll",
       "ShiftUp": "Shift up",
       "ShiftDown": "Shift down",
       "Exert": "Exert: automatic success (+1 XP)",
@@ -605,14 +523,11 @@
       "Temporary": "Temporary · gone next Safe Rest",
       "Hidden": "Hidden from players",
       "NotRollable": "Not rollable",
-      "Scale": "Scale",
       "MakeTemporary": "Improvise a temporary Trait (Pack down)",
       "EditImage": "Change image",
-      "EditBio": "Toggle editing",
       "Xp": "Banked XP",
       "XpSession": "Session XP / cap",
       "Power": "Sets actions/round and Traits to overcome",
-      "Actions": "Actions per round",
       "TraitBudget": "Traits / budget (Power+2)",
       "Defeat": "Exhausted / needed to overcome",
       "ExtraRequired": "Extra Traits to Exhaust",
@@ -625,7 +540,6 @@
       "ResetTechnique": "Reset uses",
       "EditToggle": "Edit mode",
       "CollapseGroup": "Collapse / expand",
-      "RollIcon": "click to roll",
       "NoCount": "Doesn't count toward overcoming",
       "RechargeAll": "Recharge all Traits"
     },
@@ -679,13 +593,6 @@
       "PromptSession": {
         "Name": "Ask to start a session on login",
         "Hint": "On GM login, ask if a new session began (resets session XP world-wide). Daily."
-      },
-      "XpCost": {
-        "Keyword": "XP Cost: New Keyword",
-        "Technique": "XP Cost: New Technique",
-        "Trait": "XP Cost: New Focus Trait",
-        "CoreDie": "XP Cost: Improve Core Max Die",
-        "Hint": "Cost shown on the sheet's advancement chips."
       },
       "ActionHud": {
         "Name": "Action HUD",
@@ -754,7 +661,6 @@
       "safeRest": "On Safe Rest",
       "unsafeRest": "On any Rest",
       "atWill": "At Will",
-      "custom": "Custom (manual)",
       "Manual": "Manual",
       "CustomHint": "Manual recharge only.",
       "AtWillHint": "At Will · unlimited use."
@@ -769,15 +675,6 @@
       "RetargetHint": "Pick a different target.",
       "None": "No target"
     },
-    "Assist": {
-      "Title": "Assist",
-      "PickTrait": "Assist: {actor}",
-      "Hint": "Pick a Trait to support the roll. A max roll still shifts you down.",
-      "Success": "{actor} lends a hand: the assist succeeds!",
-      "Failure": "{actor} tries to help, but the assist falls short.",
-      "NeedActor": "Select your token or assign a character to assist.",
-      "NotSelf": "You cannot assist your own roll."
-    },
     "Vehicle": {
       "Crew": "Crew",
       "CrewAdded": "{actor} joined {vehicle}'s crew.",
@@ -791,20 +688,11 @@
       "AddHint": "Pin a Trait everyone can see.",
       "DefaultName": "Global Trait",
       "NameLabel": "Trait name",
-      "SegmentsLabel": "Bar segments",
-      "Completed": "Counter complete: {name}",
-      "Empty": "No Global Traits yet.",
       "Visible": "Visible to players",
-      "Hidden": "Hidden from players",
-      "Mode": "Type",
-      "ModeClock": "Bar",
-      "ModeTrait": "Trait",
       "PlayersRoll": "Players can roll it",
       "ShiftsDown": "Shift down on a max roll",
       "ShiftOnTip": "A max roll shifts this Trait down · click to disable",
       "ShiftOffTip": "A max roll won't shift this Trait down · click to enable",
-      "StepHint": "Left half −1 · right half +1",
-      "Hide": "Hide the panel",
       "Minimize": "Minimize the panel",
       "Restore": "Restore the panel",
       "Move": "Drag to move · drop on Players to dock"
@@ -876,7 +764,6 @@
     "Location": {
       "Landmarks": "Landmarks",
       "AddLandmark": "Add a Landmark",
-      "LandmarkName": "Landmark name...",
       "Safe": "Safe",
       "Unsafe": "Unsafe",
       "SafeToggle": "Safe · click to mark as Unsafe",
