@@ -375,3 +375,75 @@ export async function organizeTraitsCompendium() {
     console.error("shift-vtt | Organising the Traits compendium failed", err);
   }
 }
+
+/**
+ * Migração one-time: converte as Quests LEGADAS (Items `type:"trait"` com
+ * `category:"quest"`) para o novo tipo de Item `quest`. Mudar o tipo de um
+ * documento exige recriação, então cada legado é RECRIADO como quest e o antigo
+ * é APAGADO, preservando nome/img/sort + clock (maxDie/currentDie/exhausted),
+ * rollable/autoShiftOnRoll, revealed e descrição. `outcome` e `links` nascem no
+ * default do modelo. Idempotente e protegida pelo flag de mundo
+ * `questTypeMigrated`; roda uma vez, só para o GM, a partir do `ready`.
+ */
+export async function migrateQuestType() {
+  if (game.settings.get("shift-vtt", "questTypeMigrated")) return;
+
+  const isLegacyQuest = i => i.type === "trait" && i.system?.category === "quest";
+  const toQuestData = old => ({
+    name: old.name,
+    type: "quest",
+    img: old.img,
+    sort: old.sort ?? 0,
+    // Marca a origem: torna a migração IDEMPOTENTE mesmo se um delete falhar no
+    // meio (um re-run não recria nada que já tenha uma quest com este fromTrait).
+    flags: foundry.utils.mergeObject(foundry.utils.deepClone(old.flags ?? {}), { "shift-vtt": { fromTrait: old.id } }),
+    system: {
+      description: old.system?.description ?? "",
+      source: old.system?.source ?? "",
+      maxDie: old.system?.maxDie ?? "d6",
+      currentDie: old.system?.currentDie ?? "d6",
+      exhausted: !!old.system?.exhausted,
+      rollable: old.system?.rollable ?? true,
+      autoShiftOnRoll: old.system?.autoShiftOnRoll ?? true,
+      revealed: old.system?.revealed ?? true
+    }
+  });
+
+  /** Converte uma coleção: cria só os legados ainda SEM quest-equivalente (pelo
+   *  flag fromTrait), depois apaga TODOS os legados (recriados agora ou numa
+   *  tentativa anterior). Assim um retry após falha parcial converge sem duplicar. */
+  const convert = async (legacy, existingQuests, create, del) => {
+    if (!legacy.length) return 0;
+    const done = new Set(existingQuests.map(q => q.getFlag("shift-vtt", "fromTrait")).filter(Boolean));
+    const fresh = legacy.filter(t => !done.has(t.id));
+    if (fresh.length) await create(fresh.map(toQuestData));
+    await del(legacy.map(i => i.id));
+    return fresh.length;
+  };
+
+  let converted = 0;
+  try {
+    // Items de mundo.
+    converted += await convert(
+      game.items.filter(isLegacyQuest),
+      game.items.filter(i => i.type === "quest"),
+      data => Item.createDocuments(data),
+      ids => Item.deleteDocuments(ids)
+    );
+    // Items embutidos em cada Actor (as Quests normalmente vivem numa Party).
+    for (const actor of game.actors) {
+      converted += await convert(
+        actor.items.filter(isLegacyQuest),
+        actor.items.filter(i => i.type === "quest"),
+        data => actor.createEmbeddedDocuments("Item", data),
+        ids => actor.deleteEmbeddedDocuments("Item", ids)
+      );
+    }
+    await game.settings.set("shift-vtt", "questTypeMigrated", true);
+    if (converted) console.log(`shift-vtt | Migrated ${converted} legacy quest(s) from Trait to the Quest item type.`);
+  } catch (err) {
+    // Não seta o flag → tenta de novo no próximo load (idempotente pelo fromTrait).
+    console.error("shift-vtt | Quest type migration failed", err);
+    ui.notifications?.error(game.i18n.localize("SHIFT.Migration.QuestFailed"));
+  }
+}

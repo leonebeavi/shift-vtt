@@ -1,0 +1,87 @@
+{{!-- Quest item sheet. Header + die-hero (o clock) + config enxuta + descrição.
+      O desfecho (success/failure) e os links são geridos no card da aba Quests
+      da Party; aqui é a configuração do clock e o texto da quest. --}}
+<div class="item-sheet quest-sheet minimal">
+  <header class="item-header">
+    <img class="item-img" src="{{item.img}}" alt="{{item.name}}" data-action="editImage" data-edit="img"/>
+    <div class="item-id">
+      <input class="item-name" type="text" name="name" value="{{item.name}}" {{#unless editMode}}disabled{{/unless}}/>
+      <div class="item-subline">
+        {{#if editable}}
+          <a class="item-lock{{#if editMode}} active{{/if}}" data-action="toggleEdit" data-tooltip="{{localize 'SHIFT.Tooltips.EditToggle'}}">
+            <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
+          </a>
+        {{/if}}
+        <span class="category-pill"><i class="fa-solid fa-scroll"></i> {{localize "SHIFT.Tabs.Quests"}}</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="die-hero status-{{statusKey}}">
+    {{#if dieImg}}
+      {{#if editable}}
+        <a class="die-badge img hero" data-die="{{statusKey}}" data-action="rollTrait"
+           data-tooltip="{{statusLabel}}{{#if canRoll}} &middot; {{localize 'SHIFT.Tooltips.RollIcon'}}{{/if}}">
+          <img src="{{dieImg}}" alt="{{currentLabel}}"/>
+        </a>
+      {{else}}
+        <span class="die-badge img hero" data-die="{{statusKey}}" data-tooltip="{{statusLabel}}">
+          <img src="{{dieImg}}" alt="{{currentLabel}}"/>
+        </span>
+      {{/if}}
+    {{else}}
+      <span class="die-badge exhausted-x hero" data-tooltip="{{statusLabel}}"><i class="fa-solid fa-xmark"></i></span>
+    {{/if}}
+    <div class="die-meta">
+      <span class="die-status">{{statusLabel}}</span>
+      <span class="die-max">{{localize "SHIFT.Trait.Max"}} {{maxLabel}}</span>
+    </div>
+    {{#if editable}}
+      <div class="die-controls">
+        <a class="ta-btn up{{#unless canShiftUp}} disabled{{/unless}}" data-action="shiftUp" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftUp'}}"><i class="fa-solid fa-circle-arrow-up"></i></a>
+        <a class="ta-btn down{{#unless canShiftDown}} disabled{{/unless}}" data-action="shiftDown" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftDown'}}"><i class="fa-solid fa-circle-arrow-down"></i></a>
+        {{#unless system.exhausted}}
+          <a class="ta-btn exhaust" data-action="exhaustTrait" data-tooltip="{{localize 'SHIFT.Tooltips.Exhaust'}}"><i class="fa-solid fa-skull"></i></a>
+        {{/unless}}
+      </div>
+    {{/if}}
+  </section>
+
+  {{#if editMode}}
+  <section class="cfg-dense">
+    <div class="config-grid">
+      <span class="cfg-group-label">{{localize "SHIFT.ItemSheet.DiceConfig"}}</span>
+      <label class="cfg">
+        <span>{{localize "SHIFT.ItemSheet.MaxDie"}}</span>
+        <select name="system.maxDie">
+          {{#each diceList}}<option value="{{this}}" {{#if (shiftEq this @root.system.maxDie)}}selected{{/if}}>{{shiftDieLabel this}}</option>{{/each}}
+        </select>
+      </label>
+      <label class="cfg">
+        <span>{{localize "SHIFT.ItemSheet.CurrentDie"}}</span>
+        {{!-- Desabilitado enquanto Exhausted: o dado é guardado à parte do flag; editar aqui dessincroniza. Recupere via shift-up. --}}
+        <select name="system.currentDie" {{#if system.exhausted}}disabled data-tooltip="{{statusLabel}}"{{/if}}>
+          {{#each diceList}}<option value="{{this}}" {{#if (shiftEq this @root.system.currentDie)}}selected{{/if}}>{{shiftDieLabel this}}</option>{{/each}}
+        </select>
+      </label>
+      <label class="cfg check"><input type="checkbox" name="system.rollable" {{checked system.rollable}}/> {{localize "SHIFT.ItemSheet.Rollable"}}</label>
+      <label class="cfg check"><input type="checkbox" name="system.autoShiftOnRoll" {{checked system.autoShiftOnRoll}}/> {{localize "SHIFT.ItemSheet.AutoShift"}}</label>
+    </div>
+  </section>
+  {{/if}}
+
+  {{#if (shiftOr enrichedDescription editMode)}}
+    <section class="item-description">
+      {{#if editMode}}
+        <prose-mirror name="system.description" value="{{source.description}}" toggled
+                      document-uuid="{{item.uuid}}" class="bio-prose">
+          {{{enrichedDescription}}}
+        </prose-mirror>
+      {{else}}
+        <div class="bio-display">{{{enrichedDescription}}}</div>
+      {{/if}}
+    </section>
+  {{/if}}
+
+  {{> "shift.item-source"}}
+</div>

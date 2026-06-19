@@ -1,14 +1,16 @@
-{{!-- SHIFT VTT — Quests tab. A Quest IS a Trait (category "quest"): the die is
-      its clock (rollable, shifts up/down, exhausts), it can carry Keywords/
-      Drawbacks + a description, and the GM hides it from players with the single
-      eye toggle (the Trait's `revealed` flag). Cards render via the shared
-      shift.ptrait-card partial; drag a card onto another to reorder. --}}
+{{!-- SHIFT VTT — Quests tab. A Quest é um tipo de Item PRÓPRIO (type "quest",
+      ShiftQuestData): o die é seu clock (rollable opcional, shifts up/down,
+      exhausts), com desfecho Success/Failure independente (system.outcome) e
+      links de Actors/Items (system.links). O GM oculta dos players pelo olho
+      (system.revealed). Cards renderizam via o partial shift.ptrait-card (com
+      quest=true); arraste um card sobre outro para reordenar, ou um Actor/Item
+      sobre o card para vincular. --}}
 <section class="party-page quests{{#if (shiftEq activeTab 'quests')}} active{{/if}}"
          data-page="quests" data-tab="quests" data-group="primary">
   <div class="party-quests party-traits-page">
     {{#if @root.editMode}}
       <div class="pt-toolbar">
-        <a class="party-btn pt-add" data-action="createItem" data-type="trait" data-category="quest">
+        <a class="party-btn pt-add" data-action="createItem" data-type="quest">
           <i class="fa-solid fa-plus"></i> {{localize "SHIFT.Party.Quests.Add"}}
         </a>
       </div>
@@ -16,7 +18,7 @@
 
     <div class="ptrait-grid">
       {{#each questGroup.traits}}
-        {{> "shift.ptrait-card" this showHide=true}}
+        {{> "shift.ptrait-card" this showHide=true quest=true}}
       {{/each}}
       {{#unless questGroup.traits.length}}
         <div class="party-empty"><i class="fa-solid fa-scroll"></i><p>{{localize "SHIFT.Party.Quests.Empty"}}</p></div>

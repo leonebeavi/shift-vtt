@@ -12,7 +12,8 @@
       "keyword": "Keyword",
       "drawback": "Drawback",
       "technique": "Technique",
-      "landmark": "Landmark"
+      "landmark": "Landmark",
+      "quest": "Quest"
     }
   },
   "SHIFT": {
@@ -101,7 +102,11 @@
       "technique": "New Technique",
       "keyword": "New Keyword",
       "drawback": "New Drawback",
-      "landmark": "New Landmark"
+      "landmark": "New Landmark",
+      "quest": "New Quest"
+    },
+    "Migration": {
+      "QuestFailed": "Quest migration failed — open the console (F12) for details. Your existing quests may not appear until it succeeds on the next reload."
     },
     "Compendium": {
       "Source": "SHIFT",
@@ -167,6 +172,7 @@
       "Vehicle": "SHIFT Vehicle Sheet",
       "Location": "SHIFT Location Sheet",
       "Landmark": "SHIFT Landmark",
+      "Quest": "SHIFT Quest",
       "Party": "SHIFT Party Sheet"
     },
     "Party": {
@@ -317,12 +323,16 @@
         "Reopen": "Reopen",
         "Done": "Completed",
         "Failed": "Failed",
+        "Success": "Success",
+        "Failure": "Failure",
+        "Resolved": "Resolved",
         "Roll": "Roll this quest's die",
         "ShiftsDown": "rolling fills the clock a step",
         "ShiftToggle": "Toggle whether rolling shifts the die down",
         "RollFlavor": "{quest} · rolled {die}",
         "Outcome": "{quest}: {result}",
         "LinkHint": "Drag an Actor, foe, or relic here to link.",
+        "RemoveLink": "Remove link",
         "ViewLink": "View in the codex",
         "HiddenName": "Hidden objective",
         "RevealHint": "What players see (the clock always shows).",

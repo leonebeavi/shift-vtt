@@ -12,7 +12,8 @@
       "keyword": "Keyword",
       "drawback": "Drawback",
       "technique": "Técnica",
-      "landmark": "Landmark"
+      "landmark": "Landmark",
+      "quest": "Quest"
     }
   },
   "SHIFT": {
@@ -101,7 +102,11 @@
       "technique": "Nova Técnica",
       "keyword": "Nova Keyword",
       "drawback": "Novo Drawback",
-      "landmark": "Novo Landmark"
+      "landmark": "Novo Landmark",
+      "quest": "Nova Quest"
+    },
+    "Migration": {
+      "QuestFailed": "Falha ao migrar as Quests — abra o console (F12) para detalhes. Suas quests existentes podem não aparecer até a migração concluir no próximo reload."
     },
     "Compendium": {
       "Source": "SHIFT",
@@ -167,6 +172,7 @@
       "Vehicle": "Ficha de Veículo SHIFT",
       "Location": "Ficha de Localidade SHIFT",
       "Landmark": "Landmark SHIFT",
+      "Quest": "Quest SHIFT",
       "Party": "Ficha de Grupo SHIFT"
     },
     "Party": {
@@ -317,12 +323,16 @@
         "Reopen": "Reabrir",
         "Done": "Concluída",
         "Failed": "Falhou",
+        "Success": "Sucesso",
+        "Failure": "Falha",
+        "Resolved": "Resolvida",
         "Roll": "Rolar o dado desta quest",
         "ShiftsDown": "rolar enche o clock um passo",
         "ShiftToggle": "Alternar se rolar dá shiftdown no dado",
         "RollFlavor": "{quest} · rolou {die}",
         "Outcome": "{quest}: {result}",
         "LinkHint": "Arraste um Actor, inimigo ou relíquia aqui para vincular.",
+        "RemoveLink": "Remover link",
         "ViewLink": "Ver no codex",
         "HiddenName": "Objetivo oculto",
         "RevealHint": "O que os jogadores veem (o clock sempre aparece).",

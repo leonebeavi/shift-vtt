@@ -213,6 +213,62 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
 }
 
 /* ------------------------------------------------------------------ */
+/* Quest                                                               */
+/* ------------------------------------------------------------------ */
+
+/** Ficha enxuta da Quest: o clock (Shift Die) + config de dado + descrição. O
+ *  desfecho (success/failure) e os links são geridos no card da aba Quests da
+ *  Party — aqui é a configuração do clock e o texto da quest. */
+export class ShiftQuestSheet extends BaseShiftItemSheet {
+
+  /** @override */
+  static DEFAULT_OPTIONS = {
+    classes: ["quest"],
+    position: { width: 520, height: "auto" },
+    actions: {
+      rollTrait: ShiftQuestSheet.#onRoll,
+      shiftUp: ShiftQuestSheet.#onShiftUp,
+      shiftDown: ShiftQuestSheet.#onShiftDown,
+      exhaustTrait: ShiftQuestSheet.#onExhaust
+    }
+  };
+
+  /** @override */
+  static PARTS = {
+    body: { template: "systems/shift-vtt/templates/item/quest-sheet.hbs", scrollable: [""] }
+  };
+
+  /** @override */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    const item = this.document;
+    Object.assign(context, {
+      statusKey: item.statusKey,
+      statusLabel: dieStatusLabel(item.statusKey),
+      dieImg: CONFIG.SHIFT.diceImages[item.statusKey] ?? null,
+      currentLabel: dieLabel(item.system.currentDie),
+      maxLabel: dieLabel(item.system.maxDie),
+      canShiftUp: item.canShiftUp && this.isEditable,
+      canShiftDown: item.canShiftDown && this.isEditable,
+      canRoll: item.canRoll && !!item.actor && this.isEditable,
+      diceList: CONFIG.SHIFT.dice,
+      resolved: item.isResolved,
+      outcome: item.questOutcome
+    });
+    return context;
+  }
+
+  static async #onRoll() {
+    if (!this.isEditable) return;
+    if (!this.document.actor) return void ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NeedsActor"));
+    await this.document.roll();
+  }
+  static async #onShiftUp() { if (!this.isEditable) return; await this.document.shiftUp({}); }
+  static async #onShiftDown() { if (!this.isEditable) return; await this.document.shiftDown({}); }
+  static async #onExhaust() { if (!this.isEditable) return; await this.document.exhaust({}); }
+}
+
+/* ------------------------------------------------------------------ */
 /* Technique                                                           */
 /* ------------------------------------------------------------------ */
 

@@ -63,7 +63,6 @@ SHIFT.traitCategories = {
   adversary: "SHIFT.TraitCategory.adversary",
   special: "SHIFT.TraitCategory.special",
   party: "SHIFT.TraitCategory.party",
-  quest: "SHIFT.TraitCategory.quest",
   custom: "SHIFT.TraitCategory.custom"
 };
 
@@ -74,7 +73,8 @@ SHIFT.defaultIcons = {
   technique: "icons/svg/target.svg",
   keyword: "icons/svg/regen.svg",
   drawback: "icons/svg/degen.svg",
-  landmark: "icons/svg/village.svg"
+  landmark: "icons/svg/village.svg",
+  quest: "icons/svg/book.svg"
 };
 
 /* Ícones padrão de ACTOR por tipo (SVGs do core do Foundry). Character mantém o

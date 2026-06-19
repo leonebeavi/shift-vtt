@@ -356,6 +356,38 @@ const REVEAL_FIELDS = ["name", "concept", "stats", "defeat", "traits", "scale", 
 
 const PARTY_TRAIT_ORDER = ["core", "attitude", "focus", "adversary", "pack", "cargo", "special", "party", "custom"];
 
+/** Chips de link de Quest por TIPO de documento: [ícone FA, cor]. Sem foto — só
+ *  ícone num círculo da cor do tipo (estilo do design). Character e Adversary NÃO
+ *  entram aqui: variam pela DISPOSITION do token (ver linkChipMeta). */
+const LINK_TYPE_META = {
+  // Actors
+  location: ["fa-location-dot", "#e0a458"],
+  vehicle: ["fa-car-side", "#5fb6bd"],
+  party: ["fa-users", "#7aa2f7"],
+  // Items
+  technique: ["fa-bolt", "#c98bff"],
+  landmark: ["fa-location-dot", "#e0a458"],          // mesmo ícone/cor de Location
+  keyword: ["fa-tag", "#2f9fd0"],                    // cor padrão da pill de Keyword (azul)
+  drawback: ["fa-triangle-exclamation", "#de2b54"]   // cor padrão da pill de Drawback (vermelho)
+};
+
+/** Resolve [ícone, cor] do chip de um doc vinculado. Characters e Adversaries
+ *  variam pela disposition (hostile = caveira vermelha, friendly = pessoa verde,
+ *  neutral/secret = pessoa azul); os demais Actors e os Items usam LINK_TYPE_META. */
+function linkChipMeta(doc) {
+  if (doc.documentName === "Actor") {
+    if (doc.type === "character" || doc.type === "adversary") {
+      const D = CONST.TOKEN_DISPOSITIONS;
+      const disp = doc.prototypeToken?.disposition ?? D.NEUTRAL;
+      if (disp === D.HOSTILE) return ["fa-skull", "#e5616b"];
+      if (disp === D.FRIENDLY) return ["fa-user", "#6fd69a"];
+      return ["fa-user", "#7aa2f7"];                 // Neutral ou Secret
+    }
+    return LINK_TYPE_META[doc.type] ?? ["fa-user", "#7aa2f7"];
+  }
+  return LINK_TYPE_META[doc.type] ?? ["fa-gem", "#c98bff"];
+}
+
 const cap = s => String(s ?? "").charAt(0).toUpperCase() + String(s ?? "").slice(1);
 
 /** Deriva um role do Codex a partir de um documento referenciado. Items separam
@@ -425,6 +457,12 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       toggleCodexReveal: ShiftPartySheet.#onToggleCodexReveal,
       toggleCodexLandmark: ShiftPartySheet.#onToggleCodexLandmark,
       toggleTraitHide: ShiftPartySheet.#onToggleTraitHide,
+      rollQuest: ShiftPartySheet.#onRollQuest,
+      questResolve: ShiftPartySheet.#onQuestResolve,
+      questFail: ShiftPartySheet.#onQuestFail,
+      questReopen: ShiftPartySheet.#onQuestReopen,
+      openQuestLink: ShiftPartySheet.#onOpenQuestLink,
+      removeQuestLink: ShiftPartySheet.#onRemoveQuestLink,
       clearLocation: ShiftPartySheet.#onClearLocation,
       openLocation: ShiftPartySheet.#onOpenLocation,
       clearVehicle: ShiftPartySheet.#onClearVehicle,
@@ -446,13 +484,12 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
   tabGroups = { primary: "roster" };
 
-  /** @override — os Traits PRÓPRIOS do party + suas Quests, ambos como Trait Items.
-   *  A aba Traits mostra o grupo "party"; a aba Quests mostra o grupo "quest"
-   *  (Quests SÃO Traits, então recebem toda a maquinaria de roll/shift/keyword). */
+  /** @override — só os Traits PRÓPRIOS do party (aba Traits). As Quests agora são
+   *  um tipo de Item próprio (não Traits): a aba Quests é montada à parte, a partir
+   *  de `actor.quests`, em #questGroup (compartilha o card .ptrait + o motor do clock). */
   get traitGroupSpec() {
     return [
-      { key: "party", label: "SHIFT.Groups.PartyTraits", categories: ["party"], css: "grid-2", create: "party" },
-      { key: "quest", label: "SHIFT.Tabs.Quests", categories: ["quest"], css: "grid-2", create: "quest", hideEmpty: false }
+      { key: "party", label: "SHIFT.Groups.PartyTraits", categories: ["party"], css: "grid-2", create: "party" }
     ];
   }
 
@@ -478,10 +515,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
     context.members = await this.#rosterContext();
 
-    // Os cards de Trait (em ambas as abas) renderizam cards ".ptrait" ricos;
-    // enriquece cada description para que apareça junto das pills de keyword/drawback
-    // (a base só enriquece ao expandir). Também marca `hidden` (o estado de ocultar
-    // por card do GM).
+    // Os Party Traits renderizam cards ".ptrait" ricos; enriquece cada description
+    // para aparecer junto das pills de keyword/drawback (a base só enriquece ao
+    // expandir). Também marca `hidden` (o estado de ocultar por card do GM).
     const allGroups = context.traitGroups ?? [];
     for (const g of allGroups) {
       for (const t of g.traits) {
@@ -491,9 +527,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
         t.hidden = !item?.system.revealed;     // toggle de ocultar do GM (olho no card)
       }
     }
-    // Divide: a aba Traits mostra os traits do party; a aba Quests mostra os traits de quest.
     context.traitGroups = allGroups.filter(g => g.key === "party");
-    context.questGroup = allGroups.find(g => g.key === "quest") ?? null;
+    // A aba Quests é montada a partir de actor.quests (tipo próprio), não dos Traits.
+    context.questGroup = await this.#questGroup();
 
     const codex = await this.#codexContext();
     context.codex = codex.cards;
@@ -572,6 +608,64 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       }
       return { name: text, desc };
     });
+  }
+
+  /* --- Quests (tipo próprio; card .ptrait compartilhado) ----------- */
+
+  /** Monta o grupo da aba Quests a partir de `actor.quests`. Espelha a forma de
+   *  um trait-group ({ key, traits }) para a aba reaproveitar o mesmo template. */
+  async #questGroup() {
+    const isOwner = this.document.isOwner;
+    const canSee = q => q.system.revealed || game.user.isGM || isOwner;
+    const quests = this.document.quests
+      .filter(canSee)
+      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
+    const traits = [];
+    for (const q of quests) traits.push(await this.#questContext(q));
+    return { key: "quest", traits };
+  }
+
+  /** Contexto de um card de Quest: o clock (igual a um trait tile) + os campos de
+   *  desfecho. Os links entram na Etapa C. */
+  async #questContext(q) {
+    const sys = q.system;
+    const outcome = q.questOutcome;          // "none" | "success" | "failure"
+    const resolved = q.isResolved;
+    const desc = (this.canViewNotes && sys.description)
+      ? await enrich(sys.description, { relativeTo: q }) : "";
+    // Resolve os UUIDs dos links em chips POR TIPO (ícone + cor, sem foto, no
+    // estilo do design); descarta os quebrados.
+    const linkDocs = await Promise.all((sys.links ?? []).map(u => fromUuid(u).catch(() => null)));
+    const links = (sys.links ?? []).map((uuid, i) => {
+      const doc = linkDocs[i];
+      if (!doc) return null;
+      const [icon, color] = linkChipMeta(doc);
+      return { uuid, name: doc.name, icon, color };
+    }).filter(Boolean);
+    return {
+      id: q.id, name: q.name,
+      links,
+      statusKey: q.statusKey,
+      dieImg: CONFIG.SHIFT.diceImages[q.statusKey] ?? null,
+      statusLabel: dieStatusLabel(q.statusKey),
+      currentLabel: dieLabel(sys.currentDie),
+      maxLabel: dieLabel(sys.maxDie),
+      exhausted: sys.exhausted,
+      hidden: !sys.revealed,
+      canRoll: q.canRoll && this.isEditable,
+      canUp: q.canShiftUp && this.isEditable,
+      canDown: q.canShiftDown && this.isEditable,
+      desc,
+      // Desfecho (independente do clock/Exhausted).
+      outcome, resolved,
+      outcomeWord: resolved
+        ? game.i18n.localize(outcome === "success" ? "SHIFT.Party.Quests.Success" : "SHIFT.Party.Quests.Failure")
+        : "",
+      outcomeIcon: outcome === "success" ? "fa-circle-check" : "fa-circle-xmark",
+      canResolve: outcome !== "success",
+      canFail: outcome !== "failure",
+      canReopen: resolved
+    };
   }
 
   /* --- Codex (reveal granular; cards por tipo; Actors E Items) ---
@@ -1044,6 +1138,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       ui.notifications.warn(game.i18n.localize("SHIFT.Party.CannotAdd"));
       return false;
     }
+    // Um Actor solto sobre um card de Quest vira um link daquela Quest.
+    const questId = this.#questDropTarget(event);
+    if (questId) return this.#addQuestLink(questId, a.uuid);
     // Uma Location/Vehicle solta em seu slot vira o place/vehicle do party.
     if (this.#isLocationDrop(event)) return this.#setLocation(a);
     if (this.#isVehicleDrop(event)) return this.#setVehicle(a);
@@ -1067,35 +1164,46 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const doc = (item instanceof Item) ? item : await Item.implementation.fromDropData(item);
     if (!doc) return false;
 
-    // Reordenar: um Trait possuído solto sobre um card de trait irmão → integer sort.
+    // Reordenar: um card (Trait/Quest) possuído solto sobre um irmão → integer sort.
     if (doc.parent === this.document && await this.#sortTraitOnDrop(event, doc)) return true;
+
+    // Um Item externo solto sobre um card de Quest vira um link daquela Quest.
+    const questId = this.#questDropTarget(event);
+    if (questId && doc.uuid) return this.#addQuestLink(questId, doc.uuid);
 
     if (["trait", "technique"].includes(doc.type) && this.#isCodexDrop(event)) return this.#addCodexEntry(doc.uuid);
 
-    if (doc.type === "trait" && doc.parent !== this.document) {
-      // A aba Quests cria uma Quest (uma quest É um Trait que avança ao rolar);
-      // em outros lugares, um Trait de party no estilo de status.
-      const isQuest = this.#isQuestDrop(event);
+    // Um Trait externo solto FORA da aba Quests vira um Party Trait (estilo status).
+    // Na aba Quests, soltar coisas vira link (Etapa C) — nunca mais converte Trait→Quest.
+    if (doc.type === "trait" && doc.parent !== this.document && !this.#isQuestDrop(event)) {
       const data = doc.toObject();
       delete data._id;
       data.system = foundry.utils.mergeObject(data.system ?? {}, {
-        category: isQuest ? "quest" : "party",
-        autoShiftOnRoll: isQuest        // quests avançam num roll máximo; party traits são status
+        category: "party",
+        autoShiftOnRoll: false           // party traits são status, não rolam pra degradar
       });
       return this.document.createEmbeddedDocuments("Item", [data]);
     }
     return super._onDropItem(event, item);
   }
 
-  /** Reordena um card de trait por integer sort quando solto sobre um irmão da
-   *  mesma categoria (party↔party, quest↔quest). Retorna true se tratou o evento. */
+  /** Reordena um card por integer sort quando solto sobre um irmão: Quests entre
+   *  Quests, Traits entre Traits da mesma categoria. Retorna true se tratou o evento. */
   async #sortTraitOnDrop(event, source) {
     const targetId = event.target?.closest?.("[data-item-id]")?.dataset.itemId;
     if (!targetId || targetId === source.id) return false;
     const target = this.document.items.get(targetId);
-    if (target?.type !== "trait" || target.system.category !== source.system.category) return false;
-    const siblings = this.document.items.filter(i =>
-      i.type === "trait" && i.system.category === source.system.category && i.id !== source.id);
+    if (!target) return false;
+
+    let siblings;
+    if (source.type === "quest") {
+      if (target.type !== "quest") return false;
+      siblings = this.document.items.filter(i => i.type === "quest" && i.id !== source.id);
+    } else {
+      if (target.type !== "trait" || target.system.category !== source.system.category) return false;
+      siblings = this.document.items.filter(i =>
+        i.type === "trait" && i.system.category === source.system.category && i.id !== source.id);
+    }
     const updates = foundry.utils.performIntegerSort(source, { target, siblings })
       .map(u => ({ _id: u.target.id, sort: u.update.sort }));
     if (updates.length) await this.document.updateEmbeddedDocuments("Item", updates);
@@ -1126,6 +1234,28 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
   #isQuestDrop(event) {
     return !!event.target?.closest?.("[data-page='quests'], .party-quests");
+  }
+
+  /** O alvo do drop é um card de Quest específico? Devolve o id da Quest ou null.
+   *  (Espelha #isCodexDrop, mas mira o card individual para vincular ali.) */
+  #questDropTarget(event) {
+    const card = event.target?.closest?.(".party-quests .ptrait[data-item-id]");
+    return card?.dataset.itemId ?? null;
+  }
+
+  /** Vincula um UUID de Actor/Item a uma Quest (espelha #addCodexEntry, mas guarda
+   *  os UUIDs em system.links da própria Quest). */
+  async #addQuestLink(questId, uuid) {
+    const quest = this.document.items.get(questId);
+    if (!quest || quest.type !== "quest" || !uuid || quest.uuid === uuid) return false;
+    const links = foundry.utils.deepClone(quest.system.links ?? []);
+    if (links.includes(uuid)) {
+      ui.notifications.info(game.i18n.localize("SHIFT.Party.Codex.Already"));
+      return true;
+    }
+    links.push(uuid);
+    await quest.update({ "system.links": links });
+    return true;
   }
 
   /** Define a Location do party (sempre catalogada no codex) + limpa o landmark. */
@@ -1317,6 +1447,50 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (icon) { icon.classList.toggle("fa-eye", revealed); icon.classList.toggle("fa-eye-slash", !revealed); }
     target.closest("[data-item-id]")?.classList.toggle("is-gmhidden", !revealed);
     await item.update({ "system.revealed": revealed }, { render: false });
+  }
+
+  /* --- Quests (rolar + desfecho) ---------------------------------- */
+
+  /** Rola o dado de uma Quest direto (single-die action roll na Party; com
+   *  autoShiftOnRoll, o clock dá ShiftDown = "o tempo acabando"). Não passa pelo
+   *  diálogo de Action Roll (esse monta da lista de Traits do actor, sem Quests). */
+  static async #onRollQuest(event, target) {
+    if (!this.isEditable) return;
+    await this.getItem(target)?.roll();
+  }
+
+  /** Define o desfecho de uma Quest. Só GM/editável (espelha #onToggleTraitHide). */
+  static async #onQuestResolve(event, target) {
+    if (!this.isEditable) return;
+    await this.getItem(target)?.update({ "system.outcome": "success" });
+  }
+  static async #onQuestFail(event, target) {
+    if (!this.isEditable) return;
+    await this.getItem(target)?.update({ "system.outcome": "failure" });
+  }
+  static async #onQuestReopen(event, target) {
+    if (!this.isEditable) return;
+    await this.getItem(target)?.update({ "system.outcome": "none" });
+  }
+
+  /** Abre a ficha do documento vinculado a uma Quest. Ignora cliques no X de
+   *  remover (que fica dentro do mesmo chip) para nunca abrir + remover juntos. */
+  static async #onOpenQuestLink(event, target) {
+    if (event?.target?.closest?.(".pt-link-x")) return;
+    const uuid = target.closest("[data-link-uuid]")?.dataset.linkUuid;
+    const doc = uuid && await fromUuid(uuid);
+    doc?.sheet?.render(true);
+  }
+
+  /** Remove um link de uma Quest (espelha #onRemoveCodexEntry). */
+  static async #onRemoveQuestLink(event, target) {
+    if (!this.isEditable) return;
+    const id = target.closest("[data-item-id]")?.dataset.itemId;
+    const uuid = target.closest("[data-link-uuid]")?.dataset.linkUuid;
+    const quest = id ? this.document.items.get(id) : null;
+    if (!quest || !uuid) return;
+    const links = (quest.system.links ?? []).filter(u => u !== uuid);
+    await quest.update({ "system.links": links });
   }
 
   /* --- Party-wide actions (GM/owner) ---------------------------- */

@@ -213,6 +213,8 @@ export function registerSettings() {
   reg("compendiumSeeded", { scope: "world", config: false, type: Boolean, default: false });
   reg("techniquesSeeded", { scope: "world", config: false, type: Boolean, default: false });
   reg("macrosSeeded", { scope: "world", config: false, type: Boolean, default: false });
+  // Migração one-time: Quests legadas (Trait category="quest") → tipo de Item "quest".
+  reg("questTypeMigrated", { scope: "world", config: false, type: Boolean, default: false });
 
   // Estado de UI por jogador (painel Global Traits + posição do Action HUD)
   reg("clocksPanelOpen", { scope: "client", config: false, type: Boolean, default: true });

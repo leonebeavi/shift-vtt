@@ -1,13 +1,15 @@
-{{!-- SHIFT VTT — one rich ".ptrait" trait card (die · name · status·max ·
-      description · Keyword/Drawback pills · tools). Shared by the party Traits
-      tab and the Quests tab (a Quest IS a Trait of category "quest"). Context =
-      a trait tile object; pass showHide=true to add the GM "hide from players"
-      toggle (the Trait's `revealed` flag) — used on the Quests tab. --}}
-<div class="ptrait status-{{statusKey}}{{#if exhausted}} is-exhausted{{/if}}{{#if hidden}} is-gmhidden{{/if}}"
+{{!-- SHIFT VTT — one rich ".ptrait" card (die · name · status·max · description ·
+      tools). Shared by the party Traits tab and the Quests tab. Pass showHide=true
+      to add the GM "hide from players" toggle. Pass quest=true (Quests tab) to turn
+      on the quest-only blocks (outcome state + Resolve/Fail/Reopen + links) — they
+      stay guarded by {{#if quest}} so the Traits tab is never touched. --}}
+<div class="ptrait status-{{statusKey}}{{#if exhausted}} is-exhausted{{/if}}{{#if quest}}{{#if resolved}} outcome-{{outcome}}{{/if}}{{/if}}{{#if hidden}} is-gmhidden{{/if}}"
      data-item-id="{{id}}" data-draggable="true">
   <div class="ptrait-head">
-    {{#if canRoll}}
-      <a class="ptrait-die" data-action="rollTrait"
+    {{#if (shiftAnd quest resolved)}}
+      <span class="ptrait-state" data-tooltip="{{outcomeWord}}"><i class="fa-solid {{outcomeIcon}}"></i></span>
+    {{else if canRoll}}
+      <a class="ptrait-die" data-action="{{#if quest}}rollQuest{{else}}rollTrait{{/if}}"
          data-tooltip="{{statusLabel}} &middot; {{localize 'SHIFT.Tooltips.RollIcon'}}">
         {{#if dieImg}}<img src="{{dieImg}}" alt="{{currentLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}
       </a>
@@ -16,7 +18,11 @@
     {{/if}}
     <div class="ptrait-title">
       {{#if @root.editMode}}<a class="ptrait-name" data-action="editItem">{{name}}</a>{{else}}<span class="ptrait-name">{{name}}</span>{{/if}}
-      <span class="ptrait-sub"><b>{{statusLabel}}</b> &middot; {{localize "SHIFT.Trait.Max"}} {{maxLabel}}</span>
+      {{#if (shiftAnd quest resolved)}}
+        <span class="ptrait-sub"><b>{{outcomeWord}}</b> &middot; {{localize "SHIFT.Party.Quests.Resolved"}}</span>
+      {{else}}
+        <span class="ptrait-sub"><b>{{statusLabel}}</b> &middot; {{localize "SHIFT.Trait.Max"}} {{maxLabel}}</span>
+      {{/if}}
     </div>
     {{#if @root.editable}}
       <div class="ptrait-tools">
@@ -54,4 +60,35 @@
       {{/if}}
     </div>
   {{/if}}
+
+  {{!-- Quest footer: links à esquerda + desfecho Resolve/Fail/Reopen à direita. O
+        rodapé aparece quando há links OU para quem edita. Drop de Actor/Item sobre o
+        card cria o link (#questDropTarget casa com .party-quests .ptrait[data-item-id]). --}}
+  {{#if quest}}{{#if (shiftOr links.length @root.editable)}}
+    <div class="pt-foot">
+      {{!-- Sem links, a seção inteira some (card mais fino). Chips são só ícone +
+            círculo na cor do tipo (sem foto). --}}
+      {{#if links.length}}
+        <div class="pt-links">
+          <span class="label">{{localize "SHIFT.Party.Quests.Field.Links"}}</span>
+          {{#each links}}
+            <a class="pt-link" style="--lc: {{this.color}};" data-link-uuid="{{this.uuid}}" data-action="openQuestLink" data-tooltip="{{this.name}}">
+              <i class="fa-solid {{this.icon}}"></i>
+              {{#if @root.editMode}}<i class="pt-link-x fa-solid fa-xmark" data-action="removeQuestLink" data-tooltip="{{localize 'SHIFT.Party.Quests.RemoveLink'}}"></i>{{/if}}
+            </a>
+          {{/each}}
+          {{#if @root.editMode}}
+            <span class="pt-link-hint" data-tooltip="{{localize 'SHIFT.Party.Quests.LinkHint'}}"><i class="fa-solid fa-plus"></i></span>
+          {{/if}}
+        </div>
+      {{/if}}
+      {{#if @root.editable}}
+        <div class="pt-outcome">
+          {{#if canResolve}}<a class="resolve" data-action="questResolve" data-tooltip="{{localize 'SHIFT.Party.Quests.Complete'}}"><i class="fa-solid fa-check"></i></a>{{/if}}
+          {{#if canFail}}<a class="fail" data-action="questFail" data-tooltip="{{localize 'SHIFT.Party.Quests.Fail'}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+          {{#if canReopen}}<a class="reopen" data-action="questReopen" data-tooltip="{{localize 'SHIFT.Party.Quests.Reopen'}}"><i class="fa-solid fa-rotate-left"></i></a>{{/if}}
+        </div>
+      {{/if}}
+    </div>
+  {{/if}}{{/if}}
 </div>

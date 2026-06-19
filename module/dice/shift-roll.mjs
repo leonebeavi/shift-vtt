@@ -286,7 +286,9 @@ export class ShiftRoll {
    *   a tag "group" do card; a regra de Critical continua seguindo a configuração.
    */
   static async actionRoll({ actor, traits = [], rollType = "normal", turnOrder = false, groupRoll = false } = {}) {
-    traits = traits.filter(t => t?.isTrait);
+    // Traits E Quests podem ser rolados (ambos carregam um Shift Die / clock); uma
+    // Quest já resolvida (success/failure) não rola mais.
+    traits = traits.filter(t => t?.hasClock && !t.isResolved);
     if (!actor || !traits.length) return null;
 
     for (const t of traits) {
@@ -513,7 +515,7 @@ export class ShiftRoll {
               actorUuid: e.item.actor?.uuid ?? null,
               name: e.item.name,
               scale: e.item.effectiveScale,
-              category: e.item.system.category
+              category: e.item.system.category ?? null   // Quests não têm category
             })),
             scaleBumps: 0,
             targetUuids

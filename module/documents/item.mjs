@@ -142,11 +142,16 @@ export class ShiftItem extends Item {
 
   get isTrait() { return this.type === "trait"; }
   get isTechnique() { return this.type === "technique"; }
+  get isQuest() { return this.type === "quest"; }
   get isDescriptor() { return this.type === "keyword" || this.type === "drawback"; }
+
+  /** Carrega um Shift Die como clock: Traits E Quests. O motor de shift/exhaust
+   *  abaixo é compartilhado por ambos via este predicado. */
+  get hasClock() { return this.isTrait || this.isQuest; }
 
   /** "d4".."d12" ou "exhausted". */
   get statusKey() {
-    if (!this.isTrait) return null;
+    if (!this.hasClock) return null;
     return this.system.exhausted ? "exhausted" : this.system.currentDie;
   }
 
@@ -155,17 +160,17 @@ export class ShiftItem extends Item {
   }
 
   get canShiftDown() {
-    return this.isTrait && !this.system.exhausted;
+    return this.hasClock && !this.system.exhausted && !this.isResolved;
   }
 
   get canShiftUp() {
-    if (!this.isTrait) return false;
+    if (!this.hasClock || this.isResolved) return false;
     if (this.system.exhausted) return true;
     return dieIndex(this.system.currentDie) > dieIndex(this.system.maxDie);
   }
 
   get isAtMax() {
-    return this.isTrait && !this.system.exhausted && this.system.currentDie === this.system.maxDie;
+    return this.hasClock && !this.system.exhausted && this.system.currentDie === this.system.maxDie;
   }
 
   /**
@@ -191,7 +196,22 @@ export class ShiftItem extends Item {
   }
 
   get canRoll() {
-    return this.isTrait && this.system.rollable && !this.system.exhausted;
+    return this.hasClock && this.system.rollable && !this.system.exhausted && !this.isResolved;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Quest (desfecho + links)                                          */
+  /* ---------------------------------------------------------------- */
+
+  /** Desfecho de uma Quest: "none" (em aberto), "success" ou "failure".
+   *  Só itens do tipo "quest" usam isto; os demais reportam "none". */
+  get questOutcome() {
+    return this.isQuest ? (this.system.outcome ?? "none") : "none";
+  }
+
+  /** Uma Quest já resolvida (success/failure) — independente do Exhausted. */
+  get isResolved() {
+    return this.isQuest && this.questOutcome !== "none";
   }
 
   /* ---------------------------------------------------------------- */
@@ -257,13 +277,14 @@ export class ShiftItem extends Item {
    * @returns {Promise<{changed:boolean, from:string, to:string, becameExhausted:boolean}>}
    */
   async shiftDown({ steps = 1, promptDeath = true, force = false } = {}) {
-    if (!this.isTrait) return { changed: false };
+    if (!this.hasClock) return { changed: false };
     const from = this.statusKey;
     if (this.system.exhausted) return { changed: false, from, to: from, becameExhausted: false };
 
     // Gate estilo Heavily Armored: enquanto um Trait irmão marcado como
     // "deve ser Exhausted primeiro" ainda estiver de pé, os outros Traits não podem fazer shift down.
-    if (!force && this.actor && !this.system.defeat?.mustBeExhaustedFirst) {
+    // (Só vale entre Traits; Quests não participam desse gate de Encounter.)
+    if (!force && this.isTrait && this.actor && !this.system.defeat?.mustBeExhaustedFirst) {
       const blockers = this.actor.items.filter(i =>
         i.type === "trait" && i.id !== this.id
         && i.system.defeat?.mustBeExhaustedFirst && !i.system.exhausted);
@@ -289,6 +310,9 @@ export class ShiftItem extends Item {
   /** Desfecho comum de um Trait que atinge Exhausted. */
   async #onBecameExhausted({ promptDeath = true } = {}) {
     Hooks.callAll("shiftRpg.traitExhausted", this.actor, this);
+
+    // Quests não têm temporary, Morte de Core, nem Overcome — só Traits seguem abaixo.
+    if (!this.isTrait) return;
 
     // Traits temporários se consomem por completo assim que ficam Exhausted.
     if (this.system.temporary) {
@@ -331,7 +355,7 @@ export class ShiftItem extends Item {
    * Recuperar de Exhausted para D12 consome um passo.
    */
   async shiftUp({ steps = 1 } = {}) {
-    if (!this.isTrait) return { changed: false };
+    if (!this.hasClock) return { changed: false };
     const from = this.statusKey;
     let exhausted = this.system.exhausted;
     let idx = dieIndex(this.system.currentDie);
@@ -349,12 +373,12 @@ export class ShiftItem extends Item {
 
   /** Exaure este Trait de imediato. */
   async exhaust({ promptDeath = true, force = false } = {}) {
-    if (!this.isTrait || this.system.exhausted) return { changed: false };
+    if (!this.hasClock || this.system.exhausted) return { changed: false };
     const from = this.statusKey;
 
     // Gate Heavily Armored: enquanto um Trait irmão marcado como "deve ser
     // Exhausted primeiro" ainda estiver de pé, os outros Traits não podem ser Exhausted (espelha shiftDown).
-    if (!force && this.actor && !this.system.defeat?.mustBeExhaustedFirst) {
+    if (!force && this.isTrait && this.actor && !this.system.defeat?.mustBeExhaustedFirst) {
       const blockers = this.actor.items.filter(i =>
         i.type === "trait" && i.id !== this.id
         && i.system.defeat?.mustBeExhaustedFirst && !i.system.exhausted);
@@ -373,7 +397,7 @@ export class ShiftItem extends Item {
 
   /** Restaura este Trait ao seu Max Die (limpa Exhausted). */
   async restore() {
-    if (!this.isTrait) return { changed: false };
+    if (!this.hasClock) return { changed: false };
     const from = this.statusKey;
     await this.update({ "system.currentDie": this.system.maxDie, "system.exhausted": false });
     return { changed: from !== this.statusKey, from, to: this.statusKey };
@@ -494,9 +518,9 @@ export class ShiftItem extends Item {
   /* Rolagem                                                           */
   /* ---------------------------------------------------------------- */
 
-  /** Action Roll rápido de um único Trait. */
+  /** Action Roll rápido de um único Trait ou Quest (ambos têm clock). */
   async roll(options = {}) {
-    if (!this.isTrait) return null;
+    if (!this.hasClock) return null;
     const { ShiftRoll } = game.shift;
     return ShiftRoll.actionRoll({ actor: this.actor, traits: [this], ...options });
   }

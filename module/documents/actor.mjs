@@ -112,6 +112,11 @@ export class ShiftActor extends Actor {
     return this.items.filter(i => i.type === "technique");
   }
 
+  /** Quests deste Actor (tipo próprio; a Party é quem normalmente as carrega). */
+  get quests() {
+    return this.items.filter(i => i.type === "quest");
+  }
+
   getTraits(category) {
     return this.traits.filter(t => t.system.category === category);
   }

@@ -83,6 +83,55 @@ export class ShiftTraitData extends ShiftItemBase {
 }
 
 /* ------------------------------------------------------------------ */
+/* Quest                                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Uma Quest é um item de PRIMEIRA CLASSE (tipo próprio), não um Trait. Ela
+ * carrega o MESMO Shift Die como clock (compartilha o motor de shift/exhaust do
+ * ShiftItem via `hasClock`), mas com seus próprios campos: o desfecho narrativo
+ * decidido pelo GM (`outcome`, independente do Exhausted) e os `links` (UUIDs de
+ * Actors/Items relacionados, espelhando o Codex da party). Modelo enxuto e
+ * pensado para CRESCER (sub-objetivos, recompensas, etapas… entram aqui depois).
+ */
+export class ShiftQuestData extends ShiftItemBase {
+  static defineSchema() {
+    const schema = super.defineSchema();   // description, source
+
+    // Clock (mesmo Shift Die dos Traits; o motor vive no ShiftItem, gated por hasClock).
+    schema.maxDie = new fields.StringField({ required: true, initial: "d6", choices: DICE });
+    schema.currentDie = new fields.StringField({ required: true, initial: "d6", choices: DICE });
+    schema.exhausted = new fields.BooleanField({ initial: false });
+
+    // Rolável é configurável: rolar uma quest pode dar ShiftDown (autoShiftOnRoll),
+    // representando "o tempo acabando" — uma camada opcional de imprevisibilidade.
+    schema.rollable = new fields.BooleanField({ initial: true });
+    schema.autoShiftOnRoll = new fields.BooleanField({ initial: true });
+
+    // Toggle do GM "ocultar dos players" (espelha `revealed` do Trait).
+    schema.revealed = new fields.BooleanField({ initial: true });
+
+    // Desfecho decidido pelo GM, INDEPENDENTE do clock/Exhausted.
+    schema.outcome = new fields.StringField({
+      required: true, initial: "none", choices: ["none", "success", "failure"]
+    });
+
+    // Links: UUIDs de Actors/Items relacionados (espelha system.codex da party).
+    schema.links = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
+
+    return schema;
+  }
+
+  /** Mantém o dado atual dentro do máximo configurado (max = melhor), igual ao Trait. */
+  prepareDerivedData() {
+    super.prepareDerivedData();
+    const maxIdx = DICE.indexOf(this.maxDie);
+    const curIdx = DICE.indexOf(this.currentDie);
+    if (maxIdx >= 0 && curIdx >= 0 && curIdx < maxIdx) this.currentDie = this.maxDie;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Keyword / Drawback (descriptor compartilhado)                       */
 /* ------------------------------------------------------------------ */
 

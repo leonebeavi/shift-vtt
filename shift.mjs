@@ -12,7 +12,7 @@ import {
   ShiftCharacterData, ShiftAdversaryData, ShiftVehicleData, ShiftLocationData, ShiftPartyData
 } from "./module/data/actor-data.mjs";
 import {
-  ShiftTraitData, ShiftDescriptorData, ShiftTechniqueData, ShiftLandmarkData
+  ShiftTraitData, ShiftDescriptorData, ShiftTechniqueData, ShiftLandmarkData, ShiftQuestData
 } from "./module/data/item-data.mjs";
 import { ShiftRoll } from "./module/dice/shift-roll.mjs";
 import { registerChatHooks } from "./module/chat/chat.mjs";
@@ -34,9 +34,9 @@ import { registerRanges } from "./module/apps/ranges.mjs";
 import { registerStatusEffects } from "./module/helpers/status-effects.mjs";
 import { ShiftBrowser } from "./module/apps/browser.mjs";
 import {
-  ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftLandmarkSheet
+  ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftLandmarkSheet, ShiftQuestSheet
 } from "./module/sheets/item-sheets.mjs";
-import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium } from "./module/helpers/migrations.mjs";
+import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium, migrateQuestType } from "./module/helpers/migrations.mjs";
 
 /* ------------------------------------------------------------------ */
 /* Init                                                                */
@@ -102,7 +102,8 @@ Hooks.once("init", async () => {
     keyword: ShiftDescriptorData,
     drawback: ShiftDescriptorData,
     technique: ShiftTechniqueData,
-    landmark: ShiftLandmarkData
+    landmark: ShiftLandmarkData,
+    quest: ShiftQuestData
   });
 
   // Barras de recurso do Token
@@ -154,6 +155,9 @@ Hooks.once("init", async () => {
   });
   ItemsC.registerSheet("shift-vtt", ShiftLandmarkSheet, {
     types: ["landmark"], makeDefault: true, label: "SHIFT.SheetLabels.Landmark"
+  });
+  ItemsC.registerSheet("shift-vtt", ShiftQuestSheet, {
+    types: ["quest"], makeDefault: true, label: "SHIFT.SheetLabels.Quest"
   });
 
   registerSettings();
@@ -224,6 +228,7 @@ Hooks.once("ready", async () => {
   registerSocket();
   cleanStoredColorValues();
   if (game.user.isGM) {
+    await migrateQuestType();
     await seedCompendium();
     await seedTechniques();
     await seedMacros();
