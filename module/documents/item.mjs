@@ -516,7 +516,7 @@ export class ShiftItem extends Item {
     });
     const typeLabel = game.i18n.localize(CONFIG.SHIFT.techniqueTypes[this.system.techniqueType] ?? "");
     const content = `
-      <div class="shift-vtt chat-card technique-card">
+      <div class="shift-vtt chat-card technique-card ${this.system.techniqueType || ""}">
         <header class="card-header">
           <img src="${this.img}" alt="${foundry.utils.escapeHTML(this.name)}"/>
           <div class="card-title">

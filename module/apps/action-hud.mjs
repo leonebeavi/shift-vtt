@@ -228,7 +228,7 @@ function scaleOn() {
   return game.settings.get("shift-vtt", "enableScale") !== false;
 }
 
-function traitButton(t, canExert = false) {
+function traitButton(t, canExert = false, scaleUpReady = null) {
   const name = foundry.utils.escapeHTML(t.name);
   // Uma Trait com um override de Scale (ou uma Scale herdada que difere da do
   // Actor, ex.: uma Trait de Vehicle tripulado) ganha um pip próprio.
@@ -236,16 +236,20 @@ function traitButton(t, canExert = false) {
   const status = t.system.exhausted
     ? game.i18n.localize("SHIFT.DiceStatus.exhausted")
     : t.system.currentDie.toUpperCase();
+  // Este Focus tem uma Scaled Up Technique vinculada ainda com uso: o botão recebe
+  // um glow rosa, lembrando que dá pra elevar a Scale deste Trait num roll.
+  const scaleUp = !!scaleUpReady?.has(t.id);
   // Dicas de modificador: Pack/Cargo Traits são gastas por uma Focus temporária
   // no Shift+clique; toda outra Trait ativa faz Exert no Ctrl/⌘+clique (Exert é um
   // move de personagem, então a dica só aparece quando o Actor dono pode de fato Exert).
   const hint = ["pack", "cargo"].includes(t.system.category)
     ? ` · ${game.i18n.localize("SHIFT.Hud.PackShiftHint")}`
     : (canExert && !t.system.exhausted) ? ` · ${game.i18n.localize("SHIFT.Hud.ExertHint")}` : "";
+  const scaleHint = scaleUp ? ` · ${game.i18n.localize("SHIFT.Hud.ScaleUpReadyHint")}` : "";
   return `
-    <button type="button" class="hud-btn trait${t.system.exhausted ? " exhausted" : ""}${t.system.temporary ? " temporary" : ""}"
+    <button type="button" class="hud-btn trait${t.system.exhausted ? " exhausted" : ""}${t.system.temporary ? " temporary" : ""}${scaleUp ? " scale-up-ready" : ""}"
             data-kind="trait" data-id="${t.id}" aria-label="${name}"
-            data-tooltip="${name} (${status})${hint}">
+            data-tooltip="${name} (${status})${hint}${scaleHint}">
       ${pip}${dieBadge(t)}
       <span class="hud-label">${name}</span>
     </button>`;
@@ -253,17 +257,26 @@ function traitButton(t, canExert = false) {
 
 function techButton(t) {
   const name = foundry.utils.escapeHTML(t.name);
+  const atWill = t.isAtWill;
   const max = t.system.uses?.max ?? 0;
   const value = t.system.uses?.value ?? 0;
-  const limited = max > 0;                 // uma Technique ilimitada não mostra pill de usos
+  // At Will tem usos ilimitados: mostra o ∞ no lugar do contador. As demais só
+  // ganham a pill de usos quando têm um limite real (Max > 0).
+  const limited = !atWill && max > 0;
   const exhausted = limited && value <= 0;
+  const usesPill = atWill
+    ? `<span class="hud-uses infinite" data-tooltip="${game.i18n.localize("SHIFT.Recharge.AtWillHint")}"><i class="fa-solid fa-infinity"></i></span>`
+    : limited ? `<span class="hud-uses">${value}</span>` : "";
+  const tipUses = atWill
+    ? ` · ${game.i18n.localize("SHIFT.Recharge.atWill")}`
+    : limited ? ` (${value}/${max})` : "";
   return `
     <button type="button" class="hud-btn technique${exhausted ? " exhausted" : ""}"
             data-kind="technique" data-id="${t.id}" aria-label="${name}"
-            data-tooltip="${name}${limited ? ` (${value}/${max})` : ""}">
+            data-tooltip="${name}${tipUses}">
       <i class="fa-solid fa-wand-sparkles"></i>
       <span class="hud-label">${name}</span>
-      ${limited ? `<span class="hud-uses">${value}</span>` : ""}
+      ${usesPill}
     </button>`;
 }
 
@@ -296,8 +309,23 @@ function buildHud(actor, collapse, openMenuKey) {
   const rollable = (actor.traits ?? []).filter(t => t.system.rollable);
   const cores = rollable.filter(t => ["core", "attitude"].includes(t.system.category));
   const others = rollable.filter(t => !["core", "attitude"].includes(t.system.category));
-  const techniques = actor.techniques ?? [];
+  const allTechniques = actor.techniques ?? [];
+  // Scaled Up Techniques saem da barra: não dá pra usá-las sozinhas (o uso só
+  // mostra uma dica). Em vez disso, o Focus Trait vinculado recebe o glow rosa.
+  const techniques = allTechniques.filter(t => !t.isScaledUp);
   const vehicles = actor.crewedVehicles ?? [];
+
+  // Focus Traits que têm uma Scaled Up Technique vinculada AINDA com uso ganham um
+  // glow rosa. Gated no toggle mestre de Scale + no sub-toggle de Scaled Up, para
+  // só sinalizar quando o Scale Up de fato pode ser aplicado num roll.
+  const scaleUpReady = new Set();
+  if (scaleOn() && game.settings.get("shift-vtt", "enableScaledUp")) {
+    for (const tech of allTechniques) {
+      if (!tech.isScaledUp || !tech.hasUse) continue;
+      const focus = tech.focusTrait;
+      if (focus && focus.actor === tech.actor) scaleUpReady.add(focus.id);
+    }
+  }
 
   const GROUP_OF = c =>
     (c === "focus" || c === "adversary") ? "focus"
@@ -307,7 +335,7 @@ function buildHud(actor, collapse, openMenuKey) {
   const groups = { focus: [], pack: [], cargo: [], other: [] };
   for (const t of others) groups[GROUP_OF(t.system.category)].push(t);
 
-  const loose = list => list.map(t => traitButton(t, canExert)).join("");
+  const loose = list => list.map(t => traitButton(t, canExert, scaleUpReady)).join("");
   const asMenu = (key, icon, labelKey, list) => list.length
     ? menuGroup(key, icon, game.i18n.localize(labelKey), loose(list))
     : "";

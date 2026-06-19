@@ -234,7 +234,6 @@ export class ShiftRoll {
     if (!actor) return null;
     const trait = await pickTrait(actor, {
       title: game.i18n.format("SHIFT.Group.PickTrait", { actor: actor.name }),
-      hint: game.i18n.localize("SHIFT.Group.Hint"),
       filter: t => t.canRoll
     });
     if (!trait) return null;

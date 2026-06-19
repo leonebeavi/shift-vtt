@@ -2069,41 +2069,160 @@
   border-color: var(--shift-pink);
   color: var(--shift-pink);
 }
-#chat-log .chat-message, #chat .chat-message, .chat-message {
+body.shift-ui-theme .chat-message {
   --shift-msg-color: var(--shift-user-color, #8a8a8a);
   --shift-msg-ink: color-mix(in srgb, var(--shift-msg-color) 70%, #f4eef3);
+  --shift-result-color: var(--shift-msg-ink);
+}
+body.shift-ui-theme .chat-message:has(.roll-card.outcome-critical-success) {
+  --shift-result-color: #12aa5b;
+}
+body.shift-ui-theme .chat-message:has(.roll-card.outcome-success) {
+  --shift-result-color: #288ccc;
+}
+body.shift-ui-theme .chat-message:has(.roll-card.outcome-mitigated-success) {
+  --shift-result-color: #ffc511;
+}
+body.shift-ui-theme .chat-message:has(.roll-card.outcome-failure) {
+  --shift-result-color: #f07d39;
+}
+body.shift-ui-theme .chat-message:has(.roll-card.outcome-critical-failure) {
+  --shift-result-color: #de2b54;
+}
+body.shift-ui-theme .chat-message:has(.info-card) {
+  --shift-result-color: #45c465;
+}
+body.shift-ui-theme .chat-message:has(.info-card.rest.safe) {
+  --shift-result-color: #23bda6;
+}
+body.shift-ui-theme .chat-message:has(.info-card.rest.unsafe) {
+  --shift-result-color: #f07d39;
+}
+body.shift-ui-theme .chat-message:has(.info-card.exert) {
+  --shift-result-color: #ffc511;
+}
+body.shift-ui-theme .chat-message:has(.info-card.xp) {
+  --shift-result-color: #12aa5b;
+}
+body.shift-ui-theme .chat-message:has(.info-card.death) {
+  --shift-result-color: #de2b54;
+}
+body.shift-ui-theme .chat-message:has(.info-card.crit) {
+  --shift-result-color: #12aa5b;
+}
+body.shift-ui-theme .chat-message:has(.info-card.warn) {
+  --shift-result-color: #ffc511;
+}
+body.shift-ui-theme .chat-message:has(.info-card.combat) {
+  --shift-result-color: #38bdd4;
+}
+body.shift-ui-theme .chat-message:has(.info-card.combat.group-invite) {
+  --shift-result-color: #ff5fa2;
+}
+body.shift-ui-theme .chat-message:has(.technique-card) {
+  --shift-result-color: #45c465;
+}
+body.shift-ui-theme .chat-message:has(.technique-card.narrative) {
+  --shift-result-color: #ffd23f;
+}
+body.shift-ui-theme .chat-message:has(.technique-card.mechanical) {
+  --shift-result-color: #2f9fd0;
+}
+body.shift-ui-theme .chat-message:has(.technique-card.scaledUp) {
+  --shift-result-color: #ff5fa2;
+}
+body.shift-ui-theme #chat-log .chat-message, body.shift-ui-theme #chat .chat-message, body.shift-ui-theme .chat-message {
+  position: relative;
   background:
     linear-gradient(0deg,
-      color-mix(in srgb, var(--shift-msg-color) 12%, transparent),
-      color-mix(in srgb, var(--shift-msg-color) 12%, transparent)),
+      color-mix(in srgb, var(--shift-msg-color) 6%, transparent),
+      color-mix(in srgb, var(--shift-msg-color) 6%, transparent)),
     #2f2730 !important;
   color: #f4eef3;
-  border: 1px solid color-mix(in srgb, var(--shift-msg-ink) 55%, #4d4050);
-  border-left: 3px solid var(--shift-msg-ink);
-  border-radius: 8px;
-  margin-bottom: 6px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  border: 1px solid color-mix(in srgb, var(--shift-msg-ink) 28%, #4d4050);
+  border-radius: 12px;
+  margin-bottom: 9px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 11px rgba(0, 0, 0, 0.3);
 }
-#chat-log .chat-message .message-header, .chat-message .message-header {
+body.shift-ui-theme #chat-log .chat-message .message-header, body.shift-ui-theme .chat-message .message-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
   color: #b5a4b3;
+  background: linear-gradient(0deg,
+    color-mix(in srgb, var(--shift-msg-color) 18%, transparent),
+    color-mix(in srgb, var(--shift-msg-color) 9%, transparent));
 }
-#chat-log .chat-message .message-sender, .chat-message .message-sender {
+body.shift-ui-theme .chat-message .message-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--shift-result-color);
+}
+body.shift-ui-theme #chat-log .chat-message .message-sender, body.shift-ui-theme .chat-message .message-sender {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
   color: var(--shift-msg-ink);
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
-#chat-log .chat-message .message-metadata, .chat-message .message-metadata, .chat-message .message-timestamp, .chat-message .whisper-to {
+body.shift-ui-theme .chat-message .message-sender::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--shift-msg-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--shift-msg-color) 26%, transparent);
+}
+body.shift-ui-theme #chat-log .chat-message .message-metadata, body.shift-ui-theme .chat-message .message-metadata, body.shift-ui-theme .chat-message .message-timestamp, body.shift-ui-theme .chat-message .whisper-to {
   color: #b5a4b3;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
-#chat-log .chat-message .message-content, .chat-message .message-content {
+body.shift-ui-theme .chat-message .message-metadata {
+  margin-left: auto;
+}
+body.shift-ui-theme #chat-log .chat-message .message-content, body.shift-ui-theme .chat-message .message-content {
   color: #f4eef3;
+  margin: 0;
+  padding: 8px 12px;
 }
-.chat-message .message-content a.content-link, .chat-message .message-content a.inline-roll {
+body.shift-ui-theme .chat-message .message-content:has(> .shift-vtt.chat-card) {
+  padding: 0;
+}
+body.shift-ui-theme .chat-message .message-content .shift-vtt.chat-card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 10px 12px;
+}
+body.shift-ui-theme .chat-message .message-content .shift-vtt .outcome-line {
+  align-self: stretch;
+  box-sizing: border-box;
+  justify-content: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent);
+}
+body.shift-ui-theme .chat-message .message-content a.content-link, body.shift-ui-theme .chat-message .message-content a.inline-roll {
   background: rgba(255, 255, 255, 0.08);
   border-color: #4d4050;
   color: #f4eef3;
 }
-.chat-message.whisper {
+body.shift-ui-theme .chat-message.whisper {
   border-style: dashed;
 }
 .application.dialog.shift-dialog .window-content, .application.dialog:has(.shift-prompt) .window-content, .application.dialog:has(.action-roll-dialog) .window-content {
@@ -2410,6 +2529,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   opacity: 0.8;
+  text-align: center;
 }
 .action-roll-dialog .trait-group-cols {
   display: flex;
@@ -2708,9 +2828,7 @@
   border: none;
   height: 2px;
   margin: 1em 0;
-  border-radius: 2px;
   background: var(--shift-grad);
-  opacity: 0.55;
 }
 .shift-vtt .bio-display a:not(.content-link):not([data-action]), .shift-vtt prose-mirror .editor-content a:not(.content-link):not([data-action]) {
   color: var(--shift-pink);
@@ -3350,6 +3468,18 @@ body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
 #shift-action-hud .hud-btn.temporary {
   border-style: dashed;
 }
+#shift-action-hud .hud-btn.trait.scale-up-ready {
+  border-color: #ff5fa2;
+  animation: shift-scaleup-glow 2.2s ease-in-out infinite;
+}
+@keyframes shift-scaleup-glow {
+  0%, 100% {
+    box-shadow: 0 0 3px 1px rgba(255, 95, 162, 0.38);
+  }
+  50% {
+    box-shadow: 0 0 7px 2px rgba(255, 95, 162, 0.72);
+  }
+}
 #shift-action-hud .hud-die {
   width: 20px;
   height: 20px;
@@ -3369,6 +3499,11 @@ body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
   padding: 0 5px;
   font-size: 0.85em;
   color: #ffd23f;
+}
+#shift-action-hud .hud-uses.infinite {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.95em;
 }
 #shift-action-hud .hud-sep {
   width: 1px;
@@ -4648,33 +4783,46 @@ body.shift-theme-light .shift-vtt .character-header .xp-btn:hover {
   background: var(--shift-pink);
   color: #fff;
 }
-body.shift-theme-light #chat-log .chat-message, body.shift-theme-light #chat .chat-message, body.shift-theme-light .chat-message {
+body.shift-ui-theme.shift-theme-light #chat-log .chat-message, body.shift-ui-theme.shift-theme-light #chat .chat-message, body.shift-ui-theme.shift-theme-light .chat-message {
   --shift-msg-ink: color-mix(in srgb, var(--shift-msg-color) 40%, #1c1320);
   background:
     linear-gradient(0deg,
-      color-mix(in srgb, var(--shift-msg-color) 10%, transparent),
-      color-mix(in srgb, var(--shift-msg-color) 10%, transparent)),
+      color-mix(in srgb, var(--shift-msg-color) 6%, transparent),
+      color-mix(in srgb, var(--shift-msg-color) 6%, transparent)),
     #fff !important;
   color: #241f27;
-  border: 1px solid color-mix(in srgb, var(--shift-msg-ink) 55%, #dcccd9);
-  border-left: 3px solid var(--shift-msg-ink);
-  box-shadow: 0 1px 4px rgba(60, 40, 60, 0.12);
+  border: 1px solid color-mix(in srgb, var(--shift-msg-ink) 28%, #dcccd9);
+  box-shadow: 0 2px 11px rgba(60, 40, 60, 0.14);
 }
-body.shift-theme-light #chat-log .chat-message .message-header, body.shift-theme-light .chat-message .message-header {
+body.shift-ui-theme.shift-theme-light #chat-log .chat-message .message-header, body.shift-ui-theme.shift-theme-light .chat-message .message-header {
   color: #6c5f70;
+  background: linear-gradient(0deg,
+    color-mix(in srgb, var(--shift-msg-color) 16%, transparent),
+    color-mix(in srgb, var(--shift-msg-color) 9%, transparent));
 }
-body.shift-theme-light #chat-log .chat-message .message-sender, body.shift-theme-light .chat-message .message-sender {
+body.shift-ui-theme.shift-theme-light .chat-message .message-header::after {
+  background: var(--shift-result-color);
+}
+body.shift-ui-theme.shift-theme-light #chat-log .chat-message .message-sender, body.shift-ui-theme.shift-theme-light .chat-message .message-sender {
   color: var(--shift-msg-ink);
   text-shadow: none;
   filter: none;
 }
-body.shift-theme-light #chat-log .chat-message .message-metadata, body.shift-theme-light .chat-message .message-metadata, body.shift-theme-light .chat-message .message-timestamp, body.shift-theme-light .chat-message .whisper-to {
+body.shift-ui-theme.shift-theme-light .chat-message .message-sender::before {
+  background: var(--shift-msg-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--shift-msg-color) 22%, transparent);
+}
+body.shift-ui-theme.shift-theme-light #chat-log .chat-message .message-metadata, body.shift-ui-theme.shift-theme-light .chat-message .message-metadata, body.shift-ui-theme.shift-theme-light .chat-message .message-timestamp, body.shift-ui-theme.shift-theme-light .chat-message .whisper-to {
   color: #6c5f70;
 }
-body.shift-theme-light #chat-log .chat-message .message-content, body.shift-theme-light .chat-message .message-content {
+body.shift-ui-theme.shift-theme-light #chat-log .chat-message .message-content, body.shift-ui-theme.shift-theme-light .chat-message .message-content {
   color: #241f27;
 }
-body.shift-theme-light .chat-message .message-content a.content-link, body.shift-theme-light .chat-message .message-content a.inline-roll {
+body.shift-ui-theme.shift-theme-light .chat-message .message-content .shift-vtt .outcome-line {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 34%, transparent);
+}
+body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-link, body.shift-ui-theme.shift-theme-light .chat-message .message-content a.inline-roll {
   background: rgba(0, 0, 0, 0.05);
   border-color: #dcccd9;
   color: #241f27;
@@ -8544,4 +8692,779 @@ body:not(.shift-theme-light) .trait-card:hover, body:not(.shift-theme-light) .pt
 .shift-vtt [data-item-id].drop-right::after {
   right: -7px;
   left: auto;
+}
+body.shift-ui-theme {
+  --color-warm-1: #ff5fa2;
+  --color-warm-2: #ff5fa2;
+  --color-border-highlight: #ff5fa2;
+  --color-text-hyperlink: #ff5fa2;
+  --color-shadow-highlight: #ff5fa2;
+  --color-shadow-primary: rgba(0, 0, 0, 0.55);
+  --shift-chip-bg: rgba(57, 47, 58, 0.9);
+}
+body.shift-ui-theme :is(button.bright, a.button.bright) {
+  --button-hover-background-color: #ff5fa2;
+  --button-hover-border-color: #ff5fa2;
+}
+body.shift-ui-theme.shift-theme-light {
+  --color-warm-1: #cf3a80;
+  --color-warm-2: #cf3a80;
+  --color-border-highlight: #cf3a80;
+  --color-text-hyperlink: #cf3a80;
+  --color-shadow-highlight: #cf3a80;
+  --shift-chip-bg: rgba(255, 255, 255, 0.88);
+}
+body.shift-ui-theme.shift-theme-light :is(button.bright, a.button.bright) {
+  --button-hover-background-color: #cf3a80;
+  --button-hover-border-color: #cf3a80;
+}
+body.shift-ui-theme #sidebar .scrollable, body.shift-ui-theme #sidebar .directory-list, body.shift-ui-theme .chat-sidebar .chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #4d4050 transparent;
+}
+body.shift-ui-theme #sidebar ::-webkit-scrollbar, body.shift-ui-theme .chat-sidebar ::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+body.shift-ui-theme #sidebar ::-webkit-scrollbar-thumb, body.shift-ui-theme .chat-sidebar ::-webkit-scrollbar-thumb {
+  background: #4d4050;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+body.shift-ui-theme #sidebar ::-webkit-scrollbar-thumb:hover, body.shift-ui-theme .chat-sidebar ::-webkit-scrollbar-thumb:hover {
+  background: #e23d86;
+}
+body.shift-ui-theme #sidebar ::-webkit-scrollbar-track, body.shift-ui-theme .chat-sidebar ::-webkit-scrollbar-track {
+  background: transparent;
+}
+body.shift-ui-theme #sidebar .directory .directory-list, body.shift-ui-theme #sidebar .scrollable {
+  direction: ltr;
+}
+body.shift-ui-theme .sidebar-tab:not(.chat-sidebar) {
+  --sidebar-background: linear-gradient(180deg, rgba(47, 39, 48, 0.96), rgba(34, 28, 33, 0.97));
+}
+body.shift-ui-theme .sidebar-tab:not(.sidebar-popout):not(.chat-sidebar) {
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+body.shift-ui-theme #sidebar input[type="text"], body.shift-ui-theme #sidebar input[type="search"], body.shift-ui-theme #sidebar .header-search input {
+  background: #2a232a;
+  border: 1px solid #4d4050;
+  color: #f4eef3;
+  border-radius: 9px;
+}
+body.shift-ui-theme #sidebar input:focus, body.shift-ui-theme #sidebar .header-search input:focus {
+  border-color: #ff5fa2;
+  box-shadow: 0 0 0 3px rgba(255, 95, 162, 0.16);
+  outline: none;
+}
+body.shift-ui-theme #sidebar .directory .folder-header:hover {
+  background: rgba(255, 95, 162, 0.08);
+}
+body.shift-ui-theme #sidebar li.folder > .folder-header .create-button:hover {
+  color: #ff5fa2;
+}
+body.shift-ui-theme #sidebar-tabs > menu {
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+body.shift-ui-theme #sidebar-tabs .notification-pip {
+  background: #ff5fa2;
+  box-shadow: 0 0 6px rgba(255, 95, 162, 0.7);
+  border: 1px solid rgba(34, 28, 33, 0.9);
+}
+body.shift-ui-theme #sidebar-content #chat {
+  --shift-chat-gutter: 9px;
+}
+body.shift-ui-theme #sidebar-content #chat .chat-scroll {
+  direction: ltr;
+  scrollbar-gutter: stable;
+}
+body.shift-ui-theme #sidebar-content #chat .chat-form {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: calc(var(--chat-message-spacing) + var(--shift-chat-gutter));
+}
+body.shift-ui-theme #sidebar-content #chat .chat-input, body.shift-ui-theme #sidebar-content #chat #chat-message {
+  width: 100%;
+  box-sizing: border-box;
+}
+body.shift-ui-theme #chat-message > .editor-container {
+  --placeholder-color: #b5a4b3;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #2a232a;
+  border: 1px solid #4d4050;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color .18s, box-shadow .18s;
+}
+body.shift-ui-theme #chat-message > .editor-container:focus-within {
+  border-color: #ff5fa2;
+  box-shadow: 0 0 0 3px rgba(255, 95, 162, 0.18);
+}
+body.shift-ui-theme #chat-message .editor-content {
+  color: #f4eef3;
+}
+body.shift-ui-theme #chat-message .menu-container {
+  display: none;
+}
+body.shift-ui-theme #chat-controls {
+  width: 100%;
+  box-sizing: border-box;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 2px 0;
+}
+body.shift-ui-theme #chat-controls #message-modes {
+  gap: 6px;
+}
+body.shift-ui-theme #chat-controls #message-modes .ui-control {
+  --control-size: 28px;
+  --control-bg-color: var(--shift-chip-bg);
+  --control-border-color: transparent;
+  --control-hover-border-color: transparent;
+  --control-active-border-color: transparent;
+  border: none;
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+body.shift-ui-theme #message-modes button[data-mode="public"] {
+  --control-icon-color: #2f9fd0;
+  --control-hover-bg-color: rgba(47, 159, 208, 0.18);
+  --control-hover-icon-color: #cdebfa;
+  --control-active-bg-color: rgba(47, 159, 208, 0.30);
+  --control-active-icon-color: #ffffff;
+}
+body.shift-ui-theme #message-modes button[data-mode="gm"] {
+  --control-icon-color: #9a5cf0;
+  --control-hover-bg-color: rgba(154, 92, 240, 0.18);
+  --control-hover-icon-color: #ddccff;
+  --control-active-bg-color: rgba(154, 92, 240, 0.32);
+  --control-active-icon-color: #ffffff;
+}
+body.shift-ui-theme #message-modes button[data-mode="blind"] {
+  --control-icon-color: #de2b54;
+  --control-hover-bg-color: rgba(222, 43, 84, 0.18);
+  --control-hover-icon-color: #ffccd6;
+  --control-active-bg-color: rgba(222, 43, 84, 0.32);
+  --control-active-icon-color: #ffffff;
+}
+body.shift-ui-theme #message-modes button[data-mode="self"] {
+  --control-icon-color: #ffc511;
+  --control-hover-bg-color: rgba(255, 197, 17, 0.18);
+  --control-hover-icon-color: #ffeeb0;
+  --control-active-bg-color: rgba(255, 197, 17, 0.32);
+  --control-active-icon-color: #ffffff;
+}
+body.shift-ui-theme #message-modes button[data-mode="ic"] {
+  --control-icon-color: #45c465;
+  --control-hover-bg-color: rgba(69, 196, 101, 0.18);
+  --control-hover-icon-color: #c2f2cf;
+  --control-active-bg-color: rgba(69, 196, 101, 0.32);
+  --control-active-icon-color: #ffffff;
+}
+body.shift-ui-theme .chat-input menu {
+  background: #2f2730;
+  border: 1px solid #4d4050;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+body.shift-ui-theme .chat-input menu li:hover, body.shift-ui-theme .chat-input menu button:hover {
+  background: rgba(255, 95, 162, 0.14);
+  color: #ff5fa2;
+}
+body.shift-ui-theme .chat-sidebar .jump-to-bottom button {
+  border-radius: 10px;
+}
+body.shift-ui-theme #chat-popout .chat-form {
+  padding-right: 0;
+}
+body.shift-ui-theme #chat-popout #chat-controls {
+  padding-inline: 8px;
+}
+body.shift-ui-theme .placeable-hud {
+  --control-bg-color: rgba(34, 28, 33, 0.92);
+  --control-border-color: transparent;
+  --control-icon-color: #efe7ee;
+  --control-hover-bg-color: rgba(255, 95, 162, 0.24);
+  --control-hover-border-color: transparent;
+  --control-hover-icon-color: #fff;
+  --control-active-bg-color: rgba(255, 95, 162, 0.34);
+  --control-active-border-color: transparent;
+  --control-active-icon-color: #fff;
+}
+body.shift-ui-theme .placeable-hud .control-icon, body.shift-ui-theme .placeable-hud input {
+  border: none;
+  border-radius: 10px;
+  backdrop-filter: blur(3px);
+}
+body.shift-ui-theme .placeable-hud .palette, body.shift-ui-theme #token-hud .status-effects {
+  background: rgba(34, 28, 33, 0.94);
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+body.shift-ui-theme #scene-controls .ui-control, body.shift-ui-theme #sidebar-tabs > menu .ui-control {
+  --control-bg-color: var(--shift-chip-bg);
+  --control-border-color: transparent;
+  --control-icon-color: #e8dfe7;
+  --control-hover-bg-color: rgba(255, 95, 162, 0.32);
+  --control-hover-border-color: transparent;
+  --control-hover-icon-color: #ffffff;
+  --control-active-bg-color: rgba(255, 95, 162, 0.30);
+  --control-active-border-color: transparent;
+  --control-active-icon-color: #ffffff;
+  --control-button-border-color: transparent;
+  --control-button-hover-bg-color: rgba(255, 95, 162, 0.32);
+  --control-button-hover-border-color: transparent;
+  --toggle-bg-color: transparent;
+  --toggle-border-color: transparent;
+  --toggle-active-bg-color: rgba(255, 95, 162, 0.30);
+  --toggle-active-border-color: transparent;
+  border: none;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+body.shift-ui-theme #scene-controls .ui-control:hover, body.shift-ui-theme #sidebar-tabs > menu .ui-control:hover, body.shift-ui-theme .ui-control:not(.shift-vtt *):hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 9px rgba(255, 95, 162, 0.40);
+}
+body.shift-ui-theme #scene-controls .ui-control[aria-pressed="true"], body.shift-ui-theme #sidebar-tabs > menu .ui-control[aria-pressed="true"] {
+  box-shadow: 0 0 12px rgba(255, 95, 162, 0.40);
+}
+body.shift-ui-theme #scene-controls .ui-control:focus-visible, body.shift-ui-theme #sidebar-tabs > menu .ui-control:focus-visible {
+  box-shadow: 0 0 0 2px rgba(255, 95, 162, 0.5);
+}
+body.shift-ui-theme #scene-controls, body.shift-ui-theme #sidebar-tabs {
+  --ui-fade-opacity: 0.85;
+}
+body.shift-ui-theme #scene-controls .notification-pip {
+  background: #ff5fa2;
+  box-shadow: 0 0 0 1px rgba(34, 28, 33, 0.9), 0 0 6px rgba(226, 61, 134, 0.6);
+  text-shadow: none;
+}
+body.shift-ui-theme #scene-navigation .scene {
+  background: var(--shift-chip-bg);
+  border: none;
+  border-color: transparent;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+body.shift-ui-theme #scene-navigation .scene:hover {
+  background: rgba(255, 95, 162, 0.32);
+}
+body.shift-ui-theme #scene-navigation .scene.active, body.shift-ui-theme #scene-navigation .scene.view {
+  background: rgba(255, 95, 162, 0.30);
+  box-shadow: 0 0 10px rgba(255, 95, 162, 0.30);
+}
+body.shift-ui-theme #hotbar {
+  --slot-color: rgba(42, 35, 42, 0.78);
+  --key-bg-color-empty: rgba(34, 28, 33, 0.92);
+  --key-bg-color-full: rgba(226, 61, 134, 0.92);
+  --key-text-color: #f4eef3;
+  --page-control-color: #b5a4b3;
+}
+body.shift-ui-theme #hotbar #action-bar .slot {
+  border: 1px solid #4d4050;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+body.shift-ui-theme #hotbar #action-bar .slot .slot-icon {
+  border-radius: 11px;
+}
+body.shift-ui-theme #hotbar #action-bar .slot .key {
+  border-radius: 12px 0 8px 0;
+  font-weight: 600;
+}
+body.shift-ui-theme #hotbar #action-bar .slot.full {
+  border-color: rgba(255, 95, 162, 0.30);
+  box-shadow: inset 0 0 0 1px rgba(255, 95, 162, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 10px rgba(0, 0, 0, 0.40);
+}
+body.shift-ui-theme #hotbar #action-bar .slot:hover {
+  border: 1px solid #ff5fa2;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 0 3px rgba(255, 95, 162, 0.22), 0 4px 12px rgba(0, 0, 0, 0.45);
+  transform: translateY(-1px);
+}
+body.shift-ui-theme #hotbar #action-bar .slot.drop-target {
+  background: rgba(255, 95, 162, 0.18);
+  border: 2px dashed #ff5fa2;
+  box-shadow: 0 0 0 3px rgba(255, 95, 162, 0.30), 0 4px 14px rgba(226, 61, 134, 0.30);
+}
+body.shift-ui-theme #hotbar button {
+  --button-text-color: #b5a4b3;
+  --button-hover-text-color: #ff5fa2;
+  color: #b5a4b3;
+  transition: color 120ms ease, filter 120ms ease;
+}
+body.shift-ui-theme #hotbar button:hover, body.shift-ui-theme #hotbar #hotbar-page-controls .hotbar-page-control:hover {
+  color: #ff5fa2;
+  filter: drop-shadow(0 0 4px rgba(255, 95, 162, 0.45));
+}
+body.shift-ui-theme #hotbar #hotbar-page-controls .hotbar-page-number {
+  color: #f4eef3;
+  font-weight: 600;
+}
+body.shift-ui-theme #hotbar button[data-action="lock"].fa-lock, body.shift-ui-theme #hotbar button[data-action="mute"].fa-volume-xmark {
+  color: #ff5fa2;
+  filter: drop-shadow(0 0 5px rgba(255, 95, 162, 0.55));
+}
+body.shift-ui-theme #players #players-active, body.shift-ui-theme #players #players-inactive {
+  --background-color: rgba(47, 39, 48, 0.92);
+  --border-color: #4d4050;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 6px 18px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(6px);
+}
+body.shift-ui-theme #players {
+  --text-color: #b5a4b3;
+  --player-name-color: #f4eef3;
+  --player-name-idle-color: #b5a4b3;
+  --player-name-self-color: #ff5fa2;
+}
+body.shift-ui-theme #players .player {
+  border-radius: 8px;
+  padding: 2px 6px;
+  margin: 0 -4px;
+  transition: background-color .15s ease, color .15s ease;
+}
+body.shift-ui-theme #players .player:hover {
+  background: rgba(255, 95, 162, 0.14);
+  color: #ff5fa2;
+}
+body.shift-ui-theme #players .player.self {
+  background: none;
+  box-shadow: none;
+}
+body.shift-ui-theme #players .player.self .player-name {
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 95, 162, 0.35);
+}
+body.shift-ui-theme #players .player.self:hover {
+  background: rgba(255, 95, 162, 0.14);
+}
+body.shift-ui-theme #players .player::before {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 0 4px rgba(0, 0, 0, 0.35);
+}
+body.shift-ui-theme #players button {
+  --button-text-color: #b5a4b3;
+  --button-hover-text-color: #ff5fa2;
+  border-radius: 8px;
+  transition: color .15s, background .15s;
+}
+body.shift-ui-theme #players button:hover {
+  background: rgba(255, 95, 162, 0.14);
+  color: #ff5fa2;
+}
+body.shift-ui-theme #players #players-expand:hover {
+  color: #ff5fa2;
+}
+body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button), body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button) {
+  --button-background-color: rgba(57, 47, 58, 0.78);
+  --button-border-color: #4d4050;
+  --button-text-color: #f4eef3;
+  --button-hover-background-color: rgba(255, 95, 162, 0.26);
+  --button-hover-border-color: #4d4050;
+  --button-hover-text-color: #ffffff;
+  --button-focus-outline-color: #ff5fa2;
+  border-radius: 9px;
+  padding-inline: 0.7rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: background .18s, color .18s, box-shadow .18s;
+}
+body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):hover, body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 2px 8px rgba(226, 61, 134, 0.18);
+}
+body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):focus-visible, body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 95, 162, 0.40);
+}
+body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):is(.active, [aria-pressed="true"]), body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):is(.active, [aria-pressed="true"]) {
+  background: rgba(255, 95, 162, 0.24);
+  border-color: #4d4050;
+  color: #ffffff;
+  outline: none;
+  box-shadow: 0 0 12px rgba(255, 95, 162, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):disabled, body.shift-ui-theme #sidebar :is(button, a.button):disabled {
+  background: rgba(42, 35, 42, 0.6);
+  border-color: #4d4050;
+  color: #b5a4b3;
+  box-shadow: none;
+  opacity: .65;
+}
+body.shift-ui-theme :is(.dialog .dialog-buttons button.default, button.bright, a.button.bright):not(.shift-vtt):not(.shift-vtt *) {
+  --button-background-color: #e23d86;
+  --button-border-color: #ff5fa2;
+  --button-text-color: #ffffff;
+  --button-hover-background-color: #ff5fa2;
+  --button-hover-border-color: #ff5fa2;
+  --button-hover-text-color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 10px rgba(226, 61, 134, 0.40);
+}
+body.shift-ui-theme :is(.shift-dialog, .shift-vtt:not(.sheet):not(.browser)) :is(.dialog-buttons, .form-footer) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button) {
+  --button-background-color: rgba(57, 47, 58, 0.78);
+  --button-border-color: #4d4050;
+  --button-text-color: #f4eef3;
+  --button-hover-background-color: rgba(255, 95, 162, 0.26);
+  --button-hover-border-color: #4d4050;
+  --button-hover-text-color: #ffffff;
+  --button-focus-outline-color: #ff5fa2;
+  border-radius: 9px;
+  padding-inline: 0.7rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: background .18s, color .18s, box-shadow .18s;
+}
+body.shift-ui-theme :is(.shift-dialog, .shift-vtt:not(.sheet):not(.browser)) :is(.dialog-buttons, .form-footer) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 2px 8px rgba(226, 61, 134, 0.20);
+}
+body.shift-ui-theme .shift-dialog .dialog-buttons button.default {
+  --button-background-color: #e23d86;
+  --button-border-color: #ff5fa2;
+  --button-text-color: #ffffff;
+  --button-hover-background-color: #ff5fa2;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 10px rgba(226, 61, 134, 0.40);
+}
+body.shift-ui-theme .ui-control:not(.shift-vtt *) {
+  --control-bg-color: var(--shift-chip-bg);
+  --control-border-color: transparent;
+  --control-icon-color: #e8dfe7;
+  --control-hover-bg-color: rgba(255, 95, 162, 0.32);
+  --control-hover-border-color: transparent;
+  --control-hover-icon-color: #ffffff;
+  --control-active-bg-color: rgba(255, 95, 162, 0.30);
+  --control-active-border-color: transparent;
+  --control-active-icon-color: #ffffff;
+  --control-button-border-color: transparent;
+  --control-button-hover-bg-color: rgba(255, 95, 162, 0.32);
+  --control-button-hover-border-color: transparent;
+  border: none;
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+body.shift-ui-theme .ui-control[aria-pressed="true"]:not(.shift-vtt *) {
+  box-shadow: 0 0 10px rgba(255, 95, 162, 0.30);
+}
+body.shift-ui-theme .ui-control:not(.shift-vtt *):focus-visible {
+  box-shadow: 0 0 0 3px rgba(255, 95, 162, 0.30);
+}
+body.shift-ui-theme .split-button:not(.shift-vtt *) .ui-control:first-child {
+  border-start-start-radius: 9px;
+  border-end-start-radius: 9px;
+}
+body.shift-ui-theme .split-button:not(.shift-vtt *) .ui-control:last-child {
+  border-start-end-radius: 9px;
+  border-end-end-radius: 9px;
+}
+body.shift-ui-theme .split-button.vertical:not(.shift-vtt *) .ui-control:first-child {
+  border-radius: 9px 9px 0 0;
+}
+body.shift-ui-theme .split-button.vertical:not(.shift-vtt *) .ui-control:last-child {
+  border-radius: 0 0 9px 9px;
+}
+body.shift-ui-theme :is(.ui-control, .placeable-hud, .standard-form, .application):not(.shift-vtt *) {
+  --toggle-bg-color: rgba(42, 35, 42, 0.85);
+  --toggle-border-color: #4d4050;
+  --toggle-active-bg-color: #ff5fa2;
+  --toggle-active-border-color: #ff5fa2;
+}
+body.shift-ui-theme .application:not(.shift-vtt) :is(input[type="checkbox"], input[type="radio"]), body.shift-ui-theme #sidebar :is(input[type="checkbox"], input[type="radio"]) {
+  --checkbox-checked-color: #ff5fa2;
+  --checkbox-background-color: #4d4050;
+  --input-focus-outline-color: #ff5fa2;
+}
+body.shift-ui-theme .application:not(.shift-vtt) input[type="range"], body.shift-ui-theme #sidebar input[type="range"] {
+  --range-track-color: rgba(42, 35, 42, 0.9);
+  --range-track-border-color: #4d4050;
+  --range-thumb-background-color: #392f3a;
+  --range-thumb-border-color: #ff5fa2;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .window-content select, body.shift-ui-theme #sidebar select {
+  background: #2a232a;
+  border: 1px solid #4d4050;
+  color: #f4eef3;
+  border-radius: 8px;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .window-content select:focus, body.shift-ui-theme #sidebar select:focus {
+  outline: none;
+  border-color: #ff5fa2;
+  box-shadow: 0 0 0 3px rgba(255, 95, 162, 0.18);
+}
+body.shift-ui-theme select option, body.shift-ui-theme select optgroup {
+  background: #2f2730;
+  color: #f4eef3;
+}
+body.shift-ui-theme .application:not(.sidebar-tab) {
+  border: 1px solid color-mix(in oklab, #ff5fa2 20%, #4d4050);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+}
+body.shift-ui-theme .application:not(.sidebar-tab) .window-header {
+  background: linear-gradient(180deg, #392f3a, #2f2730);
+  border-bottom: 1px solid color-mix(in oklab, #ff5fa2 30%, #4d4050);
+}
+body.shift-ui-theme .application:not(.sidebar-tab) .window-header .window-title {
+  color: #f4eef3;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .window-content {
+  background: #221c21;
+  color: #f4eef3;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(h1, h2, h3, h4, h5, h6) {
+  color: #f4eef3;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(label, p, span) {
+  color: #f4eef3;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(.hint, .notes) {
+  color: #b5a4b3;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .window-content a:not(.button) {
+  color: #ff5fa2;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(input[type="text"], input[type="number"], input[type="search"], input[type="password"], textarea) {
+  background: #2a232a;
+  border: 1px solid #4d4050;
+  color: #f4eef3;
+  border-radius: 8px;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(input, textarea):focus {
+  border-color: #ff5fa2;
+  box-shadow: 0 0 0 3px rgba(255, 95, 162, 0.16);
+  outline: none;
+}
+body.shift-ui-theme .application:not(.shift-vtt):not(.sidebar-tab) .scrollable {
+  --scroll-margin: 0px;
+  margin-right: 0;
+  padding-right: 0.5rem;
+  scrollbar-gutter: stable;
+}
+body.shift-ui-theme .category-browser aside {
+  border-right: 1px solid #4d4050;
+  padding: 4px 12px 4px 4px;
+}
+body.shift-ui-theme .category-browser aside input[type="search"] {
+  width: 100%;
+  background: #2a232a;
+  border: 1px solid #4d4050;
+  color: #f4eef3;
+  border-radius: 9px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+}
+body.shift-ui-theme .category-browser aside input[type="search"]:focus {
+  border-color: #ff5fa2;
+  box-shadow: 0 0 0 3px rgba(255, 95, 162, 0.16);
+  outline: none;
+}
+body.shift-ui-theme .category-browser aside nav.tabs > button {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 9px;
+  padding: 4px 10px;
+}
+body.shift-ui-theme .category-browser aside nav.tabs > button:hover {
+  background: rgba(255, 95, 162, 0.12);
+  color: #ff5fa2;
+}
+body.shift-ui-theme .category-browser aside nav.tabs > button.active {
+  background: rgba(255, 95, 162, 0.18);
+  color: #ff5fa2;
+  box-shadow: inset 0 0 0 1px rgba(255, 95, 162, 0.45);
+}
+body.shift-ui-theme .category-browser .main .categories section.tab {
+  padding: 0.5rem 0.5rem 0.25rem 0.25rem;
+}
+body.shift-ui-theme.shift-theme-light .sidebar-tab:not(.chat-sidebar) {
+  --sidebar-background: linear-gradient(180deg, #fff, #ece3eb);
+}
+body.shift-ui-theme.shift-theme-light #sidebar input[type="text"], body.shift-ui-theme.shift-theme-light #sidebar input[type="search"] {
+  background: #fff;
+  border-color: #dcccd9;
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light #sidebar-tabs > menu {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+body.shift-ui-theme.shift-theme-light #scene-controls .ui-control, body.shift-ui-theme.shift-theme-light #sidebar-tabs > menu .ui-control {
+  --control-icon-color: #6c5f70;
+  --control-hover-bg-color: rgba(207, 58, 128, 0.22);
+  --control-hover-icon-color: #cf3a80;
+  --control-active-bg-color: rgba(207, 58, 128, 0.18);
+  --control-active-icon-color: #cf3a80;
+  --toggle-active-bg-color: rgba(207, 58, 128, 0.18);
+}
+body.shift-ui-theme.shift-theme-light #scene-controls .ui-control[aria-pressed="true"], body.shift-ui-theme.shift-theme-light #sidebar-tabs > menu .ui-control[aria-pressed="true"] {
+  box-shadow: 0 0 10px rgba(207, 58, 128, 0.25);
+}
+body.shift-ui-theme.shift-theme-light #sidebar-tabs .notification-pip, body.shift-ui-theme.shift-theme-light #scene-controls .notification-pip {
+  background: #cf3a80;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+body.shift-ui-theme.shift-theme-light #scene-navigation .scene:hover {
+  background: rgba(207, 58, 128, 0.22);
+}
+body.shift-ui-theme.shift-theme-light #scene-navigation .scene.active, body.shift-ui-theme.shift-theme-light #scene-navigation .scene.view {
+  background: rgba(207, 58, 128, 0.18);
+  box-shadow: 0 0 10px rgba(207, 58, 128, 0.25);
+}
+body.shift-ui-theme.shift-theme-light #chat-message > .editor-container {
+  background: #fff;
+  border-color: #dcccd9;
+  --placeholder-color: #6c5f70;
+}
+body.shift-ui-theme.shift-theme-light #chat-message .editor-content {
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light .chat-input menu {
+  background: #fff;
+  border-color: #dcccd9;
+}
+body.shift-ui-theme.shift-theme-light #hotbar {
+  --slot-color: rgba(255, 255, 255, 0.72);
+  --key-bg-color-empty: rgba(236, 227, 235, 0.92);
+  --key-bg-color-full: rgba(207, 58, 128, 0.92);
+  --key-text-color: #241f27;
+  --page-control-color: #6c5f70;
+}
+body.shift-ui-theme.shift-theme-light #hotbar #action-bar .slot {
+  border-color: #dcccd9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 8px rgba(36, 31, 39, 0.14);
+}
+body.shift-ui-theme.shift-theme-light #hotbar #action-bar .slot.full {
+  border-color: rgba(207, 58, 128, 0.35);
+}
+body.shift-ui-theme.shift-theme-light #hotbar #action-bar .slot:hover {
+  border-color: #cf3a80;
+  box-shadow: 0 0 0 3px rgba(207, 58, 128, 0.20), 0 4px 12px rgba(36, 31, 39, 0.18);
+}
+body.shift-ui-theme.shift-theme-light #hotbar #action-bar .slot.drop-target {
+  background: rgba(207, 58, 128, 0.14);
+  border-color: #cf3a80;
+}
+body.shift-ui-theme.shift-theme-light #hotbar button {
+  --button-text-color: #6c5f70;
+  color: #6c5f70;
+}
+body.shift-ui-theme.shift-theme-light #hotbar button:hover {
+  color: #cf3a80;
+}
+body.shift-ui-theme.shift-theme-light #hotbar #hotbar-page-controls .hotbar-page-number {
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light #players #players-active, body.shift-ui-theme.shift-theme-light #players #players-inactive {
+  --background-color: rgba(255, 255, 255, 0.88);
+  --border-color: #dcccd9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 6px 16px rgba(108, 95, 112, 0.22);
+}
+body.shift-ui-theme.shift-theme-light #players {
+  --text-color: #6c5f70;
+  --player-name-color: #241f27;
+  --player-name-idle-color: #6c5f70;
+  --player-name-self-color: #cf3a80;
+}
+body.shift-ui-theme.shift-theme-light #players .player:hover {
+  background: rgba(207, 58, 128, 0.22);
+  color: #cf3a80;
+}
+body.shift-ui-theme.shift-theme-light #players .player.self {
+  background: rgba(207, 58, 128, 0.10);
+  box-shadow: inset 0 0 0 1px rgba(207, 58, 128, 0.30);
+}
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button), body.shift-ui-theme.shift-theme-light #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button) {
+  --button-background-color: #fff;
+  --button-border-color: #dcccd9;
+  --button-text-color: #241f27;
+  --button-hover-background-color: rgba(207, 58, 128, 0.22);
+  --button-hover-border-color: #dcccd9;
+  --button-hover-text-color: #241f27;
+  --button-focus-outline-color: #cf3a80;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):is(.active, [aria-pressed="true"]), body.shift-ui-theme.shift-theme-light #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):is(.active, [aria-pressed="true"]) {
+  background: rgba(207, 58, 128, 0.16);
+  border-color: #dcccd9;
+  color: #241f27;
+  box-shadow: 0 0 12px rgba(207, 58, 128, 0.25);
+}
+body.shift-ui-theme.shift-theme-light .ui-control:not(.shift-vtt *) {
+  --control-bg-color: var(--shift-chip-bg);
+  --control-border-color: transparent;
+  --control-icon-color: #6c5f70;
+  --control-hover-bg-color: rgba(207, 58, 128, 0.22);
+  --control-hover-border-color: transparent;
+  --control-hover-icon-color: #cf3a80;
+  --control-active-bg-color: rgba(207, 58, 128, 0.18);
+  --control-active-border-color: transparent;
+  --control-active-icon-color: #cf3a80;
+}
+body.shift-ui-theme.shift-theme-light :is(.ui-control, .placeable-hud, .standard-form, .application):not(.shift-vtt *) {
+  --toggle-bg-color: rgba(220, 204, 217, 0.7);
+  --toggle-border-color: #dcccd9;
+  --toggle-active-bg-color: #cf3a80;
+  --toggle-active-border-color: #cf3a80;
+}
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(input[type="checkbox"], input[type="radio"]) {
+  --checkbox-checked-color: #cf3a80;
+  --checkbox-background-color: #dcccd9;
+  --input-focus-outline-color: #cf3a80;
+}
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content select, body.shift-ui-theme.shift-theme-light #sidebar select {
+  background: #fff;
+  border-color: #dcccd9;
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light select option, body.shift-ui-theme.shift-theme-light select optgroup {
+  background: #fff;
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light .application:not(.sidebar-tab) .window-header {
+  background: linear-gradient(180deg, #fff, #ece3eb);
+  border-bottom-color: #dcccd9;
+}
+body.shift-ui-theme.shift-theme-light .application:not(.sidebar-tab) .window-header .window-title {
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content {
+  background: #f4eff3;
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(h1, h2, h3, h4, h5, h6, label, p, span) {
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(.hint, .notes) {
+  color: #6c5f70;
+}
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content a:not(.button) {
+  color: #cf3a80;
+}
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(input[type="text"], input[type="number"], input[type="search"], input[type="password"], textarea) {
+  background: #fff;
+  border-color: #dcccd9;
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light .category-browser aside {
+  border-right-color: #dcccd9;
+}
+body.shift-ui-theme.shift-theme-light .category-browser aside input[type="search"] {
+  background: #fff;
+  border-color: #dcccd9;
+  color: #241f27;
+}
+body.shift-ui-theme.shift-theme-light .category-browser aside nav.tabs > button:hover, body.shift-ui-theme.shift-theme-light .category-browser aside nav.tabs > button.active {
+  background: rgba(207, 58, 128, 0.22);
+  color: #cf3a80;
+  box-shadow: inset 0 0 0 1px rgba(207, 58, 128, 0.40);
 }

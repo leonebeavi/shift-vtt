@@ -388,7 +388,7 @@
       "ApplyManually": "apply manually",
       "AnyTrait": "Trait",
       "AnySecondTrait": "Second Trait (optional)",
-      "PickTraits": "Traits (choose up to two)",
+      "PickTraits": "Choose up to two:",
       "ApplyTarget": "Shiftdown target's Traits"
     },
     "Xp": {
@@ -416,7 +416,7 @@
       "Unsafe": "Unsafe Rest",
       "SafeChat": "{actor} takes a Safe Rest. All Traits return to their Max Die and Techniques refresh.",
       "UnsafeChat": "{actor} takes an Unsafe Rest. {pack} shifts down to {die}.",
-      "UnsafeHint": "Shift {pack} ({die}) down to restore one Trait.",
+      "UnsafeHint": "Shiftdown {pack} to restore one Trait.",
       "WealthHint": "Pick the Wealth die to cap recovery, or no limit.",
       "NoLimit": "No limit",
       "ChallengingHint": "Choose how to spend this rest.",
@@ -607,8 +607,6 @@
       "NotRollable": "Not rollable",
       "Scale": "Scale",
       "MakeTemporary": "Improvise a temporary Trait (Pack down)",
-      "UnsafeRest": "Unsafe Rest",
-      "SafeRest": "Safe Rest",
       "EditImage": "Change image",
       "EditBio": "Toggle editing",
       "Xp": "Banked XP",
@@ -745,6 +743,10 @@
         "Hint": "Light or dark for all SHIFT sheets and chat.",
         "dark": "Dark",
         "light": "Light"
+      },
+      "UiTheme": {
+        "Name": "Bunny Glass interface",
+        "Hint": "Skin Foundry's own interface (sidebar, chat, HUDs, windows) to match the SHIFT sheets. Turn off for Foundry's default look."
       }
     },
     "Recharge": {
@@ -812,7 +814,7 @@
       "Invite": "{actor} wants to work together using {trait} ({die}). One ally can join with any Trait · Core not required. A Critical needs both dice showing 1.",
       "Join": "Join the roll",
       "PickTrait": "Work Together: {actor}",
-      "Hint": "Pick any Trait · the only roll that can pair two Focus/Pack Traits.",
+      "Hint": "Joint roll with one ally.",
       "NeedActor": "Select your token or assign a character to join.",
       "NotSelf": "You cannot join your own roll."
     },
@@ -844,6 +846,7 @@
       "Tech": "Techniques",
       "PackShiftHint": "Shift+click: temporary Trait",
       "ExertHint": "Ctrl+click: Exert",
+      "ScaleUpReadyHint": "Scale Up available",
       "Drag": "Drag to move"
     },
     "Ranges": {

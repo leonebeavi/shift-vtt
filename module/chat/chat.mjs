@@ -737,7 +737,6 @@ async function onJoinGroup(event, message) {
 
   const allyTrait = await pickTrait(ally, {
     title: game.i18n.format("SHIFT.Group.PickTrait", { actor: ally.name }),
-    hint: game.i18n.localize("SHIFT.Group.Hint"),
     filter: t => t.canRoll
   });
   if (!allyTrait) return;

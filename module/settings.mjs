@@ -147,6 +147,21 @@ export function registerSettings() {
     onChange: () => applyShiftTheme()
   });
 
+  // EXPERIMENTAL (toggleável, fácil de reverter): pinta a CHROME nativa do
+  // Foundry (sidebar, chat, HUDs, janelas) com a estética "Bunny Glass" das
+  // fichas. Liga/desliga a classe body.shift-ui-theme, que governa um único
+  // bloco isolado no fim de shift.less. Desligue aqui para voltar ao visual
+  // padrão do Foundry sem tocar em nada.
+  reg("uiTheme", {
+    name: "SHIFT.Settings.UiTheme.Name",
+    hint: "SHIFT.Settings.UiTheme.Hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => applyShiftUiTheme()
+  });
+
   // As settings do Action HUD vivem no submenu "Action HUD" (config:false →
   // escondidas da lista plana). Settings config:false ainda disparam onChange no
   // set(), então a barra se atualiza quando o jogador mexe num toggle do submenu.
@@ -224,9 +239,24 @@ export function registerSettings() {
   reg("hudPosition", { scope: "client", config: false, type: Object, default: null });
   // Por jogador: mostra a faixa de distância ao passar o mouse num token na cena.
   reg("showTokenRanges", { scope: "client", config: false, type: Boolean, default: true });
+  // One-time por cliente: marca que já forçamos o Bunny Glass LIGADO por padrão.
+  reg("uiThemeDefaulted", { scope: "client", config: false, type: Boolean, default: false });
 
-  // Aplica o tema de ficha escolhido assim que o jogo estiver pronto.
-  Hooks.once("ready", () => applyShiftTheme());
+  // Aplica os temas escolhidos assim que o jogo estiver pronto.
+  Hooks.once("ready", async () => {
+    // Bunny Glass ATIVO POR PADRÃO: a setting "uiTheme" já é default:true (instalações
+    // novas já vêm ligadas), mas na 1ª carga após esta versão garantimos uiTheme=on por
+    // cliente — pega quem ficou com a setting OFF durante os testes (um valor de client
+    // guardado vence o default). Toggles futuros são respeitados.
+    if (!game.settings.get("shift-vtt", "uiThemeDefaulted")) {
+      await game.settings.set("shift-vtt", "uiThemeDefaulted", true);
+      if (game.settings.get("shift-vtt", "uiTheme") === false) {
+        await game.settings.set("shift-vtt", "uiTheme", true);
+      }
+    }
+    applyShiftTheme();
+    applyShiftUiTheme();
+  });
 }
 
 export function applyShiftTheme() {
@@ -234,6 +264,15 @@ export function applyShiftTheme() {
   document.body.classList.toggle("shift-theme-light", light);
   // Bunny Glass é PADRÃO obrigatório: assa direto no tema escuro via CSS
   // (body:not(.shift-theme-light)), sem setting nem classe pra alternar.
+}
+
+/** EXPERIMENTAL: liga/desliga o skin "Bunny Glass" na chrome nativa do Foundry
+ *  (sidebar, chat, HUDs, janelas). Tudo mora num único bloco isolado de
+ *  shift.less sob `body.shift-ui-theme` — alternar a classe é reverter por
+ *  completo, sem reload. Ver setting "uiTheme". */
+export function applyShiftUiTheme() {
+  const on = game.settings.get("shift-vtt", "uiTheme") !== false;
+  document.body.classList.toggle("shift-ui-theme", on);
 }
 
 /** Se o sistema opcional de Scale está ligado (chave-mestra). Importada onde quer

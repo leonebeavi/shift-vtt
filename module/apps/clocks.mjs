@@ -11,6 +11,8 @@ import { emitOrRun } from "../helpers/socket.mjs";
 
 let panel = null;
 let dragRow = null;
+// Observa a coluna de Players para re-dockar quando a bandeja de offline expande/recolhe.
+let playersRO = null;
 
 function getClocks() {
   return foundry.utils.deepClone(game.settings.get("shift-vtt", "clocks") ?? []);
@@ -36,6 +38,7 @@ function ensurePanel() {
   enableHeaderDrag();
   // Reposiciona quando a janela ou a UI-scale muda: re-clampa o ponto custom, ou re-docka.
   window.addEventListener("resize", positionClocks);
+  watchPlayers();
   return panel;
 }
 
@@ -57,8 +60,11 @@ function positionClocks() {
  * permanece um filho position:fixed de <body> (nunca dentro do #ui-left, que é
  * transformado e tem pointer-events:none) e é posicionado puramente por MEDIÇÃO: lemos
  * o rect de tela ao vivo da caixa de players visível de 200px (#players-active,
- * que já reflete o --ui-scale do Foundry) e alinhamos a ela. Seu z-index fica
- * ABAIXO da lista de Players, então a bandeja de offline simplesmente se expande por cima.
+ * que já reflete o --ui-scale do Foundry) para a largura/esquerda. Para a vertical,
+ * ancoramos no TOPO VISÍVEL da coluna inteira: quando a bandeja de offline
+ * (#players-inactive) expande, ela cresce a coluna para cima, então o painel sobe
+ * junto e fica ACIMA dela, em vez de ser coberto por ela. O `watchPlayers` cuida do
+ * re-dock no toggle de expandir/recolher.
  */
 function dockToPlayers() {
   if (!panel?.isConnected || !panel.classList.contains("visible")) return;
@@ -68,11 +74,39 @@ function dockToPlayers() {
   const box = players?.querySelector("#players-active") ?? players;
   const rect = box?.getBoundingClientRect();
   if (!rect || rect.width < 1) return;   // UI de Players ainda não pronta → um hook tenta de novo
+  // Borda superior do que está REALMENTE pintado. A bandeja de offline
+  // (#players-inactive) fica ACIMA da caixa ativa e só deve contar quando a lista
+  // está expandida. Usamos a classe semântica `.expanded` do #players, NÃO a
+  // geometria: ao recolher, o Foundry anima o max-height por 0.5s mas só troca a
+  // visibility no FIM da transição, deixando uma altura residual (padding/borda) —
+  // medir isso prendia o painel um pouco alto. Com a classe, recolher zera a
+  // contribuição na hora. A guarda de altura ainda ignora a bandeja vazia
+  // (expandida porém :empty continua com max-height 0).
+  let topEdge = rect.top;
+  const inactive = players?.querySelector("#players-inactive");
+  if (inactive && players.classList.contains("expanded")) {
+    const ir = inactive.getBoundingClientRect();
+    if (ir.height > 1) topEdge = Math.min(topEdge, ir.top);
+  }
   const GAP = 6;
   panel.style.left = `${Math.round(rect.left)}px`;
   panel.style.width = `${Math.round(rect.width)}px`;
   panel.style.top = "auto";
-  panel.style.bottom = `${Math.round(window.innerHeight - rect.top + GAP)}px`;
+  panel.style.bottom = `${Math.round(window.innerHeight - topEdge + GAP)}px`;
+}
+
+/**
+ * Reposiciona o painel sempre que a coluna de Players muda de tamanho — em especial
+ * quando a bandeja de offline expande/recolhe, que o V13 alterna por classe SEM
+ * disparar um render hook. Um ResizeObserver no #players cobre isso de forma
+ * desacoplada do mecanismo interno do Foundry. Idempotente: re-observa sem duplicar.
+ */
+function watchPlayers() {
+  const players = document.getElementById("players");
+  if (!players || typeof ResizeObserver === "undefined") return;
+  if (!playersRO) playersRO = new ResizeObserver(() => positionClocks());
+  playersRO.disconnect();
+  playersRO.observe(players);
 }
 
 /** Move o painel para um ponto livre (ancorado pelo canto superior esquerdo), totalmente clampado
@@ -564,7 +598,7 @@ export function registerClocks() {
   // muda (o V13 dispara renderPlayers; cores mais antigos disparam renderPlayerList). Um
   // painel posicionado de forma custom apenas re-clampa e fica no lugar.
   for (const hook of ["renderPlayers", "renderPlayerList", "collapseSidebar"]) {
-    Hooks.on(hook, () => positionClocks());
+    Hooks.on(hook, () => { watchPlayers(); positionClocks(); });
   }
 
   Hooks.on("getSceneControlButtons", controls => {

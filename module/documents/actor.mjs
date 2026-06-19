@@ -531,7 +531,7 @@ export class ShiftActor extends Actor {
       if (!restorable.length) return void ui.notifications.info(game.i18n.localize("SHIFT.Rest.NothingToRestore"));
       const id = await promptTraitChoice({
         title: game.i18n.localize("SHIFT.Rest.Unsafe"),
-        hint: game.i18n.format("SHIFT.Rest.UnsafeHint", { pack: pack.name, die: dieLabel(pack.system.currentDie) }),
+        hint: game.i18n.format("SHIFT.Rest.UnsafeHint", { pack: pack.name }),
         options: restorable.map(t => ({
           value: t.id,
           name: t.name,

@@ -388,7 +388,7 @@
       "ApplyManually": "aplicar manualmente",
       "AnyTrait": "Trait",
       "AnySecondTrait": "Segundo Trait (opcional)",
-      "PickTraits": "Traits (escolha até dois)",
+      "PickTraits": "Escolha até dois:",
       "ApplyTarget": "Shiftdown nos Traits do alvo"
     },
     "Xp": {
@@ -416,7 +416,7 @@
       "Unsafe": "Unsafe Rest",
       "SafeChat": "{actor} faz um Safe Rest. Todos os Traits voltam ao Max Die e as Técnicas são renovadas.",
       "UnsafeChat": "{actor} faz um Unsafe Rest. {pack} sofre shift down para {die}.",
-      "UnsafeHint": "Dê shift down em {pack} ({die}) para restaurar um Trait.",
+      "UnsafeHint": "Dê shiftdown em {pack} para restaurar um Trait.",
       "WealthHint": "Escolha o dado de Riqueza para limitar a recuperação, ou sem limite.",
       "NoLimit": "Sem limite",
       "ChallengingHint": "Escolha como gastar este descanso.",
@@ -607,8 +607,6 @@
       "NotRollable": "Não rolável",
       "Scale": "Escala",
       "MakeTemporary": "Improvise um Trait temporário (Mochila desce)",
-      "UnsafeRest": "Unsafe Rest",
-      "SafeRest": "Safe Rest",
       "EditImage": "Trocar imagem",
       "EditBio": "Alternar edição",
       "Xp": "XP acumulado",
@@ -745,6 +743,10 @@
         "Hint": "Aparência clara ou escura para fichas e chat SHIFT.",
         "dark": "Escuro",
         "light": "Claro"
+      },
+      "UiTheme": {
+        "Name": "Interface Bunny Glass",
+        "Hint": "Aplica a estética das fichas SHIFT à interface do próprio Foundry (sidebar, chat, HUDs, janelas). Desligue para voltar ao visual padrão do Foundry."
       }
     },
     "Recharge": {
@@ -812,7 +814,7 @@
       "Invite": "{actor} quer trabalhar em conjunto usando {trait} ({die}). Um aliado pode entrar com qualquer Trait, sem precisar de Core. Crítico exige os dois dados mostrando 1.",
       "Join": "Entrar na rolagem",
       "PickTrait": "Trabalhar em Conjunto: {actor}",
-      "Hint": "Escolha qualquer Trait · a única rolagem que pode juntar dois Focus/Pack.",
+      "Hint": "Rolagem conjunta com um aliado.",
       "NeedActor": "Selecione seu token ou vincule um personagem para entrar.",
       "NotSelf": "Você não pode entrar na própria rolagem."
     },
@@ -844,6 +846,7 @@
       "Tech": "Técnicas",
       "PackShiftHint": "Shift+clique: Trait temporário",
       "ExertHint": "Ctrl+clique: Exert",
+      "ScaleUpReadyHint": "Scale Up disponível",
       "Drag": "Arraste para mover"
     },
     "Ranges": {
