@@ -160,11 +160,11 @@ export class ShiftItem extends Item {
   }
 
   get canShiftDown() {
-    return this.hasClock && !this.system.exhausted && !this.isResolved;
+    return this.hasClock && !this.system.exhausted && !this.isResolved && !this.isLocked;
   }
 
   get canShiftUp() {
-    if (!this.hasClock || this.isResolved) return false;
+    if (!this.hasClock || this.isResolved || this.isLocked) return false;
     if (this.system.exhausted) return true;
     return dieIndex(this.system.currentDie) > dieIndex(this.system.maxDie);
   }
@@ -196,7 +196,7 @@ export class ShiftItem extends Item {
   }
 
   get canRoll() {
-    return this.hasClock && this.system.rollable && !this.system.exhausted && !this.isResolved;
+    return this.hasClock && this.system.rollable && !this.system.exhausted && !this.isResolved && !this.isLocked;
   }
 
   /* ---------------------------------------------------------------- */
@@ -212,6 +212,31 @@ export class ShiftItem extends Item {
   /** Uma Quest já resolvida (success/failure) — independente do Exhausted. */
   get isResolved() {
     return this.isQuest && this.questOutcome !== "none";
+  }
+
+  /** Uma Quest BLOQUEADA: tem pré-requisitos (system.requires) que ainda não
+   *  CONCLUÍRAM (não resolvidos). Enquanto bloqueada não rola/avança/resolve —
+   *  "só abre quando X concluir". Pré-requisito apagado não bloqueia. */
+  get isLocked() {
+    if (!this.isQuest || !this.actor) return false;
+    return (this.system.requires ?? []).some(id => {
+      const q = this.actor.items.get(id);
+      return q?.type === "quest" && !q.isResolved;
+    });
+  }
+
+  /** Os pré-requisitos pendentes (Quests não resolvidas) desta Quest. */
+  get pendingRequirements() {
+    if (!this.isQuest || !this.actor) return [];
+    return (this.system.requires ?? [])
+      .map(id => this.actor.items.get(id))
+      .filter(q => q?.type === "quest" && !q.isResolved);
+  }
+
+  /** As Quests-filhas desta (mesmo Actor, system.parentId === este id). */
+  get childQuests() {
+    if (!this.isQuest || !this.actor) return [];
+    return this.actor.items.filter(i => i.type === "quest" && i.system.parentId === this.id);
   }
 
   /* ---------------------------------------------------------------- */

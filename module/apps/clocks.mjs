@@ -182,6 +182,8 @@ function enableRowReorder() {
 function clockRow(c, isGM) {
   const die = c.exhausted ? null : c.currentDie;
   const img = die ? CONFIG.SHIFT.diceImages[die] : null;
+  // Cor do dado como acento do card (consumida só pelo Bunny Glass; inócua fora dele).
+  const accent = die ? CONFIG.SHIFT.dieColors[die] : null;
   const canRoll = !c.exhausted && (isGM || c.playersCanRoll);
   // Um Global Trait pode ser marcado para NUNCA dar ShiftDown numa rolagem máxima (estado off).
   const shiftsOff = c.shiftsDown === false;
@@ -193,7 +195,7 @@ function clockRow(c, isGM) {
   const scalePip = (scaleOn && scale > 1)
     ? `<span class="scale-pip" data-scale="${scale}" data-tooltip="${scaleLabel}">${scale}</span>` : "";
   return `
-    <li class="clock trait-clock${c.exhausted ? " exhausted" : ""}${c.visible ? "" : " gm-only"}" data-clock-id="${c.id}"${isGM ? ' draggable="true"' : ""}>
+    <li class="clock trait-clock${c.exhausted ? " exhausted" : ""}${c.visible ? "" : " gm-only"}" data-clock-id="${c.id}"${accent ? ` style="--ac:${accent}"` : ""}${isGM ? ' draggable="true"' : ""}>
       <a class="clock-die${canRoll ? " rollable" : ""}" data-act="${canRoll ? "roll" : ""}"
          data-tooltip="${c.exhausted ? game.i18n.localize("SHIFT.DiceStatus.exhausted") : dieLabel(die)}${canRoll ? " &middot; " + game.i18n.localize("SHIFT.Tooltips.RollIcon") : ""}">
         ${img ? `<img src="${img}" alt=""/>` : `<i class="fa-solid fa-xmark"></i>`}

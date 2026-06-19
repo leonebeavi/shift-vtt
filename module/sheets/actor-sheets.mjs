@@ -441,6 +441,11 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   _openTile = null;
   /** Guarda de reentrância para a criação lazy do journal de codex no lado do GM. */
   #ensuringJournal = false;
+  /** Quests-mãe com as filhas RECOLHIDAS (ids). Estado de view transitório. */
+  #questCollapsed = new Set();
+  /** Quests com o corpo INVERTIDO do padrão de abertura (clique do usuário). O
+   *  default é: topo ou com filhas = expandida; filha-folha = compacta. */
+  #questFlipped = new Set();
 
   /** @override */
   static DEFAULT_OPTIONS = {
@@ -461,6 +466,8 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       questResolve: ShiftPartySheet.#onQuestResolve,
       questFail: ShiftPartySheet.#onQuestFail,
       questReopen: ShiftPartySheet.#onQuestReopen,
+      toggleQuestKids: ShiftPartySheet.#onToggleQuestKids,
+      toggleQuestBody: ShiftPartySheet.#onToggleQuestBody,
       openQuestLink: ShiftPartySheet.#onOpenQuestLink,
       removeQuestLink: ShiftPartySheet.#onRemoveQuestLink,
       clearLocation: ShiftPartySheet.#onClearLocation,
@@ -612,25 +619,74 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
   /* --- Quests (tipo próprio; card .ptrait compartilhado) ----------- */
 
-  /** Monta o grupo da aba Quests a partir de `actor.quests`. Espelha a forma de
-   *  um trait-group ({ key, traits }) para a aba reaproveitar o mesmo template. */
+  /** Monta o grupo da aba Quests a partir de `actor.quests`, como uma ÁRVORE: as
+   *  filhas (system.parentId) aninham sob a mãe, achatadas em ordem DFS com `depth`
+   *  para a indentação. Mãe oculta/inexistente → a filha sobe pro topo. */
   async #questGroup() {
     const isOwner = this.document.isOwner;
     const canSee = q => q.system.revealed || game.user.isGM || isOwner;
-    const quests = this.document.quests
-      .filter(canSee)
-      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
+    const all = this.document.quests.filter(canSee);
+    const ids = new Set(all.map(q => q.id));
+    const byParent = new Map();           // parentId ("" = topo) -> [quests]
+    for (const q of all) {
+      const pid = (q.system.parentId && ids.has(q.system.parentId)) ? q.system.parentId : "";
+      (byParent.get(pid) ?? byParent.set(pid, []).get(pid)).push(q);
+    }
+    for (const list of byParent.values()) {
+      list.sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
+    }
     const traits = [];
-    for (const q of quests) traits.push(await this.#questContext(q));
+    const seen = new Set();
+    // Marca uma subárvore inteira como vista SEM renderizar (mãe recolhida): assim
+    // as filhas somem de fato e o fallback de órfãs abaixo não as ressuscita no topo.
+    const hideSubtree = (parentId) => {
+      for (const q of (byParent.get(parentId) ?? [])) {
+        if (seen.has(q.id)) continue;
+        seen.add(q.id);
+        hideSubtree(q.id);
+      }
+    };
+    const walk = async (parentId, depth) => {
+      const sibs = byParent.get(parentId) ?? [];
+      for (let i = 0; i < sibs.length; i++) {
+        const q = sibs[i];
+        if (seen.has(q.id)) continue;     // proteção contra ciclo
+        seen.add(q.id);
+        const ctx = await this.#questContext(q, depth);
+        ctx.firstSub = i === 0;           // 1ª filha do grupo: conector não emenda pra cima (não toca a mãe)
+        traits.push(ctx);
+        // Mãe recolhida: esconde a subárvore (marca como vista, não renderiza).
+        if (this.#questCollapsed.has(q.id)) hideSubtree(q.id);
+        else await walk(q.id, depth + 1);
+      }
+    };
+    await walk("", 0);
+    // Qualquer quest presa num ciclo (não visitada) entra no topo, pra não sumir.
+    for (const q of all) if (!seen.has(q.id)) { seen.add(q.id); traits.push(await this.#questContext(q, 0)); }
     return { key: "quest", traits };
   }
 
-  /** Contexto de um card de Quest: o clock (igual a um trait tile) + os campos de
-   *  desfecho. Os links entram na Etapa C. */
-  async #questContext(q) {
+  /** Contexto de um card de Quest: clock + desfecho + links + hierarquia (depth/
+   *  progresso das filhas). `depth` = nível de indentação na árvore. */
+  async #questContext(q, depth = 0) {
     const sys = q.system;
     const outcome = q.questOutcome;          // "none" | "success" | "failure"
     const resolved = q.isResolved;
+    const locked = q.isLocked;               // pré-requisitos pendentes
+    const pending = q.pendingRequirements.map(r => r.name);
+    // Progresso das sub-quests (filhas resolvidas / total).
+    const children = q.childQuests;
+    const childTotal = children.length;
+    const childDone = children.filter(c => c.isResolved).length;
+    // Padrão de abertura: topo (depth 0) ou quest COM filhas abre expandida; uma
+    // filha-folha nasce compacta. O clique do usuário inverte esse default.
+    const defaultExpanded = depth === 0 || childTotal > 0;
+    const expanded = this.#questFlipped.has(q.id) ? !defaultExpanded : defaultExpanded;
+    // Botões de desfecho: mostra Resolve a menos que já success, Fail a menos que
+    // já failure, Reopen quando resolvida. Travada não resolve.
+    const canResolve = !locked && outcome !== "success";
+    const canFail = !locked && outcome !== "failure";
+    const canReopen = resolved;
     const desc = (this.canViewNotes && sys.description)
       ? await enrich(sys.description, { relativeTo: q }) : "";
     // Resolve os UUIDs dos links em chips POR TIPO (ícone + cor, sem foto, no
@@ -645,6 +701,14 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return {
       id: q.id, name: q.name,
       links,
+      // Hierarquia: indentação + progresso das sub-quests na mãe + recolher filhas.
+      depth,
+      hasChildren: childTotal > 0,
+      progressDone: childDone,
+      progressTotal: childTotal,
+      kidsCollapsed: this.#questCollapsed.has(q.id),
+      // Compacto: corpo (desc/links) só quando expandida (clique no card).
+      expanded,
       statusKey: q.statusKey,
       dieImg: CONFIG.SHIFT.diceImages[q.statusKey] ?? null,
       statusLabel: dieStatusLabel(q.statusKey),
@@ -662,9 +726,13 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
         ? game.i18n.localize(outcome === "success" ? "SHIFT.Party.Quests.Success" : "SHIFT.Party.Quests.Failure")
         : "",
       outcomeIcon: outcome === "success" ? "fa-circle-check" : "fa-circle-xmark",
-      canResolve: outcome !== "success",
-      canFail: outcome !== "failure",
-      canReopen: resolved
+      // Bloqueio por pré-requisito: card de cadeado + pills das quests; não resolve enquanto travada.
+      locked,
+      requiresPending: pending,
+      canResolve, canFail, canReopen,
+      // Rodapé INTEIRO (divisória + links + desfecho) só quando EXPANDIDA: a
+      // compacta é só o cabeçalho — esconde tudo acima/abaixo da linha de divisão.
+      showFoot: expanded && ((this.isEditable && (canResolve || canFail || canReopen)) || links.length > 0)
     };
   }
 
@@ -912,6 +980,10 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
   /** Cria a JournalEntry "Field Notes" compartilhada e de propriedade dos Players para este party. */
   async #createCodexJournal() {
+    // Rede de segurança: um party que mora num compendium não pode (e não deve)
+    // criar um Journal de MUNDO nem gravar `update()` num pack travado — isso lança
+    // "may not update documents in the locked compendium". Falha silenciosa → null.
+    if (this.document.pack) return null;
     const folderName = game.i18n.localize("SHIFT.Party.Codex.JournalFolder");
     // Tolera pastas criadas antes da troca de separador " — " → " · " (sem duplicar).
     const legacyName = folderName.replace(" · ", " — ");
@@ -1050,8 +1122,11 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const did = id => !options?.parts || options.parts.includes(id);
 
     // GM: garante de forma lazy que o Journal de codex compartilhado existe (cobre
-    // parties criados antes desta feature). Protegido contra reentrância do render resultante.
-    if (game.user.isGM && !this.document.system.codexJournal && !this.#ensuringJournal) {
+    // parties criados antes desta feature). Protegido contra reentrância do render
+    // resultante. NÃO faz isso para um party que mora num compendium (ex.: o pack de
+    // Sandbox): `update()` num compendium travado lança, e um doc de compendium não
+    // deve criar/apontar para um Journal de MUNDO (uuid específico de mundo).
+    if (game.user.isGM && !this.document.pack && !this.document.system.codexJournal && !this.#ensuringJournal) {
       this.#ensuringJournal = true;
       this.#getCodexJournal(true).finally(() => { this.#ensuringJournal = false; });
     }
@@ -1471,6 +1546,24 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   static async #onQuestReopen(event, target) {
     if (!this.isEditable) return;
     await this.getItem(target)?.update({ "system.outcome": "none" });
+  }
+
+  /** Recolhe/expande as sub-quests de uma mãe (esconde as filhas na árvore). */
+  static #onToggleQuestKids(event, target) {
+    const id = target.closest("[data-item-id]")?.dataset.itemId;
+    if (!id) return;
+    this.#questCollapsed.has(id) ? this.#questCollapsed.delete(id) : this.#questCollapsed.add(id);
+    this.render();
+  }
+
+  /** Expande/recolhe o CORPO da quest (desc + links + desfecho), invertendo o
+   *  padrão de abertura. Ignora cliques em botões/inputs internos. */
+  static #onToggleQuestBody(event, target) {
+    if (event.target.closest("input, select, textarea, prose-mirror, a[data-action]:not([data-action='toggleQuestBody']), button")) return;
+    const id = target.closest("[data-item-id]")?.dataset.itemId;
+    if (!id) return;
+    this.#questFlipped.has(id) ? this.#questFlipped.delete(id) : this.#questFlipped.add(id);
+    this.render();
   }
 
   /** Abre a ficha do documento vinculado a uma Quest. Ignora cliques no X de

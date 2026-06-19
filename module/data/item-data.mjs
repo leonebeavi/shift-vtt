@@ -119,6 +119,15 @@ export class ShiftQuestData extends ShiftItemBase {
     // Links: UUIDs de Actors/Items relacionados (espelha system.codex da party).
     schema.links = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
 
+    // Pré-requisitos: ids de outras Quests (irmãs, na mesma Party) que precisam
+    // CONCLUIR antes desta abrir. Enquanto pendentes, a Quest fica bloqueada.
+    schema.requires = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
+
+    // Hierarquia: id da Quest-mãe (vazio = topo). As filhas aninham sob a mãe na
+    // aba, e a mãe mostra o progresso (filhas resolvidas / total). NÃO usar o nome
+    // "parent": é reservado pelo DataModel (aponta pro documento dono) — daí parentId.
+    schema.parentId = new fields.StringField({ required: true, blank: true, initial: "" });
+
     return schema;
   }
 

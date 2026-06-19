@@ -66,6 +66,38 @@
       </label>
       <label class="cfg check"><input type="checkbox" name="system.rollable" {{checked system.rollable}}/> {{localize "SHIFT.ItemSheet.Rollable"}}</label>
       <label class="cfg check"><input type="checkbox" name="system.autoShiftOnRoll" {{checked system.autoShiftOnRoll}}/> {{localize "SHIFT.ItemSheet.AutoShift"}}</label>
+
+      {{#if parentOptions.length}}
+        <span class="cfg-group-label">{{localize "SHIFT.Party.Quests.Hierarchy"}}</span>
+        <label class="cfg span2">
+          <span>{{localize "SHIFT.Party.Quests.ParentQuest"}}</span>
+          <select name="system.parentId">
+            <option value="" {{#unless parentId}}selected{{/unless}}>{{localize "SHIFT.Party.Quests.NoParent"}}</option>
+            {{#each parentOptions}}<option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>{{/each}}
+          </select>
+        </label>
+      {{/if}}
+    </div>
+  </section>
+  {{/if}}
+
+  {{!-- Pré-requisitos como pills (visíveis também em leitura). O "+" escolhe uma
+        Quest existente OU cria uma nova ali mesmo. --}}
+  {{#if showPrereqs}}
+  <section class="cfg-dense quest-prereqs">
+    <div class="pill-row prereq-row">
+      <span class="pill-label">{{localize "SHIFT.Party.Quests.Prerequisites"}}</span>
+      <div class="pills">
+        {{#each requires}}
+          <span class="pill quest-req{{#if this.resolved}} done{{/if}}"{{#if this.resolved}} data-tooltip="{{localize 'SHIFT.Party.Quests.Resolved'}}"{{/if}}>
+            <a class="pill-text" data-action="openRequire" data-req-id="{{this.id}}">{{this.name}}</a>
+            {{#if @root.editMode}}<a class="pill-remove" data-action="removeRequire" data-req-id="{{this.id}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+          </span>
+        {{/each}}
+        {{#if @root.editMode}}
+          <a class="pill-add" data-action="addRequire" data-tooltip="{{localize 'SHIFT.Party.Quests.AddPrereq'}}"><i class="fa-solid fa-plus"></i></a>
+        {{/if}}
+      </div>
     </div>
   </section>
   {{/if}}

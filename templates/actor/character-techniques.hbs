@@ -12,7 +12,7 @@
 
     <ul class="technique-list">
       {{#each techniques}}
-        <li class="technique-row{{#if spent}} spent{{/if}}" data-item-id="{{id}}" data-draggable="true" data-action="toggleExpand">
+        <li class="technique-row tech-{{typeKey}}{{#if spent}} spent{{/if}}" data-item-id="{{id}}" data-draggable="true" data-action="toggleExpand">
           <img class="tech-img" src="{{img}}" alt="{{name}}"/>
           <div class="tech-main">
             <a class="tech-name" data-action="toggleExpand">{{name}}</a>

@@ -232,6 +232,8 @@ export function registerSettings() {
 export function applyShiftTheme() {
   const light = game.settings.get("shift-vtt", "theme") === "light";
   document.body.classList.toggle("shift-theme-light", light);
+  // Bunny Glass é PADRÃO obrigatório: assa direto no tema escuro via CSS
+  // (body:not(.shift-theme-light)), sem setting nem classe pra alternar.
 }
 
 /** Se o sistema opcional de Scale está ligado (chave-mestra). Importada onde quer

@@ -18,7 +18,9 @@
 
     <div class="ptrait-grid">
       {{#each questGroup.traits}}
-        {{> "shift.ptrait-card" this showHide=true quest=true}}
+        <div class="pt-quest-row{{#if this.depth}} is-child{{/if}}{{#if this.firstSub}} is-first-sub{{/if}}" style="--depth: {{this.depth}};">
+          {{> "shift.ptrait-card" this showHide=true quest=true}}
+        </div>
       {{/each}}
       {{#unless questGroup.traits.length}}
         <div class="party-empty"><i class="fa-solid fa-scroll"></i><p>{{localize "SHIFT.Party.Quests.Empty"}}</p></div>

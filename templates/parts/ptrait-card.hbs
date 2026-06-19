@@ -3,8 +3,8 @@
       to add the GM "hide from players" toggle. Pass quest=true (Quests tab) to turn
       on the quest-only blocks (outcome state + Resolve/Fail/Reopen + links) — they
       stay guarded by {{#if quest}} so the Traits tab is never touched. --}}
-<div class="ptrait status-{{statusKey}}{{#if exhausted}} is-exhausted{{/if}}{{#if quest}}{{#if resolved}} outcome-{{outcome}}{{/if}}{{/if}}{{#if hidden}} is-gmhidden{{/if}}"
-     data-item-id="{{id}}" data-draggable="true">
+<div class="ptrait status-{{statusKey}}{{#if exhausted}} is-exhausted{{/if}}{{#if quest}} is-quest{{#unless expanded}} is-collapsed{{/unless}}{{#if resolved}} outcome-{{outcome}}{{/if}}{{#if locked}} is-locked{{/if}}{{/if}}{{#if hidden}} is-gmhidden{{/if}}"
+     data-item-id="{{id}}" data-draggable="true"{{#if quest}} data-action="toggleQuestBody"{{/if}}>
   <div class="ptrait-head">
     {{#if (shiftAnd quest resolved)}}
       <span class="ptrait-state" data-tooltip="{{outcomeWord}}"><i class="fa-solid {{outcomeIcon}}"></i></span>
@@ -17,9 +17,18 @@
       <span class="ptrait-die" data-tooltip="{{statusLabel}}">{{#if dieImg}}<img src="{{dieImg}}" alt="{{currentLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}</span>
     {{/if}}
     <div class="ptrait-title">
-      {{#if @root.editMode}}<a class="ptrait-name" data-action="editItem">{{name}}</a>{{else}}<span class="ptrait-name">{{name}}</span>{{/if}}
+      <span class="ptrait-namerow">
+        {{#if @root.editMode}}<a class="ptrait-name" data-action="editItem">{{name}}</a>{{else}}<span class="ptrait-name">{{name}}</span>{{/if}}
+        {{#if (shiftAnd quest hasChildren)}}<a class="pt-progress{{#if (shiftEq progressDone progressTotal)}} full{{/if}}" data-action="toggleQuestKids" data-tooltip="{{localize 'SHIFT.Party.Quests.Subquests'}}"><i class="fa-solid {{#if kidsCollapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}"></i> {{progressDone}}/{{progressTotal}}</a>{{/if}}
+      </span>
       {{#if (shiftAnd quest resolved)}}
         <span class="ptrait-sub"><b>{{outcomeWord}}</b> &middot; {{localize "SHIFT.Party.Quests.Resolved"}}</span>
+      {{else if (shiftAnd quest locked)}}
+        <span class="ptrait-sub locked">
+          <span class="lk-badge"><i class="fa-solid fa-lock"></i></span>
+          <span class="lk-label">{{localize "SHIFT.Party.Quests.Requires"}}</span>
+          {{#each requiresPending}}<span class="lk-pill">{{this}}</span>{{/each}}
+        </span>
       {{else}}
         <span class="ptrait-sub"><b>{{statusLabel}}</b> &middot; {{localize "SHIFT.Trait.Max"}} {{maxLabel}}</span>
       {{/if}}
@@ -40,7 +49,8 @@
     {{/if}}
   </div>
 
-  {{#if desc}}<div class="ptrait-desc">{{{desc}}}</div>{{/if}}
+  {{!-- Descrição: nos Traits sempre; nas Quests só quando expandida (compacta esconde). --}}
+  {{#if desc}}{{#if (shiftOr expanded (shiftNeq quest true))}}<div class="ptrait-desc">{{{desc}}}</div>{{/if}}{{/if}}
 
   {{#if (shiftOr usesKeywords usesDrawbacks)}}
     <div class="ptrait-pills">
@@ -64,11 +74,10 @@
   {{!-- Quest footer: links à esquerda + desfecho Resolve/Fail/Reopen à direita. O
         rodapé aparece quando há links OU para quem edita. Drop de Actor/Item sobre o
         card cria o link (#questDropTarget casa com .party-quests .ptrait[data-item-id]). --}}
-  {{#if quest}}{{#if (shiftOr links.length @root.editable)}}
+  {{#if quest}}{{#if showFoot}}
     <div class="pt-foot">
-      {{!-- Sem links, a seção inteira some (card mais fino). Chips são só ícone +
-            círculo na cor do tipo (sem foto). --}}
-      {{#if links.length}}
+      {{!-- Links só quando EXPANDIDA (compacta esconde). Sem links, a seção some. --}}
+      {{#if (shiftAnd expanded links.length)}}
         <div class="pt-links">
           <span class="label">{{localize "SHIFT.Party.Quests.Field.Links"}}</span>
           {{#each links}}

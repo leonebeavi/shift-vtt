@@ -142,8 +142,11 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
     const el = this.element;
     if (!el || el.dataset.shiftDropBound) return;
     el.dataset.shiftDropBound = "1";
-    el.addEventListener("dragover", ev => ev.preventDefault());
+    // Realce visual da ficha inteira enquanto se arrasta um Keyword/Drawback por cima.
+    el.addEventListener("dragover", ev => { ev.preventDefault(); el.classList.add("drag-over"); });
+    el.addEventListener("dragleave", ev => { if (!el.contains(ev.relatedTarget)) el.classList.remove("drag-over"); });
     el.addEventListener("drop", async ev => {
+      el.classList.remove("drag-over");
       if (!this.isEditable) return;
       let data;
       try { data = fvtt.TextEditor.getDragEventData(ev); } catch (err) { return; }
@@ -229,7 +232,10 @@ export class ShiftQuestSheet extends BaseShiftItemSheet {
       rollTrait: ShiftQuestSheet.#onRoll,
       shiftUp: ShiftQuestSheet.#onShiftUp,
       shiftDown: ShiftQuestSheet.#onShiftDown,
-      exhaustTrait: ShiftQuestSheet.#onExhaust
+      exhaustTrait: ShiftQuestSheet.#onExhaust,
+      addRequire: ShiftQuestSheet.#onAddRequire,
+      removeRequire: ShiftQuestSheet.#onRemoveRequire,
+      openRequire: ShiftQuestSheet.#onOpenRequire
     }
   };
 
@@ -242,7 +248,27 @@ export class ShiftQuestSheet extends BaseShiftItemSheet {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const item = this.document;
+    // Pré-requisitos atuais (Quests irmãs já escolhidas), resolvidos em {id, name}
+    // para virar pills. O "+" cria nova ou escolhe existente.
+    const requires = (item.system.requires ?? [])
+      .map(id => item.actor?.items.get(id))
+      .filter(q => q?.type === "quest")
+      .map(q => ({ id: q.id, name: q.name, resolved: q.isResolved }));
+    // Quest-mãe: candidatos = outras Quests, exceto a própria e seus DESCENDENTES
+    // (senão criaria ciclo na árvore).
+    const descendants = new Set();
+    const collectDesc = id => {
+      for (const c of item.actor?.quests ?? []) {
+        if (c.system.parentId === id && !descendants.has(c.id)) { descendants.add(c.id); collectDesc(c.id); }
+      }
+    };
+    collectDesc(item.id);
+    const parentOptions = (item.actor?.quests ?? [])
+      .filter(q => q.id !== item.id && !descendants.has(q.id))
+      .map(q => ({ id: q.id, name: q.name, selected: q.id === item.system.parentId }));
     Object.assign(context, {
+      parentId: item.system.parentId ?? "",
+      parentOptions,
       statusKey: item.statusKey,
       statusLabel: dieStatusLabel(item.statusKey),
       dieImg: CONFIG.SHIFT.diceImages[item.statusKey] ?? null,
@@ -253,7 +279,12 @@ export class ShiftQuestSheet extends BaseShiftItemSheet {
       canRoll: item.canRoll && !!item.actor && this.isEditable,
       diceList: CONFIG.SHIFT.dice,
       resolved: item.isResolved,
-      outcome: item.questOutcome
+      outcome: item.questOutcome,
+      locked: item.isLocked,
+      requires,
+      // Em leitura a seção aparece só se há pré-requisitos; em edição sempre
+      // (dá pra criar/escolher), pois o "+" também CRIA uma quest nova.
+      showPrereqs: context.editMode || requires.length > 0
     });
     return context;
   }
@@ -266,6 +297,75 @@ export class ShiftQuestSheet extends BaseShiftItemSheet {
   static async #onShiftUp() { if (!this.isEditable) return; await this.document.shiftUp({}); }
   static async #onShiftDown() { if (!this.isEditable) return; await this.document.shiftDown({}); }
   static async #onExhaust() { if (!this.isEditable) return; await this.document.exhaust({}); }
+
+  /** Adiciona um pré-requisito: escolhe uma Quest irmã existente OU cria uma nova
+   *  ali mesmo (espelha o "browse-ou-digitar" de Keyword/Drawback). */
+  static async #onAddRequire() {
+    if (!this.isEditable) return;
+    const quest = this.document;
+    const actor = quest.actor;
+    if (!actor) return void ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NeedsActor"));
+    const L = k => game.i18n.localize(k);
+    const esc = foundry.utils.escapeHTML;
+
+    const reqs = new Set(quest.system.requires ?? []);
+    const available = actor.quests.filter(q => q.id !== quest.id && !reqs.has(q.id));
+    const opts = available.map(q => `<option value="${q.id}">${esc(q.name)}</option>`).join("");
+    const content = `
+      <div class="shift-prompt quest-prereq-add">
+        ${available.length ? `<div class="form-group">
+          <label>${esc(L("SHIFT.Party.Quests.PickExisting"))}</label>
+          <select name="existing"><option value="">—</option>${opts}</select>
+        </div>` : ""}
+        <div class="form-group">
+          <label>${esc(L("SHIFT.Party.Quests.CreateNew"))}</label>
+          <input type="text" name="newName" placeholder="${esc(L("SHIFT.Party.Quests.NamePlaceholder"))}" autofocus/>
+        </div>
+      </div>`;
+
+    let pick = null;
+    try {
+      pick = await fvtt.DialogV2.prompt({
+        window: { title: L("SHIFT.Party.Quests.AddPrereq") },
+        classes: ["shift-vtt", "shift-dialog"],
+        content,
+        rejectClose: false,
+        ok: {
+          label: L("SHIFT.Common.Confirm"),
+          callback: (event, button) => ({
+            existing: button.form.elements.existing?.value ?? "",
+            newName: button.form.elements.newName?.value?.trim() ?? ""
+          })
+        }
+      });
+    } catch (err) { pick = null; }
+    if (!pick) return;
+
+    let id = pick.existing || null;
+    if (pick.newName) {
+      const [created] = await actor.createEmbeddedDocuments("Item", [{ type: "quest", name: pick.newName }]);
+      id = created?.id ?? id;
+    }
+    if (!id) return;
+    reqs.add(id);
+    await quest.update({ "system.requires": [...reqs] });
+  }
+
+  /** Remove um pré-requisito (pelo id no chip). */
+  static async #onRemoveRequire(event, target) {
+    if (!this.isEditable) return;
+    const id = target.closest("[data-req-id]")?.dataset.reqId;
+    if (!id) return;
+    const reqs = (this.document.system.requires ?? []).filter(r => r !== id);
+    await this.document.update({ "system.requires": reqs });
+  }
+
+  /** Abre a ficha da Quest pré-requisito. */
+  static #onOpenRequire(event, target) {
+    const id = target.closest("[data-req-id]")?.dataset.reqId;
+    const q = id ? this.document.actor?.items.get(id) : null;
+    q?.sheet?.render(true);
+  }
 }
 
 /* ------------------------------------------------------------------ */

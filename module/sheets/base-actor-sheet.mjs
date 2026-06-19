@@ -2,6 +2,7 @@
  * SHIFT VTT, comportamento compartilhado da ficha de Actor (ApplicationV2).
  */
 import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker, bindDescriptionSecrets } from "../helpers/utils.mjs";
+import { bindDragFeedback } from "../helpers/drag-feedback.mjs";
 import { ShiftBrowser } from "../apps/browser.mjs";
 import { scaleEnabled } from "../settings.mjs";
 
@@ -274,6 +275,8 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
         ev.dataTransfer.setData("text/plain", JSON.stringify(item.toDragData()));
       });
     }
+    // Feedback visual de arraste (source esmaecido, realce da drop-zone, linha de reorder).
+    bindDragFeedback(this.element);
   }
 
   /* ---------------------------------------------------------------- */

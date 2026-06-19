@@ -757,6 +757,9 @@
   color: var(--die-color, var(--shift-text-muted));
   font-weight: 700;
 }
+.shift-vtt .max-die {
+  color: color-mix(in oklab, var(--die-color, var(--shift-text-muted)) 52%, var(--shift-text-muted));
+}
 .shift-vtt .tag {
   background: var(--shift-bg-soft);
   border: 1px solid var(--shift-border);
@@ -765,7 +768,7 @@
   font-size: 0.95em;
 }
 .shift-vtt .tag.no-roll, .shift-vtt .tag.hidden-tag {
-  color: var(--shift-text-muted);
+  color: color-mix(in oklab, var(--die-color, var(--shift-text-muted)) 52%, var(--shift-text-muted));
 }
 .shift-vtt .tag.temporary {
   color: var(--shift-accent);
@@ -790,7 +793,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 5px;
-  color: var(--shift-text-muted);
+  color: color-mix(in oklab, var(--die-color, var(--shift-text-muted)) 62%, var(--shift-text-muted));
   cursor: pointer;
   font-size: 0.78em;
   transition: color 0.15s, background 0.15s;
@@ -833,7 +836,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.82em;
-  color: var(--shift-text-muted);
+  color: color-mix(in oklab, var(--die-color, var(--shift-text-muted)) 52%, var(--shift-text-muted));
 }
 .shift-vtt .pills {
   display: flex;
@@ -860,6 +863,9 @@
   border-color: rgba(47, 159, 208, 0.5);
 }
 .shift-vtt .pill-remove {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   color: var(--shift-text-muted);
   cursor: pointer;
   font-size: 0.8em;
@@ -893,10 +899,10 @@
 .shift-vtt .meta-chip {
   font-size: 0.7em;
   background: var(--shift-bg-soft);
-  border: 1px solid var(--shift-border);
+  border: 1px solid color-mix(in oklab, var(--die-color, var(--shift-border)) 28%, var(--shift-border));
   border-radius: 8px;
   padding: 1px 6px;
-  color: var(--shift-text-muted);
+  color: color-mix(in oklab, var(--die-color, var(--shift-text-muted)) 52%, var(--shift-text-muted));
 }
 .shift-vtt .meta-chip.warn {
   color: var(--outcome-mitigated);
@@ -1051,6 +1057,10 @@
 .shift-vtt .tech-type.mechanical {
   color: var(--shift-blue);
   border-color: rgba(47, 159, 208, 0.45);
+}
+.shift-vtt .tech-type.scaledUp {
+  color: var(--shift-pink);
+  border-color: rgba(255, 95, 162, 0.45);
 }
 .shift-vtt .tech-uses .uses-count {
   font-weight: 700;
@@ -2775,13 +2785,13 @@
   margin: 0.6em 0;
   padding: 0.5em 0.8em;
   border-radius: 8px;
-  background: var(--shift-purple-soft);
-  border: 1px dashed var(--shift-purple);
+  background: var(--shift-pink-soft);
+  border: 1px dashed var(--shift-pink);
 }
 .shift-vtt section.secret.revealed {
-  background: var(--shift-pink-soft);
+  background: var(--shift-purple-soft);
   border-style: solid;
-  border-color: var(--shift-pink);
+  border-color: var(--shift-purple);
 }
 .shift-vtt section.secret > button.reveal {
   display: none;
@@ -2795,9 +2805,9 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--shift-purple);
+  color: var(--shift-pink);
   background: transparent;
-  border: 1px dashed var(--shift-purple);
+  border: 1px dashed var(--shift-pink);
   border-radius: 999px;
   cursor: pointer;
 }
@@ -2805,15 +2815,15 @@
   display: inline-flex;
 }
 .shift-vtt section.secret > button.reveal:hover {
-  background: var(--shift-purple-soft);
+  background: var(--shift-pink-soft);
   border-style: solid;
 }
 .shift-vtt section.secret.revealed > button.reveal {
-  color: var(--shift-pink);
-  border-color: var(--shift-pink);
+  color: var(--shift-purple);
+  border-color: var(--shift-purple);
 }
 .shift-vtt section.secret.revealed > button.reveal:hover {
-  background: var(--shift-pink-soft);
+  background: var(--shift-purple-soft);
   border-style: solid;
 }
 body.shift-theme-light .shift-vtt .bio-display a:not(.content-link):not([data-action]), body.shift-theme-light .shift-vtt prose-mirror .editor-content a:not(.content-link):not([data-action]) {
@@ -2823,18 +2833,18 @@ body.shift-theme-light .shift-vtt .bio-display li::marker, body.shift-theme-ligh
   color: var(--shift-pink-ink);
 }
 body.shift-theme-light .shift-vtt section.secret {
-  border-color: var(--shift-purple-ink);
+  border-color: var(--shift-pink-ink);
 }
 body.shift-theme-light .shift-vtt section.secret > button.reveal {
-  color: var(--shift-purple-ink);
-  border-color: var(--shift-purple-ink);
-}
-body.shift-theme-light .shift-vtt section.secret.revealed {
-  border-color: var(--shift-pink-ink);
-}
-body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
   color: var(--shift-pink-ink);
   border-color: var(--shift-pink-ink);
+}
+body.shift-theme-light .shift-vtt section.secret.revealed {
+  border-color: var(--shift-purple-ink);
+}
+body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
+  color: var(--shift-purple-ink);
+  border-color: var(--shift-purple-ink);
 }
 .combat-tracker li.shift-phase-header, #combat li.shift-phase-header {
   list-style: none;
@@ -3153,7 +3163,7 @@ body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
   margin-top: 4px;
 }
 #shift-clocks-panel .clock-tools a {
-  color: #b5a4b3;
+  color: color-mix(in oklab, var(--ac, #b5a4b3) 62%, #b5a4b3);
   cursor: pointer;
   font-size: 0.85em;
 }
@@ -5561,6 +5571,21 @@ body.shift-theme-light .chat-message .message-content a.content-link, body.shift
   font-size: 0.92em;
   opacity: 0.85;
 }
+.shift-vtt .recharge-pill.recharge-session.on span {
+  border-color: color-mix(in oklab, var(--shift-green) 50%, transparent);
+  background: color-mix(in oklab, var(--shift-green) 13%, transparent);
+  color: var(--shift-green);
+}
+.shift-vtt .recharge-pill.recharge-safeRest.on span {
+  border-color: color-mix(in oklab, var(--shift-safe) 50%, transparent);
+  background: color-mix(in oklab, var(--shift-safe) 13%, transparent);
+  color: var(--shift-safe);
+}
+.shift-vtt .recharge-pill.recharge-unsafeRest.on span {
+  border-color: color-mix(in oklab, var(--shift-unsafe) 50%, transparent);
+  background: color-mix(in oklab, var(--shift-unsafe) 13%, transparent);
+  color: var(--shift-unsafe);
+}
 .shift-vtt .recharge-pill.recharge-atWill.on span {
   border-color: rgba(255, 197, 17, 0.55);
   background: rgba(255, 197, 17, 0.14);
@@ -5571,16 +5596,13 @@ body.shift-theme-light .chat-message .message-content a.content-link, body.shift
 }
 .shift-vtt .technique-sheet .uses-chip.infinite {
   padding: 4px 12px;
-  color: var(--shift-yellow);
 }
 .shift-vtt .technique-sheet .uses-chip .uses-inf {
   display: inline-flex;
   align-items: center;
   font-size: 1.2em;
-  color: var(--shift-yellow);
 }
 .shift-vtt .tech-uses .uses-count.infinite {
-  color: var(--shift-yellow);
   font-size: 1.05em;
 }
 .shift-vtt .recharge-pill.type-toggle.scaledUp span {
@@ -7308,7 +7330,7 @@ body.shift-theme-light .chat-message .message-content a.content-link, body.shift
 }
 .ptrait-sub {
   font-size: 0.72rem;
-  color: var(--shift-text-muted);
+  color: color-mix(in oklab, var(--die-color, var(--shift-text-muted)) 52%, var(--shift-text-muted));
 }
 .ptrait-sub b {
   color: var(--tile);
@@ -8174,14 +8196,6 @@ a.ptrait-die:hover {
 .party-quests .ptrait:hover .ptrait-tools {
   opacity: 1;
 }
-.party-quests .ta-btn {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-}
-.party-quests .ta-btn:hover {
-  background: rgba(255,255,255,0.09);
-  color: var(--shift-text);
-}
 .party-quests .ptrait.is-gmhidden {
   opacity: 0.62;
   border-style: dashed;
@@ -8305,4 +8319,229 @@ a.ptrait-die:hover {
 .party-quests .pt-link-hint:hover {
   color: var(--shift-text);
   border-color: rgba(255,255,255,0.32);
+}
+.party-quests .ptrait.is-locked {
+  opacity: 0.78;
+}
+.party-quests .ptrait.is-locked .ptrait-die {
+  filter: grayscale(0.85) drop-shadow(0 3px 6px rgba(0,0,0,0.5));
+}
+.party-quests .ptrait-sub.locked {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.party-quests .lk-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  color: color-mix(in oklab, var(--die-color, var(--shift-text-muted)) 52%, var(--shift-text-muted));
+}
+.party-quests .lk-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--die-color, var(--shift-text-muted)) 52%, var(--shift-text-muted));
+}
+.party-quests .lk-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  color: color-mix(in oklab, var(--die-color, var(--shift-text)) 50%, var(--shift-text));
+  background: rgba(255,255,255,0.06);
+  border: 1px solid color-mix(in oklab, var(--die-color, rgba(255,255,255,0.13)) 30%, rgba(255,255,255,0.13));
+}
+.party-quests .pt-quest-row {
+  margin-left: calc(var(--depth, 0) * 24px);
+}
+.party-quests .pt-quest-row.is-child {
+  position: relative;
+  padding-left: 28px;
+}
+.party-quests .pt-quest-row.is-child::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: -13px;
+  bottom: 0;
+  border-left: 3px solid color-mix(in oklab, var(--shift-text-muted) 26%, transparent);
+}
+.party-quests .pt-quest-row.is-child.is-first-sub::before {
+  top: 8px;
+}
+.party-quests .pt-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  color: color-mix(in oklab, var(--die-color, var(--shift-text-muted)) 52%, var(--shift-text-muted));
+  background: rgba(0,0,0,0.28);
+  border: 1px solid color-mix(in oklab, var(--die-color, var(--shift-border)) 28%, var(--shift-border));
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.14s, border-color 0.14s;
+}
+.party-quests .pt-progress:hover {
+  filter: brightness(1.25);
+}
+.party-quests .pt-progress > i {
+  font-size: 0.8em;
+}
+.party-quests .pt-progress.full {
+  color: var(--outcome-crit-success);
+  border-color: color-mix(in oklab, var(--outcome-crit-success) 45%, var(--shift-border));
+}
+.party-quests .ptrait.is-quest {
+  cursor: pointer;
+}
+.party-quests .ptrait.is-quest .ptrait-die, .party-quests .ptrait.is-quest .ptrait-state {
+  cursor: inherit;
+}
+.shift-vtt .ptrait-namerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.shift-vtt .ptrait-namerow .ptrait-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shift-vtt .quest-sheet .quest-prereqs {
+  margin-top: 10px;
+}
+.shift-vtt .quest-sheet .pill.quest-req {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.14);
+}
+.shift-vtt .quest-sheet .pill.quest-req.done {
+  background: color-mix(in oklab, var(--outcome-crit-success) 14%, transparent);
+  border-color: color-mix(in oklab, var(--outcome-crit-success) 40%, transparent);
+}
+body:not(.shift-theme-light) .trait-card, body:not(.shift-theme-light) .ptrait, body:not(.shift-theme-light) .trait-tile, body:not(.shift-theme-light) .detail-card, body:not(.shift-theme-light) .die-hero, body:not(.shift-theme-light) .technique-row {
+  --ac: var(--die-color, var(--tile, var(--shift-accent)));
+  border: 1px solid color-mix(in oklab, var(--ac) 26%, rgba(255,255,255,0.10)) !important;
+  background: linear-gradient(155deg,
+      color-mix(in oklab, var(--ac) 12%, rgba(255,255,255,0.05)),
+      rgba(255,255,255,0.014)) !important;
+  backdrop-filter: blur(10px) saturate(1.3);
+  -webkit-backdrop-filter: blur(10px) saturate(1.3);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.10);
+}
+body:not(.shift-theme-light) .technique-row.tech-narrative {
+  --ac: var(--shift-yellow);
+}
+body:not(.shift-theme-light) .technique-row.tech-mechanical {
+  --ac: var(--shift-blue);
+}
+body:not(.shift-theme-light) .technique-row.tech-scaledUp {
+  --ac: var(--shift-pink);
+}
+body:not(.shift-theme-light) #shift-clocks-panel {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  opacity: 1;
+  transition: opacity 0.18s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+body:not(.shift-theme-light) #shift-clocks-panel .clocks-head {
+  border-bottom-color: transparent;
+}
+body:not(.shift-theme-light) #shift-clocks-panel .clocks-head > * {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+body:not(.shift-theme-light) #shift-clocks-panel:hover {
+  background: rgba(34, 28, 33, 0.92);
+  border-color: #4d4050;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+body:not(.shift-theme-light) #shift-clocks-panel:hover .clocks-head {
+  border-bottom-color: #4d4050;
+}
+body:not(.shift-theme-light) #shift-clocks-panel:hover .clocks-head > * {
+  opacity: 1;
+}
+body:not(.shift-theme-light) #shift-clocks-panel .clock {
+  --ac: var(--shift-pink);
+  border: 1px solid color-mix(in oklab, var(--ac) 55%, transparent);
+  background: linear-gradient(150deg,
+      color-mix(in oklab, var(--ac) 40%, rgba(20, 15, 22, 0.42)),
+      color-mix(in oklab, var(--ac) 20%, rgba(20, 15, 22, 0.30)));
+  backdrop-filter: blur(11px) saturate(1.5);
+  -webkit-backdrop-filter: blur(11px) saturate(1.5);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.14),
+                inset 0 0 20px color-mix(in oklab, var(--ac) 16%, transparent);
+}
+body:not(.shift-theme-light) .trait-card:hover, body:not(.shift-theme-light) .ptrait:hover, body:not(.shift-theme-light) .die-hero:hover, body:not(.shift-theme-light) .technique-row:hover {
+  box-shadow: 0 14px 32px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.shift-vtt [data-draggable="true"] {
+  cursor: grab;
+}
+.shift-vtt [data-draggable="true"]:active {
+  cursor: grabbing;
+}
+.shift-vtt .is-dragging {
+  transform: scale(1.035);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in oklab, var(--shift-accent) 35%, transparent);
+  position: relative;
+  z-index: 8;
+  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+}
+.shift-vtt .drag-over {
+  background-color: color-mix(in oklab, var(--shift-accent) 11%, transparent);
+  transition: background-color 0.1s ease-out;
+}
+.shift-vtt [data-item-id].drop-before, .shift-vtt [data-item-id].drop-after, .shift-vtt [data-item-id].drop-left, .shift-vtt [data-item-id].drop-right {
+  position: relative;
+}
+.shift-vtt [data-item-id].drop-before::before, .shift-vtt [data-item-id].drop-after::after, .shift-vtt [data-item-id].drop-left::before, .shift-vtt [data-item-id].drop-right::after {
+  content: "";
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  border-radius: 3px;
+  background: var(--shift-accent);
+  filter: none;
+  opacity: 1;
+  box-shadow: 0 0 9px color-mix(in oklab, var(--shift-accent) 65%, transparent);
+}
+.shift-vtt [data-item-id].drop-before::before, .shift-vtt [data-item-id].drop-after::after {
+  left: 6px;
+  right: 6px;
+  width: auto;
+  height: 3px;
+}
+.shift-vtt [data-item-id].drop-before::before {
+  top: 2px;
+  bottom: auto;
+}
+.shift-vtt [data-item-id].drop-after::after {
+  bottom: 2px;
+  top: auto;
+}
+.shift-vtt [data-item-id].drop-left::before, .shift-vtt [data-item-id].drop-right::after {
+  top: 6px;
+  bottom: 6px;
+  height: auto;
+  width: 3px;
+}
+.shift-vtt [data-item-id].drop-left::before {
+  left: -7px;
+  right: auto;
+}
+.shift-vtt [data-item-id].drop-right::after {
+  right: -7px;
+  left: auto;
 }
