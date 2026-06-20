@@ -111,6 +111,11 @@ export class ShiftQuestData extends ShiftItemBase {
     // Toggle do GM "ocultar dos players" (espelha `revealed` do Trait).
     schema.revealed = new fields.BooleanField({ initial: true });
 
+    // Bookkeeping da cascata de ocultar: marca que esta Quest está oculta SÓ por
+    // causa da mãe (não por um ocultar próprio do GM). Revelar a mãe restaura só
+    // estas; uma filha que o GM ocultou sozinho fica oculta. NÃO afeta os players.
+    schema.cascadeHidden = new fields.BooleanField({ initial: false });
+
     // Desfecho decidido pelo GM, INDEPENDENTE do clock/Exhausted.
     schema.outcome = new fields.StringField({
       required: true, initial: "none", choices: ["none", "success", "failure"]

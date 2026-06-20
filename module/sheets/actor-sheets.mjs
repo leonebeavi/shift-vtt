@@ -855,18 +855,38 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return this.document.testUserPermission(game.user, "OBSERVER");
   }
 
-  /** Toda a descendência (recursiva) de uma Quest, via childQuests. O `seen` guarda
-   *  contra ciclos em dados ruins (parentId circular não trava o cliente). */
-  #questDescendants(quest) {
-    const out = [], seen = new Set([quest.id]);
-    const walk = q => {
-      for (const c of q.childQuests ?? []) {
-        if (seen.has(c.id)) continue;
-        seen.add(c.id); out.push(c); walk(c);
-      }
-    };
-    walk(quest);
-    return out;
+  /** Monta os updates de ocultar/revelar uma Quest E propaga pelas filhas, sempre
+   *  incluindo a própria (índice 0). O `seen` guarda contra ciclos em dados ruins.
+   *
+   *  Ocultar: leva junto SÓ as filhas atualmente visíveis (marcando cascadeHidden),
+   *  parando ao topo de uma subárvore já oculta — assim uma filha que o GM já tinha
+   *  ocultado por conta própria não vira "oculta pela mãe".
+   *
+   *  Revelar: restaura SÓ as filhas ocultas PELA cascata (cascadeHidden), preservando
+   *  as que o GM ocultou sozinho. A própria Quest sempre zera cascadeHidden (o toggle
+   *  do GM nela É uma ação própria). */
+  #questRevealCascade(item, revealed) {
+    const updates = [{ _id: item.id, "system.revealed": revealed, "system.cascadeHidden": false }];
+    const seen = new Set([item.id]);
+    const walk = revealed
+      ? q => {
+          for (const c of q.childQuests ?? []) {
+            if (seen.has(c.id) || !c.system.cascadeHidden) continue;   // só desce no que a cascata ocultou
+            seen.add(c.id);
+            updates.push({ _id: c.id, "system.revealed": true, "system.cascadeHidden": false });
+            walk(c);
+          }
+        }
+      : q => {
+          for (const c of q.childQuests ?? []) {
+            if (seen.has(c.id) || !c.system.revealed) continue;        // já oculta → subárvore consistente, não toca
+            seen.add(c.id);
+            updates.push({ _id: c.id, "system.revealed": false, "system.cascadeHidden": true });
+            walk(c);
+          }
+        };
+    walk(item);
+    return updates;
   }
 
   /** Monta o grupo da aba Quests a partir de `actor.quests`, como uma ÁRVORE: as
@@ -1990,22 +2010,23 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const item = id ? this.document.items.get(id) : null;
     if (!item) return;
     const revealed = !item.system.revealed;
-    // Esconder uma Quest com filhas esconde a árvore inteira (não deixa filhas órfãs
-    // visíveis aos Players); aí re-renderiza a aba para refletir o olho das descendentes.
-    const kids = (!revealed && item.type === "quest") ? this.#questDescendants(item) : [];
-    if (kids.length) {
-      await this.document.updateEmbeddedDocuments("Item", [
-        { _id: item.id, "system.revealed": false },
-        ...kids.map(k => ({ _id: k.id, "system.revealed": false }))
-      ]);
-      this.render({ parts: ["quests"] });
-      return;
+    // Uma Quest propaga o olho pelas filhas: ocultar leva a árvore junto (não deixa
+    // filhas órfãs visíveis aos Players); revelar restaura SÓ as que a cascata ocultou
+    // (cascadeHidden), sem ressuscitar filhas que o GM ocultou por conta própria. Quando
+    // a cascata pega alguma filha, re-renderiza a aba pra refletir o olho das descendentes.
+    if (item.type === "quest") {
+      const updates = this.#questRevealCascade(item, revealed);
+      if (updates.length > 1) {
+        await this.document.updateEmbeddedDocuments("Item", updates);
+        this.render({ parts: ["quests"] });
+        return;
+      }
     }
     target.classList.toggle("on", !revealed);   // "on" = oculto
     const icon = target.querySelector("i");
     if (icon) { icon.classList.toggle("fa-eye", revealed); icon.classList.toggle("fa-eye-slash", !revealed); }
     target.closest("[data-item-id]")?.classList.toggle("is-gmhidden", !revealed);
-    await item.update({ "system.revealed": revealed }, { render: false });
+    await item.update({ "system.revealed": revealed, "system.cascadeHidden": false }, { render: false });
   }
 
   /* --- Quests (rolar + desfecho) ---------------------------------- */
