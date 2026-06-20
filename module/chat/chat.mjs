@@ -259,7 +259,7 @@ async function applyScaledUp(message) {
     // Paga o custo: faz ShiftDown de um Core Trait. Aborta (sem gastar nada) se cancelado.
     const core = await pickTrait(actor, {
       title: game.i18n.format("SHIFT.Scale.ScaledUpPickCore", { focus: match.focusTrait.name }),
-      hint: game.i18n.localize("SHIFT.Scale.ScaledUpCoreHint"),
+      hint: game.i18n.localize("SHIFT.Scale.ScaleUpHint"),
       filter: t => t.system.category === "core" && t.canShiftDown
     });
     if (!core) return;

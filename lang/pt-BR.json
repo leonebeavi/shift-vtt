@@ -74,7 +74,6 @@
       "ScaledUpUnavailable": "Nenhuma Technique de Scaled Up disponível combina com os Traits rolados.",
       "ScaledUpUseHint": "Aplique o Scaled Up de {trait} pelo botão \"Escalar\" numa rolagem.",
       "ScaledUpPickCore": "Escalar {focus} · escolha um Trait Core para rebaixar",
-      "ScaledUpCoreHint": "Rebaixe um Core para tratar o Focus mais alto.",
       "BindFocusTitle": "{technique}: vincular um Focus Trait",
       "BindFocusHint": "Escolha o Focus Trait que isto potencializa."
     },

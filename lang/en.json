@@ -74,7 +74,6 @@
       "ScaledUpUnavailable": "No available Scaled Up Technique matches the Traits rolled.",
       "ScaledUpUseHint": "Apply {trait}'s Scaled Up via the \"Scale Up\" button on a roll.",
       "ScaledUpPickCore": "Scale Up {focus} · choose a Core Trait to shiftdown",
-      "ScaledUpCoreHint": "Shift a Core down to treat the Focus higher.",
       "BindFocusTitle": "{technique}: link a Focus Trait",
       "BindFocusHint": "Pick the Focus Trait this upgrades."
     },

@@ -2,7 +2,7 @@
   {{#each traitGroups as |group|}}
     <div class="trait-group {{group.css}}{{#if group.collapsed}} collapsed{{/if}}" data-group-key="{{group.key}}">
       <header class="group-header">
-        <a class="group-toggle" data-action="toggleGroup" data-tooltip="{{localize 'SHIFT.Tooltips.CollapseGroup'}}">
+        <a class="group-toggle" data-action="toggleGroup">
           <i class="fa-solid {{#if group.collapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}"></i>
         </a>
         <h2>{{group.label}}</h2>

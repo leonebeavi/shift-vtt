@@ -42,8 +42,8 @@
         <a class="ta-btn up{{#unless canUp}} disabled{{/unless}}" data-action="shiftUp" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftUp'}}"><i class="fa-solid fa-circle-arrow-up"></i></a>
         <a class="ta-btn down{{#unless canDown}} disabled{{/unless}}" data-action="shiftDown" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftDown'}}"><i class="fa-solid fa-circle-arrow-down"></i></a>
         {{#if @root.editMode}}
-          <a class="ta-btn edit" data-action="editItem" data-tooltip="{{localize 'SHIFT.Tooltips.Edit'}}"><i class="fa-solid fa-pen-to-square"></i></a>
-          <a class="ta-btn danger" data-action="deleteItem" data-tooltip="{{localize 'SHIFT.Tooltips.Delete'}}"><i class="fa-solid fa-trash"></i></a>
+          <a class="ta-btn edit" data-action="editItem"><i class="fa-solid fa-pen-to-square"></i></a>
+          <a class="ta-btn danger" data-action="deleteItem"><i class="fa-solid fa-trash"></i></a>
         {{/if}}
       </div>
     {{/if}}

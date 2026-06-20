@@ -41,13 +41,10 @@
                 <a class="ta-btn" data-action="resetTechnique"
                    data-tooltip="{{localize 'SHIFT.Tooltips.ResetTechnique'}}"><i class="fa-solid fa-rotate-left"></i></a>
               {{/unless}}
-              <a class="ta-btn expand" data-action="toggleExpand"
-                 data-tooltip="{{localize 'SHIFT.Tooltips.Expand'}}"><i class="fa-solid {{#if expanded}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i></a>
+              <a class="ta-btn expand" data-action="toggleExpand"><i class="fa-solid {{#if expanded}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i></a>
               {{#if @root.editMode}}
-                <a class="ta-btn" data-action="editItem"
-                   data-tooltip="{{localize 'SHIFT.Tooltips.Edit'}}"><i class="fa-solid fa-pen-to-square"></i></a>
-                <a class="ta-btn danger" data-action="deleteItem"
-                   data-tooltip="{{localize 'SHIFT.Tooltips.Delete'}}"><i class="fa-solid fa-trash"></i></a>
+                <a class="ta-btn" data-action="editItem"><i class="fa-solid fa-pen-to-square"></i></a>
+                <a class="ta-btn danger" data-action="deleteItem"><i class="fa-solid fa-trash"></i></a>
               {{/if}}
             </div>
           {{/if}}
