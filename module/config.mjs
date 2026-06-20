@@ -138,6 +138,28 @@ SHIFT.techniqueTypes = {
 };
 
 /* ------------------------------------------------------------------ */
+/* Vehicle domain & Location size (subcategorias do Codex)             */
+/* ------------------------------------------------------------------ */
+
+/** Domínio de um Vehicle — campo explícito escolhido pelo GM. */
+SHIFT.vehicleDomains = {
+  land: "SHIFT.Vehicle.Domain.land",
+  sea: "SHIFT.Vehicle.Domain.sea",
+  air: "SHIFT.Vehicle.Domain.air",
+  space: "SHIFT.Vehicle.Domain.space",
+  underground: "SHIFT.Vehicle.Domain.underground",
+  mixed: "SHIFT.Vehicle.Domain.mixed"
+};
+
+/** Tamanho de uma Location — derivado da Scale (1–4), não é campo separado. */
+SHIFT.locationSizes = {
+  1: "SHIFT.Location.Size.site",
+  2: "SHIFT.Location.Size.locale",
+  3: "SHIFT.Location.Size.region",
+  4: "SHIFT.Location.Size.realm"
+};
+
+/* ------------------------------------------------------------------ */
 /* Modos de Rest                                                       */
 /* ------------------------------------------------------------------ */
 

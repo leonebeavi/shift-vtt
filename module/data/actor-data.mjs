@@ -101,6 +101,9 @@ export class ShiftVehicleData extends ShiftActorBase {
   static defineSchema() {
     const schema = super.defineSchema();
     schema.concept = new fields.StringField({ required: false, blank: true, initial: "" });
+    /** Domínio do veículo (terrestre, naval, aéreo, espacial, subterrâneo, misto).
+     *  Em branco = não definido. Tinge/rotula o card no Codex (ver CONFIG.SHIFT.vehicleDomains). */
+    schema.domain = new fields.StringField({ required: false, blank: true, initial: "" });
     /** UUIDs de Actor da tripulação. Membros da tripulação podem gastar o Cargo
      *  Trait em Unsafe Rests e rolar os Traits do Vehicle junto com os seus. */
     schema.crew = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });

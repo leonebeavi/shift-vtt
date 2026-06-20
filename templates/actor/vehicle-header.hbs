@@ -37,6 +37,23 @@
           </button>
         </div>
       {{/if}}
+      {{#if editMode}}
+        <div class="header-domain edit-only">
+          <label>{{localize "SHIFT.Vehicle.Domain.Label"}}</label>
+          <div class="domain-picker">
+            {{#each domainOptions}}
+              <a class="domain-chip{{#if selected}} on{{/if}}" data-action="setVehicleDomain" data-domain="{{value}}"
+                 data-tooltip="{{label}}" style="--dc: {{color}};"><i class="fa-solid {{icon}}"></i></a>
+            {{/each}}
+          </div>
+        </div>
+      {{else}}
+        {{#if domainLabel}}
+          <div class="header-stats">
+            <span class="type-badge" data-tooltip="{{localize 'SHIFT.Vehicle.Domain.Label'}}"><i class="fa-solid {{domainIcon}}"></i> {{domainLabel}}</span>
+          </div>
+        {{/if}}
+      {{/if}}
     </div>
   </header>
 

@@ -242,6 +242,14 @@
         "Safe": "Safe to rest",
         "Unsafe": "Unsafe · resting is risky",
         "RevealLandmark": "Reveal this landmark to players",
+        "RevealFull": "Choose what players see for this entry · Ctrl+Click reveals everything",
+        "RevealSectionsTitle": "Reveal sections to players",
+        "RevealSectionsHint": "Pick what players can see for this entry. Anything unchecked stays hidden.",
+        "Revealed": "{name} revealed to players.",
+        "RevealAll": "Choose what players see across the codex · Ctrl+Click reveals everything",
+        "RevealAllTitle": "Reveal sections across the codex",
+        "RevealAllHint": "Pick what players can see for every entry. Anything unchecked is hidden everywhere.",
+        "RevealedAll": "Revealed {count} codex entries to players.",
         "FieldNotes": "Field Notes",
         "NotesUnavailable": "Shared notes aren't ready yet · ask the GM to open the party once.",
         "NotesFailed": "Couldn't save your note.",
@@ -260,7 +268,8 @@
           "Boss": "Boss",
           "Elite": "Elite",
           "Minion": "Minion",
-          "Foe": "Foe",
+          "Commoner": "Commoner",
+          "Legendary": "Legendary",
           "Ally": "Ally",
           "NPC": "NPC",
           "Place": "Place",
@@ -678,7 +687,17 @@
     "Vehicle": {
       "Crew": "Crew",
       "CrewAdded": "{actor} joined {vehicle}'s crew.",
-      "CrewHint": "Drag a Character here."
+      "CrewHint": "Drag a Character here.",
+      "Domain": {
+        "Label": "Domain",
+        "None": "—",
+        "land": "Land",
+        "sea": "Aquatic",
+        "air": "Air",
+        "space": "Space",
+        "underground": "Underground",
+        "mixed": "Mixed"
+      }
     },
     "Clocks": {
       "Title": "Global Traits",
@@ -772,7 +791,13 @@
       "NPCs": "NPCs",
       "NPCsHint": "Drag an Actor here to add an NPC.",
       "NpcAdded": "{actor} was tied to {location}.",
-      "OpenNpc": "Open sheet"
+      "OpenNpc": "Open sheet",
+      "Size": {
+        "site": "Site",
+        "locale": "Locale",
+        "region": "Region",
+        "realm": "Realm"
+      }
     }
   }
 }

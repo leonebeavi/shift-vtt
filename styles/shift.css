@@ -17,6 +17,7 @@
   --shift-accent-soft: rgba(69, 196, 101, 0.14);
   --shift-pink-soft: rgba(255, 95, 162, 0.14);
   --shift-purple-soft: rgba(154, 92, 240, 0.16);
+  --shift-drag: var(--shift-pink);
   --die-d4: #12aa5b;
   --die-d6: #addd27;
   --die-d8: #ffc511;
@@ -4731,6 +4732,7 @@ body.shift-theme-light .shift-vtt {
   --shift-pink-soft: rgba(255,95,162,0.16);
   --shift-pink-ink: #cf3a80;
   --shift-purple-ink: #6a3fae;
+  --shift-drag: var(--shift-pink-ink);
   --tab-accent: var(--shift-pink-ink);
 }
 body.shift-theme-light .shift-vtt.sheet .window-content {
@@ -5010,6 +5012,50 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   gap: 6px;
   width: 100%;
 }
+.shift-vtt .vehicle-header .header-domain {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+.shift-vtt .vehicle-header .header-domain > label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.8);
+}
+.shift-vtt .vehicle-header .domain-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+}
+.shift-vtt .vehicle-header .domain-chip {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.85);
+  background: rgba(20,16,22,0.42);
+  border: 1px solid rgba(255,255,255,0.26);
+  transition: transform 0.12s, color 0.12s, border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+.shift-vtt .vehicle-header .domain-chip:hover {
+  transform: translateY(-1px);
+  color: var(--dc);
+  border-color: var(--dc);
+}
+.shift-vtt .vehicle-header .domain-chip.on {
+  color: #fff;
+  border-color: var(--dc);
+  background: color-mix(in oklab, var(--dc) 32%, rgba(20,16,22,0.5));
+  box-shadow: 0 0 0 1px var(--dc), 0 2px 9px color-mix(in oklab, var(--dc) 45%, transparent);
+}
 .shift-vtt .adversary-header .header-side .stat-pill, .shift-vtt .adversary-header .header-side .adv-stat, .shift-vtt .adversary-header .header-side .type-badge, .shift-vtt .location-header .header-side .stat-pill, .shift-vtt .location-header .header-side .adv-stat, .shift-vtt .location-header .header-side .type-badge, .shift-vtt .vehicle-header .header-side .stat-pill, .shift-vtt .vehicle-header .header-side .adv-stat, .shift-vtt .vehicle-header .header-side .type-badge {
   display: flex;
   align-items: center;
@@ -5033,6 +5079,12 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   text-align: center;
   font-size: 0.98em;
   color: rgba(255,255,255,0.95);
+}
+.shift-vtt .adversary-header .header-side i.fa-fire, .shift-vtt .location-header .header-side i.fa-fire, .shift-vtt .vehicle-header .header-side i.fa-fire {
+  color: #f07d39;
+}
+.shift-vtt .adversary-header .header-side i.fa-bolt, .shift-vtt .location-header .header-side i.fa-bolt, .shift-vtt .vehicle-header .header-side i.fa-bolt {
+  color: #ffd23f;
 }
 .shift-vtt .adversary-header .header-side .pl, .shift-vtt .location-header .header-side .pl, .shift-vtt .vehicle-header .header-side .pl {
   flex: 1 1 auto;
@@ -6198,25 +6250,10 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   box-shadow: 0 2px 0 rgba(255,255,255,0.02) inset, 0 8px 20px rgba(0,0,0,0.28);
   transition: transform 0.16s ease, border-color 0.18s, box-shadow 0.18s;
 }
-.party-member::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 14px;
-  bottom: 14px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: linear-gradient(180deg, var(--party-accent), transparent);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
 .party-member:hover {
   transform: translateY(-2px);
   border-color: color-mix(in oklab, var(--party-accent) 40%, var(--shift-border));
   box-shadow: 0 2px 0 rgba(255,255,255,0.03) inset, 0 14px 30px rgba(0,0,0,0.4);
-}
-.party-member:hover::before {
-  opacity: 0.9;
 }
 .pm-portrait {
   --pc: var(--party-accent);
@@ -6802,8 +6839,14 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   color: var(--party-accent);
   background: rgba(255,255,255,0.05);
 }
-.shift-vtt.party.edit-mode .party-tab-tool {
+.party-tab-tool.active {
   color: var(--party-accent);
+}
+.party-tab-tool.recharge:hover {
+  color: var(--shift-green);
+}
+.party-tab-tool.reveal-all:hover {
+  color: var(--shift-pink);
 }
 .party-tabpages {
   flex: 1 1 auto;
@@ -6955,8 +6998,8 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-content: flex-start;
   gap: 12px;
   padding: 14px 16px 20px;
@@ -6967,9 +7010,7 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   --role: var(--shift-border);
   position: relative;
   cursor: pointer;
-  flex: 1 1 186px;
-  min-width: 168px;
-  max-width: 280px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 9px;
@@ -7052,6 +7093,12 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
 .cc-stat i {
   font-size: 0.82em;
 }
+.cc-stat.power i {
+  color: #f07d39;
+}
+.cc-stat.actions i {
+  color: #ffd23f;
+}
 .cc-stat.def i {
   color: var(--db-color);
 }
@@ -7086,6 +7133,16 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   border: 1px solid var(--shift-border);
   border-radius: 7px;
   padding: 2px 8px;
+}
+.cc-tag.kw {
+  color: var(--kw-color);
+  border-color: color-mix(in oklab, var(--kw-color) 45%, var(--shift-border));
+  background: color-mix(in oklab, var(--kw-color) 13%, var(--shift-bg-raised));
+}
+.cc-tag.db {
+  color: var(--db-color);
+  border-color: color-mix(in oklab, var(--db-color) 45%, var(--shift-border));
+  background: color-mix(in oklab, var(--db-color) 13%, var(--shift-bg-raised));
 }
 .cc-locked {
   opacity: 0.5;
@@ -7533,9 +7590,6 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
 .shift-vtt.party[data-atmo="arcade"] .party-member {
   border-color: color-mix(in oklab, var(--party-accent) 24%, var(--shift-border));
 }
-.shift-vtt.party[data-atmo="arcade"] .party-member::before {
-  opacity: 0.5;
-}
 .shift-vtt.party[data-atmo="arcade"] .pm-portrait::before {
   opacity: 0.4;
   transform: scale(1);
@@ -7609,27 +7663,61 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   top: 8px;
   right: 9px;
   display: inline-flex;
-  gap: 4px;
+  gap: 3px;
   z-index: 3;
 }
 .codex-card .cc-tool {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   display: inline-grid;
   place-items: center;
-  border-radius: 6px;
+  border: none;
+  background: none;
   color: var(--shift-text-muted);
-  background: rgba(0, 0, 0, 0.45);
   cursor: pointer;
-  font-size: 0.72rem;
-  transition: color 0.15s, background 0.15s;
+  font-size: 0.84rem;
+  opacity: 0.6;
+  transition: color 0.12s, opacity 0.12s;
 }
 .codex-card .cc-tool:hover {
-  color: #fff;
-  background: var(--party-accent);
+  opacity: 1;
+  color: var(--shift-text);
+}
+.codex-card .cc-tool.reveal:hover {
+  color: var(--shift-green);
 }
 .codex-card .cc-tool.danger:hover {
-  background: var(--db-color);
+  color: var(--db-color);
+}
+.shift-vtt .codex-reveal-pick .hint {
+  margin: 0 0 10px;
+  color: var(--shift-text-muted);
+  font-size: 0.85rem;
+}
+.shift-vtt .codex-reveal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+}
+.shift-vtt .codex-reveal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+.shift-vtt .codex-reveal-row input {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.shift-vtt .codex-reveal-sub {
+  margin: 12px 0 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--shift-text-muted);
 }
 textarea.cd-note-edit {
   width: 100%;
@@ -8160,11 +8248,11 @@ a.ptrait-die:hover {
   margin: 0;
 }
 .party-actions.stacked .pa-roll {
-  border-left-color: #23bda6;
+  border-left-color: #ff5fa2;
 }
 .party-actions.stacked .pa-roll:hover {
-  border-color: #23bda6;
-  background: color-mix(in oklab, #23bda6 20%, transparent);
+  border-color: #ff5fa2;
+  background: color-mix(in oklab, #ff5fa2 20%, transparent);
 }
 .request-roll-dialog .rr-char-grid {
   display: flex;
@@ -8619,13 +8707,13 @@ body:not(.shift-theme-light) .trait-card:hover, body:not(.shift-theme-light) .pt
 }
 .shift-vtt .is-dragging {
   transform: scale(1.035);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in oklab, var(--shift-accent) 35%, transparent);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in oklab, var(--shift-drag) 35%, transparent);
   position: relative;
   z-index: 8;
   transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
 }
 .shift-vtt .drag-over {
-  background-color: color-mix(in oklab, var(--shift-accent) 11%, transparent);
+  background-color: color-mix(in oklab, var(--shift-drag) 11%, transparent);
   transition: background-color 0.1s ease-out;
 }
 .shift-vtt [data-item-id].drop-before, .shift-vtt [data-item-id].drop-after, .shift-vtt [data-item-id].drop-left, .shift-vtt [data-item-id].drop-right {
@@ -8637,10 +8725,10 @@ body:not(.shift-theme-light) .trait-card:hover, body:not(.shift-theme-light) .pt
   z-index: 6;
   pointer-events: none;
   border-radius: 3px;
-  background: var(--shift-accent);
+  background: var(--shift-drag);
   filter: none;
   opacity: 1;
-  box-shadow: 0 0 9px color-mix(in oklab, var(--shift-accent) 65%, transparent);
+  box-shadow: 0 0 9px color-mix(in oklab, var(--shift-drag) 65%, transparent);
 }
 .shift-vtt [data-item-id].drop-before::before, .shift-vtt [data-item-id].drop-after::after {
   left: 6px;

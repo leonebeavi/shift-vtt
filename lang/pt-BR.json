@@ -242,6 +242,14 @@
         "Safe": "Seguro para descansar",
         "Unsafe": "Inseguro · descansar é arriscado",
         "RevealLandmark": "Revelar este landmark aos jogadores",
+        "RevealFull": "Escolher o que os jogadores veem desta entrada · Ctrl+Click revela tudo",
+        "RevealSectionsTitle": "Revelar seções aos jogadores",
+        "RevealSectionsHint": "Escolha o que os jogadores podem ver desta entrada. O que ficar desmarcado segue oculto.",
+        "Revealed": "{name} revelado(a) aos jogadores.",
+        "RevealAll": "Escolher o que os jogadores veem no codex · Ctrl+Click revela tudo",
+        "RevealAllTitle": "Revelar seções em todo o codex",
+        "RevealAllHint": "Escolha o que os jogadores veem em cada entrada. O que ficar desmarcado fica oculto em todas.",
+        "RevealedAll": "{count} entradas do codex reveladas aos jogadores.",
         "FieldNotes": "Notas de Campo",
         "NotesUnavailable": "As notas compartilhadas ainda não estão prontas · peça ao GM para abrir a party uma vez.",
         "NotesFailed": "Não foi possível salvar sua nota.",
@@ -260,7 +268,8 @@
           "Boss": "Chefe",
           "Elite": "Elite",
           "Minion": "Lacaio",
-          "Foe": "Adversário",
+          "Commoner": "Plebeu",
+          "Legendary": "Lendário",
           "Ally": "Aliado",
           "NPC": "NPC",
           "Place": "Lugar",
@@ -678,7 +687,17 @@
     "Vehicle": {
       "Crew": "Tripulação",
       "CrewAdded": "{actor} entrou na tripulação de {vehicle}.",
-      "CrewHint": "Arraste um Personagem aqui."
+      "CrewHint": "Arraste um Personagem aqui.",
+      "Domain": {
+        "Label": "Domínio",
+        "None": "—",
+        "land": "Terrestre",
+        "sea": "Aquático",
+        "air": "Aéreo",
+        "space": "Espacial",
+        "underground": "Subterrâneo",
+        "mixed": "Misto"
+      }
     },
     "Clocks": {
       "Title": "Global Traits",
@@ -772,7 +791,13 @@
       "NPCs": "NPCs",
       "NPCsHint": "Arraste um Ator aqui para adicionar um NPC.",
       "NpcAdded": "{actor} foi vinculado a {location}.",
-      "OpenNpc": "Abrir ficha"
+      "OpenNpc": "Abrir ficha",
+      "Size": {
+        "site": "Sítio",
+        "locale": "Localidade",
+        "region": "Região",
+        "realm": "Domínio"
+      }
     }
   }
 }

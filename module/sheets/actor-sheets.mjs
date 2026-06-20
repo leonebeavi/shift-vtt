@@ -119,7 +119,8 @@ export class ShiftVehicleSheet extends BaseShiftActorSheet {
     classes: ["vehicle"],
     position: { width: 680, height: 740 },
     actions: {
-      removeCrew: ShiftVehicleSheet.#onRemoveCrew
+      removeCrew: ShiftVehicleSheet.#onRemoveCrew,
+      setVehicleDomain: ShiftVehicleSheet.#onSetVehicleDomain
     }
   };
 
@@ -143,6 +144,15 @@ export class ShiftVehicleSheet extends BaseShiftActorSheet {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.typeLabel = game.i18n.localize("TYPES.Actor.vehicle");
+    const dom = this.document.system.domain;
+    context.domainLabel = dom ? game.i18n.localize(CONFIG.SHIFT.vehicleDomains[dom] ?? "") : "";
+    context.domainIcon = VEHICLE_DOMAIN_ICON[dom] ?? "fa-car-side";
+    context.domainOptions = Object.entries(CONFIG.SHIFT.vehicleDomains).map(([k, v]) => ({
+      value: k, label: game.i18n.localize(v),
+      icon: VEHICLE_DOMAIN_ICON[k] ?? "fa-car-side",
+      color: VEHICLE_DOMAIN_COLOR[k] ?? ROLE_COLORS.vehicle,
+      selected: k === dom
+    }));
     context.crew = [];
     for (const uuid of this.document.system.crew ?? []) {
       const a = await fromUuid(uuid);
@@ -174,10 +184,20 @@ export class ShiftVehicleSheet extends BaseShiftActorSheet {
 
   /** Remove um membro da crew (data-action="removeCrew"). */
   static async #onRemoveCrew(event, target) {
+    if (!this.isEditable) return;   // ApplicationV2 despacha o clique mesmo sem editable; o template só esconde
     const uuid = target.closest("[data-crew-uuid]")?.dataset.crewUuid;
     if (!uuid) return;
     const crew = (this.document.system.crew ?? []).filter(u => u !== uuid);
     await this.document.update({ "system.crew": crew });
+  }
+
+  /** Define/limpa o domínio do veículo (data-action="setVehicleDomain"); clicar no
+   *  domínio já ativo limpa o campo. */
+  static async #onSetVehicleDomain(event, target) {
+    if (!this.isEditable) return;   // só o dono edita; o picker é escondido no template, mas o data-action dispara mesmo assim
+    const d = target.dataset.domain;
+    const cur = this.document.system.domain;
+    await this.document.update({ "system.domain": d === cur ? "" : d });
   }
 }
 
@@ -313,25 +333,48 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
  *  Locations/vehicles/items ganham seus próprios grupos para que o codex possa ser
  *  navegado pelo que a coisa É. */
 const ROLE_GROUP = {
-  boss: "enemy", elite: "enemy", minion: "enemy", foe: "enemy",
+  boss: "enemy", elite: "enemy", minion: "enemy",
   ally: "ally", npc: "npc", place: "place", vehicle: "vehicle", trait: "trait", technique: "technique"
 };
 const ROLE_ICONS = {
-  boss: "fa-skull", elite: "fa-fire", minion: "fa-paw", foe: "fa-skull",
+  boss: "fa-skull", elite: "fa-fire", minion: "fa-paw",
   ally: "fa-handshake", npc: "fa-user", place: "fa-map-location-dot", vehicle: "fa-car-side",
   trait: "fa-dice-d20", technique: "fa-bolt"
 };
 const ROLE_COLORS = {
-  boss: "#de2b54", elite: "#f07d39", minion: "#ffc511", foe: "#de2b54",
+  boss: "#de2b54", elite: "#f07d39", minion: "#ffc511",
   ally: "#45c465", npc: "#2f9fd0", place: "#ffce4a", vehicle: "#5b8def", trait: "#a06bff", technique: "#23bda6"
 };
 const ROLE_LABEL = {
   boss: "SHIFT.Party.Codex.Role.Boss", elite: "SHIFT.Party.Codex.Role.Elite",
-  minion: "SHIFT.Party.Codex.Role.Minion", foe: "SHIFT.Party.Codex.Role.Foe",
+  minion: "SHIFT.Party.Codex.Role.Minion",
   ally: "SHIFT.Party.Codex.Role.Ally", npc: "SHIFT.Party.Codex.Role.NPC",
   place: "SHIFT.Party.Codex.Role.Place", vehicle: "SHIFT.Party.Codex.Role.Vehicle",
   trait: "SHIFT.Party.Codex.Role.Trait", technique: "SHIFT.Party.Codex.Role.Technique"
 };
+/** Ícone/cor por domínio de Vehicle (campo system.domain). */
+const VEHICLE_DOMAIN_ICON = {
+  land: "fa-car-side", sea: "fa-anchor", air: "fa-plane",
+  space: "fa-rocket", underground: "fa-mountain", mixed: "fa-shuffle"
+};
+const VEHICLE_DOMAIN_COLOR = {
+  land: "#6bbf59", sea: "#2f9fd0", air: "#37c0c0",
+  space: "#a06bff", underground: "#c0883f", mixed: "#9aa0a6"
+};
+/** Cor por Scale (1–4) — a mesma rampa dos pips de Scale; tinge as Locations no Codex. */
+const SCALE_COLOR = { 1: "#45c465", 2: "#ffc511", 3: "#f07d39", 4: "#de2b54" };
+/** Tier de um NPC pelo Power — mesmos recortes dos hostiles, sem Power 0:
+ *  ≤2 Commoner · 3–4 Elite · 5+ Legendary ("Elite" reusa a chave do hostil). */
+const NPC_TIER_LABEL = {
+  commoner: "SHIFT.Party.Codex.Role.Commoner",
+  elite: "SHIFT.Party.Codex.Role.Elite",
+  legendary: "SHIFT.Party.Codex.Role.Legendary"
+};
+const NPC_TIER_COLOR = { commoner: "#2f9fd0", elite: "#f07d39", legendary: "#a06bff" };
+function npcTier(power) {
+  const p = power ?? 0;
+  return p >= 5 ? "legendary" : p >= 3 ? "elite" : "commoner";
+}
 /** id do filtro → os grupos que ele casa (null = todos). Grupos vazios são
  *  ocultados na renderização (ver #codexContext), então só aparecem categorias
  *  com conteúdo. */
@@ -402,7 +445,7 @@ function deriveCodexRole(doc) {
   const disp = doc?.prototypeToken?.disposition ?? doc?.token?.disposition ?? null;
   if (disp === D.HOSTILE) {
     const p = doc.system?.power ?? 0;
-    return p >= 5 ? "boss" : p >= 3 ? "elite" : p >= 1 ? "minion" : "foe";
+    return p >= 5 ? "boss" : p >= 3 ? "elite" : "minion";
   }
   if (disp === D.FRIENDLY) return "ally";
   return "npc"; // NEUTRAL / SECRET / não definido
@@ -414,6 +457,52 @@ function codexKind(doc) {
   if (doc?.type === "location") return "location";
   if (doc?.type === "vehicle") return "vehicle";
   return "actor"; // character / adversary
+}
+
+/** Texto do TYPE localizado (TYPES.Actor.x / TYPES.Item.x). */
+function typeLabelOf(doc) {
+  return game.i18n.localize(`TYPES.${doc instanceof Item ? "Item" : "Actor"}.${doc.type}`);
+}
+
+/** Cor de destaque (--role) de um card de Codex: Traits seguem o DADO MÁX; Techniques
+ *  a CATEGORIA (narrative/mechanical/scaledUp); os demais, o role. */
+const TECH_ACCENT = { narrative: "var(--shift-yellow)", mechanical: "var(--shift-blue)", scaledUp: "var(--shift-pink)" };
+function codexAccent(doc, role, kind) {
+  if (kind === "technique") return TECH_ACCENT[doc.system.techniqueType] ?? ROLE_COLORS.technique;
+  if (kind === "trait") return `var(--die-${doc.system.maxDie || "d6"})`;
+  if (kind === "vehicle") return VEHICLE_DOMAIN_COLOR[doc.system.domain] ?? ROLE_COLORS.vehicle;
+  if (kind === "location") return SCALE_COLOR[doc.system.scale] ?? ROLE_COLORS.place;
+  if (role === "npc") return NPC_TIER_COLOR[npcTier(doc.system.power)];
+  return ROLE_COLORS[role] ?? "#b5a4b3";
+}
+
+/** Subtítulo do card, sempre no formato "<amplo> · <específico>": Adversaries
+ *  "Minion · Adversary", Vehicles "Vehicle · Vehicle", Traits "Trait · Focus Trait",
+ *  Techniques "Technique · Mechanical". */
+function codexRoleLabel(doc, role, kind) {
+  if (kind === "trait") {
+    const cat = game.i18n.localize(CONFIG.SHIFT.traitCategories[doc.system.category] ?? "");
+    return cat ? `${typeLabelOf(doc)} · ${cat}` : typeLabelOf(doc);
+  }
+  if (kind === "technique") {
+    const tt = game.i18n.localize(CONFIG.SHIFT.techniqueTypes[doc.system.techniqueType] ?? "");
+    return tt ? `${typeLabelOf(doc)} · ${tt}` : typeLabelOf(doc);
+  }
+  if (kind === "location") {
+    const sz = game.i18n.localize(CONFIG.SHIFT.locationSizes[doc.system.scale] ?? "");
+    return sz ? `${typeLabelOf(doc)} · ${sz}` : typeLabelOf(doc);
+  }
+  if (kind === "vehicle" && doc.system.domain) {
+    const dl = game.i18n.localize(CONFIG.SHIFT.vehicleDomains[doc.system.domain] ?? "");
+    if (dl) return `${typeLabelOf(doc)} · ${dl}`;
+  }
+  if (role === "npc") {
+    const tier = game.i18n.localize(NPC_TIER_LABEL[npcTier(doc.system.power)]);
+    return `${tier} · ${game.i18n.localize(ROLE_LABEL.npc)}`;
+  }
+  const rl = game.i18n.localize(ROLE_LABEL[role] ?? "");
+  const tl = typeLabelOf(doc);
+  return rl ? `${rl} · ${tl}` : tl;
 }
 
 function byTraitOrder(a, b) {
@@ -434,8 +523,9 @@ function byTraitOrder(a, b) {
  */
 export class ShiftPartySheet extends BaseShiftActorSheet {
 
-  /** Filtro/busca/abertura do Codex + tile de trait aberto são estado de view transitório. */
-  _codexFilter = "all";
+  /** Filtro/busca/abertura do Codex + tile de trait aberto são estado de view transitório.
+   *  O filtro do Codex é MULTI-SELEÇÃO: um Set de ids de categoria ativos; vazio = "All". */
+  _codexFilters = new Set();
   _codexQuery = "";
   _codexOpen = null;
   _openTile = null;
@@ -459,6 +549,8 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       openCodexEntry: ShiftPartySheet.#onOpenCodexEntry,
       codexBack: ShiftPartySheet.#onCodexBack,
       removeCodexEntry: ShiftPartySheet.#onRemoveCodexEntry,
+      revealCodexEntry: ShiftPartySheet.#onRevealCodexEntry,
+      revealAllCodex: ShiftPartySheet.#onRevealAllCodex,
       toggleCodexReveal: ShiftPartySheet.#onToggleCodexReveal,
       toggleCodexLandmark: ShiftPartySheet.#onToggleCodexLandmark,
       toggleTraitHide: ShiftPartySheet.#onToggleTraitHide,
@@ -541,11 +633,14 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const codex = await this.#codexContext();
     context.codex = codex.cards;
     context.codexDetail = await this.#codexDetailContext();
-    context.codexFilter = this._codexFilter;
     context.codexQuery = this._codexQuery;
-    // Só categorias que realmente contêm entradas ganham um botão de filtro.
-    context.codexFilters = CODEX_FILTER_BUTTONS.filter(
-      b => b.group === null || (codex.counts[b.group] ?? 0) > 0);
+    // Só categorias que realmente contêm entradas ganham um botão de filtro; cada um
+    // já carrega seu estado `active` (multi-seleção). "All" fica ativo quando nada está.
+    // (#codexContext acima já podou filtros de categorias esvaziadas deste Set.)
+    const active = this._codexFilters;
+    context.codexFilters = CODEX_FILTER_BUTTONS
+      .filter(b => b.group === null || (codex.counts[b.group] ?? 0) > 0)
+      .map(b => ({ ...b, active: b.id === "all" ? active.size === 0 : active.has(b.id) }));
 
     context.locationInfo = await this.#locationContext();
     context.activeVehicle = await this.#vehicleContext();
@@ -758,18 +853,33 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       all.push(card);
     }
 
-    // Um filtro cuja categoria esvaziou (última entrada removida) faz fallback para
-    // "all", para que a grade nunca mostre uma view falsamente vazia sob um botão sumido.
-    let filter = this._codexFilter;
-    const fg = CODEX_FILTERS[filter];
-    if (filter !== "all" && (!fg || !fg.some(g => (counts[g] ?? 0) > 0))) filter = this._codexFilter = "all";
-    const filterGroups = CODEX_FILTERS[filter] ?? null;
+    // Codex sempre exibido em ordem alfabética (a ordem de inserção não importa).
+    // Ordena pelo nome EXIBIDO, nunca pelo verdadeiro de uma entrada oculta (senão
+    // a posição vazaria a identidade); rumores "???"/"Unknown" vão ao fim, pois não
+    // têm nome real pra ordenar. numeric+base => "Guarda 2" antes de "Guarda 10" e
+    // acentos ordenam de forma natural. (Array.sort é estável.)
+    all.sort((a, b) => {
+      const ca = a.locked || a.nameHidden, cb = b.locked || b.nameHidden;
+      if (ca !== cb) return ca ? 1 : -1;
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+    });
+
+    // Multi-seleção: descarta filtros cujo grupo esvaziou (última entrada removida),
+    // pra grade nunca ficar falsamente vazia sob um botão que sumiu; Set vazio = "All".
+    const selected = this._codexFilters;
+    for (const id of [...selected]) {
+      const groups = CODEX_FILTERS[id];
+      if (!groups || !groups.some(g => (counts[g] ?? 0) > 0)) selected.delete(id);
+    }
+    // União dos grupos de TODOS os filtros ativos; null = nenhum filtro → mostra tudo.
+    const filterGroups = selected.size
+      ? new Set([...selected].flatMap(id => CODEX_FILTERS[id] ?? [])) : null;
 
     const cards = all.filter(card => {
-      // Players veem rumores travados só na view "all", nunca sob um filtro de
-      // categoria (isso revelaria a categoria da coisa oculta).
+      // Players veem rumores travados só na view "all" (sem filtros), nunca sob um
+      // filtro de categoria (isso revelaria a categoria da coisa oculta).
       if (card.locked && !isGM && filterGroups) return false;
-      if (filterGroups && !filterGroups.includes(card.group)) return false;
+      if (filterGroups && !filterGroups.has(card.group)) return false;
       return true;
     });
     return { cards, counts };
@@ -793,17 +903,22 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return (p.body.textContent ?? "").trim();
   }
 
-  #typeLabel(doc) {
-    return game.i18n.localize(`TYPES.${doc instanceof Item ? "Item" : "Actor"}.${doc.type}`);
-  }
-
-  /** Coleta até cinco tags de Keyword/Drawback dos Traits de um actor. */
+  /** Coleta tags de Keyword/Drawback dos Traits de um actor, marcadas por tipo
+   *  para colorização (kw = azul, db = vermelho). */
   #codexTags(actor) {
-    const tags = [];
-    for (const t of actor.items?.filter?.(i => i.type === "trait") ?? []) {
-      for (const k of t.system.keywords ?? []) if (k && !tags.includes(k)) tags.push(k);
-    }
-    return tags.slice(0, 5);
+    const traits = actor.items?.filter?.(i => i.type === "trait") ?? [];
+    const collect = (key, kind, max) => {
+      const out = [], seen = new Set();
+      for (const t of traits) for (const v of t.system[key] ?? []) {
+        const label = String(v ?? "").trim();
+        if (!label || seen.has(label.toLowerCase())) continue;
+        seen.add(label.toLowerCase());
+        out.push({ label, kind });
+        if (out.length >= max) return out;
+      }
+      return out;
+    };
+    return [...collect("keywords", "kw", 4), ...collect("drawbacks", "db", 3)];
   }
 
   /** Um card da GRADE do codex, customizado por kind. `doc` já vem resolvido pelo chamador. */
@@ -818,33 +933,36 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const role = deriveCodexRole(doc);
     const kind = codexKind(doc);
     const lower = s => String(s ?? "").toLowerCase();
+    // Scale: actors (character/adversary/location/vehicle) guardam em system.scale
+    // (número); traits em system.scale.value; techniques não têm scale real. No FRONT
+    // o chip de scale só aparece quando > 1 (regra: só quando a scale é maior que 1).
+    const scale = doc instanceof Item ? (doc.system.scale?.value ?? 1) : (doc.system.scale ?? 1);
+    const showScale = see("scale") && scale > 1;
     const base = {
       uuid: entry.uuid, role, kind, group: ROLE_GROUP[role] ?? "ally",
       locked, nameHidden,
       partlyHidden: isGM && !this.#fullyRevealed(entry, doc),
       name: locked ? "???" : (nameHidden ? game.i18n.localize("SHIFT.Party.Codex.Unknown") : doc.name),
       img: conceal ? null : doc.img, icon: ROLE_ICONS[role] ?? "fa-question",
+      accent: codexAccent(doc, role, kind),
+      hasStatRow: kind === "actor" || kind === "location" || showScale,
+      showScale, scale,
       roleLabel: locked ? game.i18n.localize("SHIFT.Party.Codex.Locked")
-        : `${game.i18n.localize(ROLE_LABEL[role] ?? "")} · ${this.#typeLabel(doc)}`,
+        : codexRoleLabel(doc, role, kind),
       nameLower: conceal ? "" : lower(doc.name)
     };
     if (locked) return base;                  // um card de rumor não precisa de mais nada
 
-    if (kind === "technique") {
-      return Object.assign(base, {
-        showTech: see("stats"),
-        techType: game.i18n.localize(CONFIG.SHIFT.techniqueTypes[doc.system.techniqueType] ?? "")
-      });
-    }
+    // Technique: categoria + cor já vêm no subtítulo/accent (base); sem stats na grade.
+    if (kind === "technique") return base;
     if (kind === "trait") {
       const tags = see("traits")
-        ? [...(doc.system.keywords ?? []), ...(doc.system.drawbacks ?? [])].slice(0, 5) : [];
-      return Object.assign(base, {
-        showDie: see("stats"),
-        statusKey: doc.statusKey, dieImg: CONFIG.SHIFT.diceImages[doc.statusKey] ?? null,
-        statusLabel: dieStatusLabel(doc.statusKey),
-        tags, tagsLower: tags.map(lower).join(" ")
-      });
+        ? [
+            ...(doc.system.keywords ?? []).map(label => ({ label: String(label), kind: "kw" })),
+            ...(doc.system.drawbacks ?? []).map(label => ({ label: String(label), kind: "db" }))
+          ].filter(t => t.label).slice(0, 5) : [];
+      // O dado vira a cor de destaque (accent = dado máx); sem pill de status na grade.
+      return Object.assign(base, { tags, tagsLower: tags.map(t => lower(t.label)).join(" ") });
     }
     if (kind === "location") {
       const lms = doc.items?.filter?.(i => i.type === "landmark") ?? [];
@@ -853,16 +971,13 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       return Object.assign(base, {
         showStats: see("stats"),
         landmarkCount: shown.length,
-        tags, tagsLower: tags.map(lower).join(" ")
+        tags, tagsLower: tags.map(t => lower(t.label)).join(" ")
       });
     }
     if (kind === "vehicle") {
+      // Sem stat row: o domínio já aparece no subtítulo (role label); só as tags.
       const tags = see("traits") ? this.#codexTags(doc) : [];
-      return Object.assign(base, {
-        showStats: see("stats"),
-        crewCount: see("stats") ? (doc.system.crew ?? []).length : 0,
-        tags, tagsLower: tags.map(lower).join(" ")
-      });
+      return Object.assign(base, { tags, tagsLower: tags.map(t => lower(t.label)).join(" ") });
     }
     // actor (character / adversary)
     const defeat = doc.system.defeat ?? { value: 0, max: 0 };
@@ -871,7 +986,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       showStats: see("stats"),
       power: doc.system.power ?? 0, actions: doc.system.actions ?? doc.system.power ?? 0,
       showDefeat: see("defeat") && !!defeat.max, defeat,
-      tags, tagsLower: tags.map(lower).join(" ")
+      tags, tagsLower: tags.map(t => lower(t.label)).join(" ")
     });
   }
 
@@ -894,10 +1009,10 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
     const base = {
       uuid, isGM, kind, reveal: r, canEditReveal: isGM, nameHidden,
-      role, roleColor: ROLE_COLORS[role] ?? "#b5a4b3",
+      role, roleColor: codexAccent(doc, role, kind),
       name: nameHidden ? game.i18n.localize("SHIFT.Party.Codex.Unknown") : doc.name,
       img: nameHidden ? null : doc.img, icon: ROLE_ICONS[role] ?? "fa-question",
-      roleLabel: `${game.i18n.localize(ROLE_LABEL[role] ?? "")} · ${this.#typeLabel(doc)}`,
+      roleLabel: codexRoleLabel(doc, role, kind),
       showNote: see("note"), note: entry.note ?? "", editable: this.isEditable,
       canOpenSheet: isGM,
       fieldNotes: await this.#fieldNotesContext(entry),
@@ -936,6 +1051,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
         }));
       return Object.assign(base, {
         concept: see("concept") ? (doc.system.concept ?? "") : "",
+        showScale: see("scale"), scale: doc.system.scale ?? 1,
         traits, hasTraits: traits.length > 0,
         landmarks, hasLandmarks: landmarks.length > 0
       });
@@ -948,6 +1064,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
             .filter(Boolean).map(c => ({ uuid: c.uuid, name: c.name, img: c.img })) : [];
       return Object.assign(base, {
         concept: see("concept") ? (doc.system.concept ?? "") : "",
+        showScale: see("scale"), scale: doc.system.scale ?? 1,
         traits, hasTraits: traits.length > 0,
         crew, hasCrew: crew.length > 0
       });
@@ -1284,10 +1401,34 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return true;
   }
 
-  /** Solta uma Folder de Actors sobre o roster para adicionar todos eles. */
+  /** Solta uma Folder no party. Na aba Codex cataloga em lote: Actors (exceto outros
+   *  parties) e Items do tipo trait/technique — espelhando os drops individuais de
+   *  #onDropActor/#onDropItem. Uma Folder de Actors fora do Codex vira membros do
+   *  roster; uma Folder de Items só tem sentido no Codex. */
   async _onDropFolder(event, folder) {
     if (!this.isEditable) return false;
+    const isCodex = this.#isCodexDrop(event);
+
+    // Folder de Items (Traits/Techniques): só catalogável no Codex, como o drop
+    // individual (#onDropItem aceita só trait/technique). Numa única escrita.
+    if (folder?.type === "Item") {
+      if (!isCodex) return false;
+      return this.#addCodexEntries(folder.contents
+        .filter(x => x instanceof Item && ["trait", "technique"].includes(x.type))
+        .map(x => x.uuid));
+    }
+
     if (folder?.type !== "Actor") return false;
+
+    // Aba Codex: cataloga todos numa única escrita (Locations/Vehicles também são
+    // entradas válidas do codex; só outros parties não fazem sentido aqui).
+    if (isCodex) {
+      return this.#addCodexEntries(folder.contents
+        .filter(x => x instanceof Actor && x.type !== "party")
+        .map(x => x.uuid));
+    }
+
+    // Caso contrário, vira roster (Locations/Vehicles/parties têm slots próprios).
     const actors = folder.contents.filter(x =>
       x instanceof Actor && !["party", "location", "vehicle"].includes(x.type));
     if (actors.length) await this.document.addPartyMembers(...actors);
@@ -1373,12 +1514,27 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   /** Adiciona um UUID de Actor/Item ao codex. Entradas novas começam OCULTAS (um
    *  rumor "???"); o GM revela os campos deliberadamente. */
   async #addCodexEntry(uuid) {
+    return this.#addCodexEntries([uuid]);
+  }
+
+  /** Adiciona vários UUIDs ao codex de uma vez (dedupe contra o que já existe),
+   *  numa única escrita. Avisa "já catalogado" só quando nada de novo entrou. */
+  async #addCodexEntries(uuids) {
     const codex = foundry.utils.deepClone(this.document.system.codex ?? []);
-    if (codex.some(e => e.uuid === uuid)) {
-      ui.notifications.info(game.i18n.localize("SHIFT.Party.Codex.Already"));
+    const have = new Set(codex.map(e => e.uuid));
+    let added = 0;
+    for (const uuid of uuids) {
+      if (!uuid || have.has(uuid)) continue;
+      have.add(uuid);
+      codex.push(ShiftPartySheet.#newCodexEntry(uuid));
+      added++;
+    }
+    if (!added) {
+      // Só avisa "já catalogado" quando havia algo pra catalogar e tudo era dup;
+      // uma folder vazia / só de parties não merece toast (espelha o silêncio do roster).
+      if (uuids.length) ui.notifications.info(game.i18n.localize("SHIFT.Party.Codex.Already"));
       return false;
     }
-    codex.push(ShiftPartySheet.#newCodexEntry(uuid));
     await this.document.update({ "system.codex": codex });
     return true;
   }
@@ -1431,7 +1587,12 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   /* --- Codex (a curadoria é só do GM; a config de reveal também) ------- */
 
   static #onCodexFilter(event, target) {
-    this._codexFilter = target.dataset.filter ?? "all";
+    const id = target.dataset.filter ?? "all";
+    // "All" limpa a seleção (mostra tudo); senão alterna o filtro — eles GRUDAM, dá
+    // pra somar várias categorias ao mesmo tempo (sticky/multi-seleção).
+    if (id === "all") this._codexFilters.clear();
+    else if (this._codexFilters.has(id)) this._codexFilters.delete(id);
+    else this._codexFilters.add(id);
     this._codexOpen = null;   // não deixa um detalhe aberto isolado sob uma grade filtrada
     this.render({ parts: ["codex"] });   // direcionado → sem flash da ficha inteira
   }
@@ -1503,6 +1664,144 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (icon) { icon.classList.toggle("fa-eye", on); icon.classList.toggle("fa-eye-slash", !on); }
     target.closest(".cd-landmark")?.classList.toggle("is-hidden", !on);
     await this.document.update({ "system.codex": codex }, { render: false });
+  }
+
+  /** Revela uma entrada do Codex aos Players. Disponível para o GM E o owner do
+   *  party (botão na grade). Clique normal abre o prompt pra escolher quais seções;
+   *  CTRL/⌘+Click revela a ficha INTEIRA (todos os campos + landmarks), sem perguntar. */
+  static async #onRevealCodexEntry(event, target) {
+    if (!this.document.isOwner) return;
+    const uuid = target.closest("[data-codex-uuid]")?.dataset.codexUuid;
+    if (!uuid) return;
+    if (event.ctrlKey || event.metaKey) return this.#applyCodexReveal(uuid, REVEAL_FIELDS, { allLandmarks: true });
+    return this.#promptRevealSections(uuid);
+  }
+
+  /** Revela o Codex INTEIRO aos Players (botão geral, ao lado do Recharge). Clique
+   *  normal abre o prompt das seções a aplicar a todas; CTRL/⌘+Click revela tudo de
+   *  toda entrada, sem perguntar. GM ou owner do party. */
+  static async #onRevealAllCodex(event) {
+    if (!this.document.isOwner) return;
+    if (event.ctrlKey || event.metaKey) return this.#applyCodexRevealAll(REVEAL_FIELDS, { allLandmarks: true });
+    return this.#promptRevealAllSections();
+  }
+
+  /** Escreve o estado de reveal de uma entrada — `fields` ficam visíveis, o resto
+   *  oculto — mais os landmarks, numa única escrita; re-render direcionado do Codex.
+   *  GM ou owner do party. */
+  async #applyCodexReveal(uuid, fields, { allLandmarks = false, landmarks = null } = {}) {
+    if (!this.document.isOwner) return false;
+    const codex = foundry.utils.deepClone(this.document.system.codex ?? []);
+    const e = codex.find(x => x.uuid === uuid);
+    if (!e) return false;
+    e.reveal = ShiftPartySheet.#revealSet(fields);
+    const doc = await fromUuid(uuid);
+    const lmIds = (doc?.items?.filter?.(i => i.type === "landmark") ?? []).map(l => l.id);
+    if (allLandmarks) e.revealLandmarks = lmIds;
+    else if (landmarks) e.revealLandmarks = lmIds.filter(id => landmarks.includes(id));
+    await this.document.update({ "system.codex": codex }, { render: false });
+    this.render({ parts: ["codex"] });   // direcionado → sem flash da ficha inteira
+    ui.notifications.info(game.i18n.format("SHIFT.Party.Codex.Revealed",
+      { name: doc?.name ?? game.i18n.localize("SHIFT.Party.Codex.Unknown") }));
+    return true;
+  }
+
+  /** Aplica um estado de reveal a TODAS as entradas do Codex de uma vez (`fields`
+   *  visíveis, o resto oculto; landmarks conforme `allLandmarks`). Uma escrita só. */
+  async #applyCodexRevealAll(fields, { allLandmarks = false } = {}) {
+    if (!this.document.isOwner) return false;
+    const codex = foundry.utils.deepClone(this.document.system.codex ?? []);
+    if (!codex.length) return false;
+    const docs = await Promise.all(codex.map(e => fromUuid(e.uuid).catch(() => null)));
+    for (let i = 0; i < codex.length; i++) {
+      codex[i].reveal = ShiftPartySheet.#revealSet(fields);
+      codex[i].revealLandmarks = allLandmarks
+        ? (docs[i]?.items?.filter?.(d => d.type === "landmark") ?? []).map(l => l.id) : [];
+    }
+    await this.document.update({ "system.codex": codex }, { render: false });
+    this.render({ parts: ["codex"] });
+    ui.notifications.info(game.i18n.format("SHIFT.Party.Codex.RevealedAll", { count: codex.length }));
+    return true;
+  }
+
+  /** Linha de checkbox do diálogo de reveal (label escapado; ícone é literal). */
+  static #revealRow(name, label, on, icon = "") {
+    return `<label class="codex-reveal-row"><input type="checkbox" name="${name}"${on ? " checked" : ""}/>` +
+      `<span>${icon}${foundry.utils.escapeHTML(label)}</span></label>`;
+  }
+
+  /** Roda o diálogo de checkboxes de reveal e devolve um mapa {name: checked} (ou
+   *  null se cancelado). Reúne o que os dois prompts (entrada e geral) têm em comum. */
+  async #revealPrompt(titleKey, contentHtml) {
+    try {
+      return await foundry.applications.api.DialogV2.prompt({
+        window: { title: game.i18n.localize(titleKey), icon: "fa-solid fa-eye" },
+        classes: ["shift-vtt", "shift-dialog"],
+        content: contentHtml, rejectClose: false,
+        ok: {
+          label: game.i18n.localize("SHIFT.Common.Confirm"),
+          callback: (_e, btn) => {
+            const out = {};
+            for (const cb of btn.form.querySelectorAll("input[type=checkbox]")) out[cb.name] = cb.checked;
+            return out;
+          }
+        }
+      });
+    } catch (_err) { return null; }
+  }
+
+  /** Diálogo de seleção das seções a revelar (CTRL+Click no botão de revelar de um
+   *  card). Vem pré-marcado com o estado atual; Locations listam também seus
+   *  landmarks. O que ficar desmarcado é OCULTADO (o prompt define o estado completo). */
+  async #promptRevealSections(uuid) {
+    if (!this.document.isOwner) return false;
+    const entry = (this.document.system.codex ?? []).find(e => e.uuid === uuid);
+    if (!entry) return false;
+    const doc = await fromUuid(uuid);
+    const r = entry.reveal ?? {};
+    const row = ShiftPartySheet.#revealRow;
+    const fieldRows = REVEAL_FIELDS.map(f =>
+      row(f, game.i18n.localize(`SHIFT.Party.Codex.Field.${cap(f)}`), !!r[f])).join("");
+    const lms = doc?.items?.filter?.(i => i.type === "landmark") ?? [];
+    const lmRows = lms.map(l =>
+      row(`lm:${l.id}`, l.name, !!entry.revealLandmarks?.includes(l.id),
+        `<i class="fa-solid fa-map-pin"></i> `)).join("");
+    const content =
+      `<div class="shift-dialog-body codex-reveal-pick">` +
+        `<p class="hint">${game.i18n.localize("SHIFT.Party.Codex.RevealSectionsHint")}</p>` +
+        `<div class="codex-reveal-grid">${fieldRows}</div>` +
+        (lmRows
+          ? `<div class="codex-reveal-sub">${game.i18n.localize("SHIFT.Location.Landmarks")}</div>` +
+            `<div class="codex-reveal-grid">${lmRows}</div>`
+          : "") +
+      `</div>`;
+    const picked = await this.#revealPrompt("SHIFT.Party.Codex.RevealSectionsTitle", content);
+    if (!picked) return false;
+    const fields = REVEAL_FIELDS.filter(f => picked[f]);
+    const landmarks = lms.map(l => l.id).filter(id => picked[`lm:${id}`]);
+    return this.#applyCodexReveal(uuid, fields, { landmarks });
+  }
+
+  /** Diálogo de seleção das seções a revelar no Codex INTEIRO (CTRL+Click no botão
+   *  geral). Começa tudo marcado (= revelar tudo); o que ficar desmarcado fica
+   *  oculto em todas as entradas. Um único checkbox cobre todos os landmarks. */
+  async #promptRevealAllSections() {
+    if (!this.document.isOwner) return false;
+    if (!(this.document.system.codex ?? []).length) return false;
+    const row = ShiftPartySheet.#revealRow;
+    const fieldRows = REVEAL_FIELDS.map(f =>
+      row(f, game.i18n.localize(`SHIFT.Party.Codex.Field.${cap(f)}`), true)).join("");
+    const lmRow = row("landmarks", game.i18n.localize("SHIFT.Location.Landmarks"), true,
+      `<i class="fa-solid fa-map-pin"></i> `);
+    const content =
+      `<div class="shift-dialog-body codex-reveal-pick">` +
+        `<p class="hint">${game.i18n.localize("SHIFT.Party.Codex.RevealAllHint")}</p>` +
+        `<div class="codex-reveal-grid">${fieldRows}${lmRow}</div>` +
+      `</div>`;
+    const picked = await this.#revealPrompt("SHIFT.Party.Codex.RevealAllTitle", content);
+    if (!picked) return false;
+    const fields = REVEAL_FIELDS.filter(f => picked[f]);
+    return this.#applyCodexRevealAll(fields, { allLandmarks: !!picked.landmarks });
   }
 
   /* --- Trait/Quest hide (toggle de reveal de um botão) -------------- */

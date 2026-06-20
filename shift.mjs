@@ -32,6 +32,7 @@ import { ActionHudConfig } from "./module/apps/action-hud-config.mjs";
 import { RangesConfig } from "./module/apps/ranges-config.mjs";
 import { registerRanges } from "./module/apps/ranges.mjs";
 import { registerStatusEffects } from "./module/helpers/status-effects.mjs";
+import { registerUserConfig } from "./module/helpers/user-config.mjs";
 import { ShiftBrowser } from "./module/apps/browser.mjs";
 import {
   ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftLandmarkSheet, ShiftQuestSheet
@@ -222,6 +223,7 @@ Hooks.once("init", async () => {
   registerStatusEffects();
   registerRanges();
   registerParty();
+  registerUserConfig();
 });
 
 Hooks.once("ready", async () => {

@@ -11,8 +11,9 @@
     <div class="codex-bar">
       <div class="codex-filters">
         {{#each codexFilters}}
-          <button type="button" class="codex-filter{{#if (shiftEq @root.codexFilter id)}} active{{/if}}"
-                  data-action="codexFilter" data-filter="{{id}}">{{localize label}}</button>
+          <button type="button" class="codex-filter{{#if active}} active{{/if}}"
+                  data-action="codexFilter" data-filter="{{id}}"
+                  aria-pressed="{{#if active}}true{{else}}false{{/if}}">{{localize label}}</button>
         {{/each}}
       </div>
       <div class="codex-search">
@@ -24,7 +25,7 @@
     <div class="codex-grid">
       {{#each codex}}
         <div class="codex-card cc-kind-{{kind}}{{#if locked}} cc-locked{{/if}}{{#if nameHidden}} cc-anon{{/if}}"
-             {{#unless locked}}data-role="{{role}}" {{/unless}}data-codex-uuid="{{uuid}}"
+             {{#unless locked}}data-role="{{role}}" style="--role: {{accent}};" {{/unless}}data-codex-uuid="{{uuid}}"
              data-name="{{nameLower}}" data-tags="{{tagsLower}}"{{#unless locked}} data-action="openCodexEntry"{{/unless}}>
           <div class="cc-top">
             <div class="cc-portrait">
@@ -35,39 +36,34 @@
             <div class="cc-id"><div class="cc-name">{{name}}</div><div class="cc-role">{{roleLabel}}</div></div>
           </div>
           {{#unless locked}}
-            <div class="cc-stats">
-              {{!-- actor (character / adversary) --}}
-              {{#if (shiftEq kind 'actor')}}
-                {{#if showStats}}
-                  {{#if power}}<span class="cc-stat power" data-tooltip="Power"><i class="fa-solid fa-fire"></i>{{power}}</span>{{/if}}
-                  {{#if actions}}<span class="cc-stat" data-tooltip="Actions"><i class="fa-solid fa-bolt"></i>{{actions}}</span>{{/if}}
+            {{#if hasStatRow}}
+              <div class="cc-stats">
+                {{!-- actor (character / adversary) --}}
+                {{#if (shiftEq kind 'actor')}}
+                  {{#if showStats}}
+                    {{#if power}}<span class="cc-stat power" data-tooltip="Power"><i class="fa-solid fa-fire"></i>{{power}}</span>{{/if}}
+                    {{#if actions}}<span class="cc-stat actions" data-tooltip="Actions"><i class="fa-solid fa-bolt"></i>{{actions}}</span>{{/if}}
+                  {{/if}}
+                  {{#if showDefeat}}<span class="cc-stat def" data-tooltip="Defeat"><i class="fa-solid fa-skull"></i>{{defeat.value}}/{{defeat.max}}</span>{{/if}}
                 {{/if}}
-                {{#if showDefeat}}<span class="cc-stat def" data-tooltip="Defeat"><i class="fa-solid fa-skull"></i>{{defeat.value}}/{{defeat.max}}</span>{{/if}}
-              {{/if}}
-              {{!-- location --}}
-              {{#if (shiftEq kind 'location')}}
-                {{#if landmarkCount}}<span class="cc-stat place" data-tooltip="{{localize 'SHIFT.Location.Landmarks'}}"><i class="fa-solid fa-map-pin"></i> {{landmarkCount}}</span>{{/if}}
-              {{/if}}
-              {{!-- vehicle --}}
-              {{#if (shiftEq kind 'vehicle')}}
-                {{#if crewCount}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Party.Codex.Crew'}}"><i class="fa-solid fa-users"></i> {{crewCount}}</span>{{/if}}
-              {{/if}}
-              {{!-- trait --}}
-              {{#if (shiftEq kind 'trait')}}
-                {{#if showDie}}<span class="cc-stat cc-die-pill status-{{statusKey}}" data-tooltip="{{statusLabel}}"><i class="fa-solid fa-dice-d20"></i> {{statusLabel}}</span>{{/if}}
-              {{/if}}
-              {{!-- technique --}}
-              {{#if (shiftEq kind 'technique')}}
-                {{#if showTech}}<span class="cc-stat tech" data-tooltip="{{localize 'SHIFT.SheetLabels.Technique'}}"><i class="fa-solid fa-bolt"></i> {{techType}}</span>{{/if}}
-              {{/if}}
-            </div>
-            {{#if tags.length}}<div class="cc-tags">{{#each tags}}<span class="cc-tag">{{this}}</span>{{/each}}</div>{{/if}}
+                {{!-- location --}}
+                {{#if (shiftEq kind 'location')}}
+                  {{#if landmarkCount}}<span class="cc-stat place" data-tooltip="{{localize 'SHIFT.Location.Landmarks'}}"><i class="fa-solid fa-map-pin"></i> {{landmarkCount}}</span>{{/if}}
+                {{/if}}
+                {{!-- scale · qualquer kind, só aparece quando > 1 (regra do front) --}}
+                {{#if showScale}}<span class="cc-stat scale" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i>{{scale}}</span>{{/if}}
+              </div>
+            {{/if}}
+            {{#if tags.length}}<div class="cc-tags">{{#each tags}}<span class="cc-tag {{this.kind}}">{{this.label}}</span>{{/each}}</div>{{/if}}
           {{else}}
             <div class="cc-tags"><span class="cc-tag">{{localize "SHIFT.Party.Codex.Locked"}}</span></div>
           {{/unless}}
-          {{#if @root.isGM}}
+          {{#if @root.isOwner}}
             <span class="cc-tools edit-only">
-              <a class="cc-tool danger" data-action="removeCodexEntry" data-tooltip="{{localize 'SHIFT.Party.RemoveCodex'}}"><i class="fa-solid fa-xmark"></i></a>
+              <a class="cc-tool reveal" data-action="revealCodexEntry" data-tooltip="{{localize 'SHIFT.Party.Codex.RevealFull'}}"><i class="fa-solid fa-eye"></i></a>
+              {{#if @root.isGM}}
+                <a class="cc-tool danger" data-action="removeCodexEntry" data-tooltip="{{localize 'SHIFT.Party.RemoveCodex'}}"><i class="fa-solid fa-xmark"></i></a>
+              {{/if}}
             </span>
           {{/if}}
         </div>
@@ -97,7 +93,7 @@
                 {{#if (shiftEq codexDetail.kind 'actor')}}
                   {{#if codexDetail.showStats}}
                     {{#if codexDetail.power}}<span class="cc-stat power" data-tooltip="Power"><i class="fa-solid fa-fire"></i> Power {{codexDetail.power}}</span>{{/if}}
-                    {{#if codexDetail.actions}}<span class="cc-stat" data-tooltip="Actions"><i class="fa-solid fa-bolt"></i> {{codexDetail.actions}}</span>{{/if}}
+                    {{#if codexDetail.actions}}<span class="cc-stat actions" data-tooltip="Actions"><i class="fa-solid fa-bolt"></i> {{codexDetail.actions}}</span>{{/if}}
                   {{/if}}
                   {{#if codexDetail.showScale}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize 'SHIFT.Trait.Scale'}} {{codexDetail.scale}}</span>{{/if}}
                 {{/if}}
@@ -116,7 +112,12 @@
                 {{/if}}
                 {{!-- vehicle --}}
                 {{#if (shiftEq codexDetail.kind 'vehicle')}}
+                  {{#if codexDetail.showScale}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize 'SHIFT.Trait.Scale'}} {{codexDetail.scale}}</span>{{/if}}
                   {{#if codexDetail.hasCrew}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Party.Codex.Crew'}}"><i class="fa-solid fa-users"></i> {{codexDetail.crew.length}}</span>{{/if}}
+                {{/if}}
+                {{!-- location --}}
+                {{#if (shiftEq codexDetail.kind 'location')}}
+                  {{#if codexDetail.showScale}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize 'SHIFT.Trait.Scale'}} {{codexDetail.scale}}</span>{{/if}}
                 {{/if}}
               </div>
             </div>
