@@ -42,10 +42,10 @@
                 {{!-- actor (character / adversary) --}}
                 {{#if (shiftEq kind 'actor')}}
                   {{#if showStats}}
-                    {{#if power}}<span class="cc-stat power" data-tooltip="Power"><i class="fa-solid fa-fire"></i>{{power}}</span>{{/if}}
-                    {{#if actions}}<span class="cc-stat actions" data-tooltip="Actions"><i class="fa-solid fa-bolt"></i>{{actions}}</span>{{/if}}
+                    {{#if power}}<span class="cc-stat power" data-tooltip="{{localize 'SHIFT.Adversary.Power'}}"><i class="fa-solid fa-fire"></i>{{power}}</span>{{/if}}
+                    {{#if actions}}<span class="cc-stat actions" data-tooltip="{{localize 'SHIFT.Adversary.Actions'}}"><i class="fa-solid fa-bolt"></i>{{actions}}</span>{{/if}}
                   {{/if}}
-                  {{#if showDefeat}}<span class="cc-stat def" data-tooltip="Defeat"><i class="fa-solid fa-skull"></i>{{defeat.value}}/{{defeat.max}}</span>{{/if}}
+                  {{#if showDefeat}}<span class="cc-stat def" data-tooltip="{{localize 'SHIFT.Tooltips.Defeat'}}"><i class="fa-solid fa-skull"></i>{{defeat.value}}/{{defeat.max}}</span>{{/if}}
                 {{/if}}
                 {{!-- location --}}
                 {{#if (shiftEq kind 'location')}}
@@ -98,8 +98,8 @@
                 {{!-- actor --}}
                 {{#if (shiftEq codexDetail.kind 'actor')}}
                   {{#if codexDetail.showStats}}
-                    {{#if codexDetail.power}}<span class="cc-stat power" data-tooltip="Power"><i class="fa-solid fa-fire"></i> Power {{codexDetail.power}}</span>{{/if}}
-                    {{#if codexDetail.actions}}<span class="cc-stat actions" data-tooltip="Actions"><i class="fa-solid fa-bolt"></i> {{codexDetail.actions}}</span>{{/if}}
+                    {{#if codexDetail.power}}<span class="cc-stat power" data-tooltip="{{localize 'SHIFT.Adversary.Power'}}"><i class="fa-solid fa-fire"></i> {{localize 'SHIFT.Adversary.Power'}} {{codexDetail.power}}</span>{{/if}}
+                    {{#if codexDetail.actions}}<span class="cc-stat actions" data-tooltip="{{localize 'SHIFT.Adversary.Actions'}}"><i class="fa-solid fa-bolt"></i> {{codexDetail.actions}}</span>{{/if}}
                   {{/if}}
                   {{#if codexDetail.showScale}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize 'SHIFT.Trait.Scale'}} {{codexDetail.scale}}</span>{{/if}}
                 {{/if}}
@@ -129,7 +129,7 @@
             </div>
             {{#if codexDetail.showDefeat}}
               <div class="cd-defeat">
-                <div class="cd-defeat-top"><span>Defeat</span><span>{{codexDetail.defeat.value}} / {{codexDetail.defeat.max}}</span></div>
+                <div class="cd-defeat-top"><span>{{localize "SHIFT.Adversary.Defeat"}}</span><span>{{codexDetail.defeat.value}} / {{codexDetail.defeat.max}}</span></div>
                 <div class="cd-defeat-bar"><div class="cd-defeat-fill" style="width:{{codexDetail.defeatPct}}%"></div></div>
               </div>
             {{/if}}

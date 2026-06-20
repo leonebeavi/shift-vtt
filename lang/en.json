@@ -73,7 +73,7 @@
       "ScaledUpAlready": "This roll has already been Scaled Up.",
       "ScaledUpUnavailable": "No available Scaled Up Technique matches the Traits rolled.",
       "ScaledUpUseHint": "Apply {trait}'s Scaled Up via the \"Scale Up\" button on a roll.",
-      "ScaledUpPickCore": "Scale Up {focus} · choose a Core Trait to shiftdown",
+      "ScaledUpPickCore": "Scale Up {focus} · choose a Core Trait to shift down",
       "BindFocusTitle": "{technique}: link a Focus Trait",
       "BindFocusHint": "Pick the Focus Trait this upgrades."
     },
@@ -98,7 +98,7 @@
       "quest": "New Quest"
     },
     "Migration": {
-      "QuestFailed": "Quest migration failed — open the console (F12) for details. Your existing quests may not appear until it succeeds on the next reload."
+      "QuestFailed": "Quest migration failed. Reload the world to retry; see the console (F12)."
     },
     "Compendium": {
       "Source": "SHIFT",
@@ -181,7 +181,7 @@
       "NothingToRecall": "No member tokens to recall on this scene.",
       "NoScene": "Open a scene first to deploy the party.",
       "NoPermission": "You don't have permission to place tokens on this scene.",
-      "AddMember": "Drag an Actor or folder here.",
+      "AddMember": "Drag a character or folder here.",
       "RemoveCodex": "Remove from codex",
       "AddTrait": "Add trait",
       "HideToggle": "Hide from players / show",
@@ -252,7 +252,7 @@
         "RevealedAll": "Revealed {count} codex entries to players.",
         "HideAll": "Hide the entire codex from players · Ctrl+Click skips the confirm",
         "HideAllTitle": "Hide the whole codex",
-        "HideAllHint": "This conceals every entry from players, turning them all back into \"???\" rumors. You can re-reveal anytime.",
+        "HideAllHint": "Hide every codex entry from players? You can re-reveal later.",
         "HiddenAll": "Hid {count} codex entries from players.",
         "FieldNotes": "Field Notes",
         "NotesUnavailable": "Shared notes aren't ready yet · ask the GM to open the party once.",
@@ -310,7 +310,7 @@
         "ParentQuest": "Parent quest",
         "NoParent": "None (top-level)",
         "Subquests": "Sub-quests resolved",
-        "LinkHint": "Drag an Actor, foe, or relic here to link.",
+        "LinkHint": "Drag a character, foe, or relic here to link.",
         "RemoveLink": "Remove link",
         "Field": {
           "Links": "Linked"
@@ -333,10 +333,10 @@
       "RollButton": "Roll!",
       "PrimaryTrait": "Core Trait",
       "RollType": "Roll Type",
-      "GMRequested": "The GM requested a",
+      "GMRequested": "The GM requested this Roll Type:",
       "ApplyManually": "apply manually",
       "PickTraits": "Choose up to two:",
-      "ApplyTarget": "Shiftdown target's Traits"
+      "ApplyTarget": "Shift down target's Traits"
     },
     "Xp": {
       "Title": "XP",
@@ -362,7 +362,7 @@
       "Unsafe": "Unsafe Rest",
       "SafeChat": "{actor} takes a Safe Rest. All Traits return to their Max Die and Techniques refresh.",
       "UnsafeChat": "{actor} takes an Unsafe Rest. {pack} shifts down to {die}.",
-      "UnsafeHint": "Shiftdown {pack} to restore one Trait.",
+      "UnsafeHint": "Shift down {pack} to restore one Trait.",
       "WealthHint": "Pick the Wealth die to cap recovery, or no limit.",
       "NoLimit": "No limit",
       "ChallengingHint": "Choose how to spend this rest.",
@@ -397,28 +397,28 @@
     },
     "CritBonus": {
       "Choose": "Choose a critical success bonus:",
-      "Own": "Shiftup one of your Traits",
+      "Own": "Shift up one of your Traits",
       "OwnHint": "Up one step, never past Max Die.",
       "OwnChat": "{actor} shifts {trait} up: {from} → {to}.",
-      "Ally": "Shiftup an ally's Trait",
+      "Ally": "Shift up an ally's Trait",
       "AllyHint": "Shift an ally's Trait up one step.",
       "AllyChat": "{actor} bolsters {ally}: {trait} shifts {from} → {to}.",
-      "Enemy": "Shiftdown the target again",
-      "EnemyHint": "One extra shiftdown on the target. At a larger Scale, the Critical Exhausts it.",
+      "Enemy": "Shift down the target again",
+      "EnemyHint": "One extra shift down on the target. At a larger Scale, the Critical Exhausts it.",
       "Narrative": "Narrative boost",
       "NarrativeHint": "With the GM: drop a Drawback, learn something, open a door.",
-      "NarrativeChat": "{actor} earns a narrative boost! Work out a cool extra effect with the GM."
+      "NarrativeChat": "{actor} earns a narrative boost! Work out an extra effect with the GM."
     },
     "Combat": {
       "TurnOrderRoll": "Turn Order Roll",
-      "TurnOrderHint": "Roll one Core Trait. Success: act before Adversaries; Failure: after. It can crit and shift down.",
+      "TurnOrderHint": "Roll one Core Trait. Success: act before Adversaries; Failure: after.",
       "FirstPhase": "Acts in Action Phase 1 (before the Adversaries).",
       "AdversaryPhase": "Adversary Phase",
       "SecondPhase": "Acts in Action Phase 2 (after the Adversaries).",
       "NewRound": "Round {round}",
       "RerollHint": "Roll turn order for the new round.",
       "NotYourTurnOrder": "You do not own {name}; ask their player to roll the turn order.",
-      "AllExhausted": "{name} has no usable Trait for the turn order roll and falls to the Second Action Phase.",
+      "AllExhausted": "{name} has no usable Trait and falls to Action Phase 2.",
       "Phase1": "Action Phase 1",
       "PhaseAdversary": "Adversary Phase",
       "Phase2": "Action Phase 2",
@@ -432,7 +432,7 @@
       "AdvantagePlayersChat": "The players have the advantage and act first!",
       "AdvantageAdversariesChat": "The adversaries have the advantage and act first!",
       "AdvantagePhase": "Advantage",
-      "Spotlight": "Take the spotlight (act now)",
+      "Spotlight": "Take the spotlight",
       "RollFromChat": "Roll your turn order",
       "NothingToRoll": "No owned characters waiting to roll."
     },
@@ -573,11 +573,11 @@
       },
       "XpLimit": {
         "Name": "Session XP Cap",
-        "Hint": "Max XP per session from shiftdowns and exerts."
+        "Hint": "Max XP per session from shift downs and exerts."
       },
       "AutoXp": {
         "Name": "Automatic XP",
-        "Hint": "Grant XP automatically on forced shiftdowns and exerts."
+        "Hint": "Grant XP automatically on forced shift downs and exerts."
       },
       "RerollTurnOrder": {
         "Name": "Re-roll Turn Order Each Round",
@@ -605,7 +605,7 @@
       },
       "PromptSession": {
         "Name": "Ask to start a session on login",
-        "Hint": "On GM login, ask if a new session began (resets session XP world-wide). Daily."
+        "Hint": "On GM login (once a day), ask whether a new session started · resets everyone's session XP."
       },
       "ActionHud": {
         "Name": "Action HUD",
@@ -623,18 +623,18 @@
       },
       "Advancements": {
         "Name": "XP Advancements",
-        "Hint": "What XP buys and its cost. Shown as sheet chips.",
+        "Hint": "What XP can buy and what it costs.",
         "Label": "Advancement",
         "Add": "Add a row",
         "Reset": "Restore default values"
       },
       "ScaleMenu": {
         "Name": "Scale Rules",
-        "Hint": "Optional Scale system: enable it, allow Scaled Up, spend XP to Scale Up."
+        "Hint": "Optional rules for rolls at a larger Scale."
       },
       "ActionHudMenu": {
         "Name": "Action HUD",
-        "Hint": "Your Action HUD: enable, keep open, choose how submenus open."
+        "Hint": "Bottom-screen bar with your character's Traits and Techniques."
       },
       "RangesMenu": {
         "Name": "Distance Ranges",
@@ -652,7 +652,7 @@
       },
       "StatusEffects": {
         "Name": "Status Effects",
-        "Hint": "Color markers that replace Foundry's conditions. Toggle them from a token's HUD. Edit, add, or restore defaults.",
+        "Hint": "Color markers that replace Foundry's conditions. Toggle them from a token's HUD.",
         "Label": "Status name",
         "Add": "Add a status",
         "Reset": "Restore default markers",
@@ -680,9 +680,9 @@
     },
     "Target": {
       "Pick": "Choose a target",
-      "ApplyTitle": "Shiftdown: {target}",
+      "ApplyTitle": "Shift down: {target}",
       "ApplyHint": "Pick a target Trait to shift down.",
-      "ApplyChat": "{actor} pressures {target}: shiftdown on {trait}, {from} → {to}.",
+      "ApplyChat": "{actor} pressures {target}: shift down on {trait}, {from} → {to}.",
       "AlreadyApplied": "This roll's effect has already landed on a target.",
       "Retarget": "Retarget",
       "RetargetHint": "Pick a different target.",
@@ -792,9 +792,9 @@
       "Unsafe": "Unsafe",
       "SafeToggle": "Safe · click to mark as Unsafe",
       "UnsafeToggle": "Unsafe · click to mark as Safe",
-      "LandmarksHint": "Safe Landmarks allow Safe Rests; Unsafe ones don't.",
+      "LandmarksHint": "Safe Landmarks · enable Safe Rests",
       "NPCs": "NPCs",
-      "NPCsHint": "Drag an Actor here to add an NPC.",
+      "NPCsHint": "Drag a character here to add an NPC.",
       "NpcAdded": "{actor} was tied to {location}.",
       "OpenNpc": "Open sheet",
       "Size": {

@@ -29,7 +29,7 @@
       "Hurt": "Ferido",
       "Exposed": "Exposto",
       "Rattled": "Abalado",
-      "Steady": "Firme",
+      "Steady": "Estável",
       "Hidden": "Oculto",
       "Marked": "Marcado",
       "Empowered": "Fortalecido",
@@ -43,7 +43,7 @@
       "attitude": "Trait de Atitude",
       "adversary": "Trait de Adversário",
       "special": "Special Trait",
-      "party": "Traço de Party",
+      "party": "Trait de Party",
       "custom": "Trait Personalizado"
     },
     "RollTypes": {
@@ -98,7 +98,7 @@
       "quest": "Nova Quest"
     },
     "Migration": {
-      "QuestFailed": "Falha ao migrar as Quests — abra o console (F12) para detalhes. Suas quests existentes podem não aparecer até a migração concluir no próximo reload."
+      "QuestFailed": "Falha ao migrar as Quests. Recarregue o mundo para tentar de novo; veja o console (F12)."
     },
     "Compendium": {
       "Source": "SHIFT",
@@ -119,7 +119,7 @@
       "Cargo": "Carga",
       "Wealth": "Riqueza",
       "Security": "Segurança",
-      "Max": "Máx",
+      "Max": "Max",
       "Scale": "Escala"
     },
     "Groups": {
@@ -133,7 +133,7 @@
       "Special": "Special Traits",
       "LocationCore": "Wealth & Security",
       "Vehicle": "Traits do Veículo",
-      "PartyTraits": "Traços da Party"
+      "PartyTraits": "Traits da Party"
     },
     "Tabs": {
       "Traits": "Traits",
@@ -181,7 +181,7 @@
       "NothingToRecall": "Nenhum token de membro para recolher nesta cena.",
       "NoScene": "Abra uma cena primeiro para posicionar o grupo.",
       "NoPermission": "Você não tem permissão para colocar tokens nesta cena.",
-      "AddMember": "Arraste um Actor ou pasta aqui.",
+      "AddMember": "Arraste um personagem ou pasta aqui.",
       "RemoveCodex": "Remover do codex",
       "AddTrait": "Adicionar trait",
       "HideToggle": "Ocultar dos jogadores / mostrar",
@@ -252,10 +252,10 @@
         "RevealedAll": "{count} entradas do codex reveladas aos jogadores.",
         "HideAll": "Ocultar o codex inteiro dos jogadores · Ctrl+Click pula a confirmação",
         "HideAllTitle": "Ocultar o codex inteiro",
-        "HideAllHint": "Isto oculta todas as entradas dos jogadores, voltando todas a serem rumores \"???\". Você pode revelar de novo quando quiser.",
+        "HideAllHint": "Oculta todas as entradas do codex dos jogadores? Você pode revelar de novo depois.",
         "HiddenAll": "{count} entradas do codex ocultadas dos jogadores.",
         "FieldNotes": "Notas de Campo",
-        "NotesUnavailable": "As notas compartilhadas ainda não estão prontas · peça ao GM para abrir a party uma vez.",
+        "NotesUnavailable": "As notas compartilhadas ainda não estão prontas · peça ao Mestre para abrir a party uma vez.",
         "NotesFailed": "Não foi possível salvar sua nota.",
         "JournalFolder": "SHIFT · Notas de Campo da Party",
         "JournalName": "{party} · Notas de Campo do Codex",
@@ -263,7 +263,7 @@
         "Already": "Essa entrada já está no codex.",
         "PartlyHidden": "Alguns detalhes estão ocultos dos jogadores",
         "Empty": "Nenhuma entrada combina com a busca.",
-        "Notes": "Nota do GM",
+        "Notes": "Nota do Mestre",
         "NotesPlaceholder": "Fraquezas, comportamento, onde encontraram…",
         "KnownTraits": "Traits conhecidos",
         "RevealTitle": "O que os jogadores veem",
@@ -310,7 +310,7 @@
         "ParentQuest": "Quest-mãe",
         "NoParent": "Nenhuma (topo)",
         "Subquests": "Sub-quests resolvidas",
-        "LinkHint": "Arraste um Actor, inimigo ou relíquia aqui para vincular.",
+        "LinkHint": "Arraste um personagem, inimigo ou relíquia aqui para vincular.",
         "RemoveLink": "Remover link",
         "Field": {
           "Links": "Vinculados"
@@ -333,10 +333,10 @@
       "RollButton": "Rolar!",
       "PrimaryTrait": "Core Trait",
       "RollType": "Tipo de Rolagem",
-      "GMRequested": "O mestre pediu uma rolagem",
+      "GMRequested": "O Mestre pediu este Tipo de Rolagem:",
       "ApplyManually": "aplicar manualmente",
       "PickTraits": "Escolha até dois:",
-      "ApplyTarget": "Shiftdown nos Traits do alvo"
+      "ApplyTarget": "Shift down nos Traits do alvo"
     },
     "Xp": {
       "Title": "XP",
@@ -354,15 +354,15 @@
       "Title": "Trait Temporário",
       "NameLabel": "O que o personagem tira da Mochila?",
       "Source": "Da Mochila",
-      "Chat": "{actor} vasculha a Mochila e ganha o Trait temporário {name} ({die}). Ele dura até ficar Exausto ou até o próximo Safe Rest.",
+      "Chat": "{actor} vasculha a Mochila e ganha o Trait temporário {name} ({die}). Ele dura até ficar Exausto ou até o próximo Descanso Seguro.",
       "Expired": "{name} se esgotou e desapareceu."
     },
     "Rest": {
-      "Safe": "Safe Rest",
-      "Unsafe": "Unsafe Rest",
-      "SafeChat": "{actor} faz um Safe Rest. Todos os Traits voltam ao Max Die e as Técnicas são renovadas.",
-      "UnsafeChat": "{actor} faz um Unsafe Rest. {pack} sofre shift down para {die}.",
-      "UnsafeHint": "Dê shiftdown em {pack} para restaurar um Trait.",
+      "Safe": "Descanso Seguro",
+      "Unsafe": "Descanso Arriscado",
+      "SafeChat": "{actor} faz um Descanso Seguro. Todos os Traits voltam ao Max Die e as Técnicas são renovadas.",
+      "UnsafeChat": "{actor} faz um Descanso Arriscado. {pack} sofre shift down para {die}.",
+      "UnsafeHint": "Dê shift down em {pack} para restaurar um Trait.",
       "WealthHint": "Escolha o dado de Riqueza para limitar a recuperação, ou sem limite.",
       "NoLimit": "Sem limite",
       "ChallengingHint": "Escolha como gastar este descanso.",
@@ -397,28 +397,28 @@
     },
     "CritBonus": {
       "Choose": "Escolha um bônus de sucesso crítico:",
-      "Own": "Shiftup em um Trait seu",
+      "Own": "Shift up em um Trait seu",
       "OwnHint": "Um passo acima, nunca além do Max Die.",
       "OwnChat": "{actor} faz shift up em {trait}: {from} → {to}.",
-      "Ally": "Shiftup no Trait de um aliado",
+      "Ally": "Shift up no Trait de um aliado",
       "AllyHint": "Dê shift up em um Trait de um aliado.",
       "AllyChat": "{actor} fortalece {ally}: {trait} sobe de {from} → {to}.",
-      "Enemy": "Shiftdown de novo no alvo",
+      "Enemy": "Shift down de novo no alvo",
       "EnemyHint": "Um shift down extra no alvo. Em Escala maior, o Crítico o Exaure.",
       "Narrative": "Impulso narrativo",
       "NarrativeHint": "Com o Mestre: remova um Drawback, descubra algo, abra uma porta.",
-      "NarrativeChat": "{actor} ganha um impulso narrativo! Combine com o Mestre um efeito extra interessante."
+      "NarrativeChat": "{actor} ganha um impulso narrativo! Combine com o Mestre um efeito extra."
     },
     "Combat": {
       "TurnOrderRoll": "Rolagem de Ordem de Turno",
-      "TurnOrderHint": "Role um Core Trait. Sucesso: aja antes dos Adversários; Falha: depois. Pode dar crítico e shift down.",
+      "TurnOrderHint": "Role um Core Trait. Sucesso: aja antes dos Adversários; Falha: depois.",
       "FirstPhase": "Age na Fase de Ação 1 (antes dos Adversários).",
       "AdversaryPhase": "Fase dos Adversários",
       "SecondPhase": "Age na Fase de Ação 2 (depois dos Adversários).",
       "NewRound": "Rodada {round}",
       "RerollHint": "Rolem a ordem de turno da nova rodada.",
       "NotYourTurnOrder": "Você não controla {name}; peça ao jogador para rolar a ordem de turno.",
-      "AllExhausted": "{name} não tem Trait utilizável para a ordem de turno e cai para a Segunda Fase de Ação.",
+      "AllExhausted": "{name} não tem Trait utilizável e cai para a Fase de Ação 2.",
       "Phase1": "Fase de Ação 1",
       "PhaseAdversary": "Fase dos Adversários",
       "Phase2": "Fase de Ação 2",
@@ -432,7 +432,7 @@
       "AdvantagePlayersChat": "Os jogadores têm a vantagem e agem primeiro!",
       "AdvantageAdversariesChat": "Os adversários têm a vantagem e agem primeiro!",
       "AdvantagePhase": "Vantagem",
-      "Spotlight": "Assumir o spotlight (agir agora)",
+      "Spotlight": "Entrar em cena",
       "RollFromChat": "Rolar sua ordem de turno",
       "NothingToRoll": "Nenhum personagem seu aguardando rolagem."
     },
@@ -533,7 +533,7 @@
       "Edit": "Editar",
       "Delete": "Excluir",
       "MaxDie": "O maior dado que este Trait alcança",
-      "Temporary": "Temporário · some no próximo Safe Rest",
+      "Temporary": "Temporário · some no próximo Descanso Seguro",
       "Hidden": "Oculto dos jogadores",
       "NotRollable": "Não rolável",
       "MakeTemporary": "Improvise um Trait temporário (Mochila desce)",
@@ -559,7 +559,7 @@
     "Settings": {
       "RestMode": {
         "Name": "Modo de Descanso e Recuperação",
-        "Hint": "Padrão: Unsafe Rest restaura um Trait. Simples: restaura tudo, sessões renovam. Desafiador: mais lento, Safe Rest limitado pela Riqueza.",
+        "Hint": "Padrão: Descanso Arriscado restaura um Trait. Simples: restaura tudo, sessões renovam. Desafiador: mais lento, Descanso Seguro limitado pela Riqueza.",
         "standard": "Padrão",
         "simple": "Simples",
         "challenging": "Desafiador"
@@ -573,11 +573,11 @@
       },
       "XpLimit": {
         "Name": "Limite de XP por Sessão",
-        "Hint": "XP máximo por sessão de shiftdowns e exerts."
+        "Hint": "XP máximo por sessão de shift downs e exerts."
       },
       "AutoXp": {
         "Name": "XP Automático",
-        "Hint": "Concede XP automaticamente em shiftdowns forçados e exerts."
+        "Hint": "Concede XP automaticamente em shift downs forçados e exerts."
       },
       "RerollTurnOrder": {
         "Name": "Rolar Ordem de Turno a Cada Rodada",
@@ -605,7 +605,7 @@
       },
       "PromptSession": {
         "Name": "Perguntar sobre nova sessão no login",
-        "Hint": "No login do GM, pergunta se começou nova sessão (zera o XP de sessão do mundo). Diário."
+        "Hint": "No login do Mestre (uma vez por dia), pergunta se uma nova sessão começou · zera o XP de sessão de todos."
       },
       "ActionHud": {
         "Name": "HUD de Ações",
@@ -623,18 +623,18 @@
       },
       "Advancements": {
         "Name": "Avanços de XP",
-        "Hint": "O que o XP compra e o custo. Aparece como pills na ficha.",
+        "Hint": "O que o XP pode comprar e quanto custa.",
         "Label": "Avanço",
         "Add": "Adicionar linha",
         "Reset": "Restaurar padrões"
       },
       "ScaleMenu": {
         "Name": "Regras de Escala",
-        "Hint": "Sistema opcional de Escala: habilite, permita Scaled Up, gaste XP para Escalar."
+        "Hint": "Regras opcionais para rolagens em Escala maior."
       },
       "ActionHudMenu": {
         "Name": "HUD de Ações",
-        "Hint": "Sua HUD de Ações: ligue, mantenha aberta, escolha como os submenus abrem."
+        "Hint": "Barra na base da tela com os Traits e Técnicas do seu personagem."
       },
       "RangesMenu": {
         "Name": "Distâncias",
@@ -652,7 +652,7 @@
       },
       "StatusEffects": {
         "Name": "Efeitos de Estado",
-        "Hint": "Marcadores coloridos que substituem as condições do Foundry. Ative-os pelo HUD do token. Edite, crie ou restaure os padrões.",
+        "Hint": "Marcadores coloridos que substituem as condições do Foundry. Ative-os pelo HUD do token.",
         "Label": "Nome do estado",
         "Add": "Adicionar estado",
         "Reset": "Restaurar marcadores padrão",
@@ -671,7 +671,7 @@
     },
     "Recharge": {
       "session": "Por sessão",
-      "safeRest": "No Safe Rest",
+      "safeRest": "No Descanso Seguro",
       "unsafeRest": "Em qualquer descanso",
       "atWill": "À Vontade",
       "Manual": "Manual",
@@ -680,9 +680,9 @@
     },
     "Target": {
       "Pick": "Escolha um alvo",
-      "ApplyTitle": "Shiftdown: {target}",
+      "ApplyTitle": "Shift down: {target}",
       "ApplyHint": "Escolha um Trait do alvo para dar shift down.",
-      "ApplyChat": "{actor} pressiona {target}: shiftdown em {trait}, {from} → {to}.",
+      "ApplyChat": "{actor} pressiona {target}: shift down em {trait}, {from} → {to}.",
       "AlreadyApplied": "O efeito desta rolagem já foi aplicado a um alvo.",
       "Retarget": "Trocar alvo",
       "RetargetHint": "Escolha outro alvo.",
@@ -713,16 +713,16 @@
       "NameLabel": "Nome do Trait",
       "Visible": "Visível aos jogadores",
       "PlayersRoll": "Jogadores podem rolar",
-      "ShiftsDown": "Faz Shiftdown ao rolar o valor máximo",
-      "ShiftOnTip": "Rolar o valor máximo faz Shiftdown neste Trait · clique para desativar",
-      "ShiftOffTip": "Rolar o valor máximo NÃO faz Shiftdown · clique para ativar",
+      "ShiftsDown": "Faz shift down ao rolar o valor máximo",
+      "ShiftOnTip": "Rolar o valor máximo faz shift down neste Trait · clique para desativar",
+      "ShiftOffTip": "Rolar o valor máximo NÃO faz shift down · clique para ativar",
       "Minimize": "Minimizar o painel",
       "Restore": "Restaurar o painel",
       "Move": "Arraste para mover · solte em Jogadores para encaixar"
     },
     "Group": {
       "Title": "Trabalhar em Conjunto",
-      "Invite": "{actor} quer trabalhar em conjunto usando {trait} ({die}). Um aliado pode entrar com qualquer Trait, sem precisar de Core. Crítico exige os dois dados mostrando 1.",
+      "Invite": "{actor} quer trabalhar em conjunto usando {trait} ({die}). Um aliado pode entrar com qualquer Trait · sem precisar de Core. Um Crítico exige os dois dados mostrando 1.",
       "Join": "Entrar na rolagem",
       "PickTrait": "Trabalhar em Conjunto: {actor}",
       "Hint": "Rolagem conjunta com um aliado.",
@@ -738,7 +738,7 @@
       "World": "Mundo",
       "CreateNew": "Criar novo",
       "Empty": "Nada encontrado.",
-      "Truncated": "Há mais resultados, refine a busca.",
+      "Truncated": "Há mais resultados · refine a busca.",
       "Filters": "Filtros",
       "Clear": "Limpar",
       "Category": "Categoria",
@@ -766,7 +766,7 @@
       "Far": "Longe",
       "ExtremelyFar": "Muito Longe",
       "Units": "unidades",
-      "ToggleTool": "Ativa/desativa o medidor de distância ao passar o mouse entre tokens"
+      "ToggleTool": "Faixas de Distância"
     },
     "Macro": {
       "RechargeName": "Recarregar Traits",
@@ -788,13 +788,13 @@
     "Location": {
       "Landmarks": "Landmarks",
       "AddLandmark": "Adicionar Landmark",
-      "Safe": "Safe",
-      "Unsafe": "Unsafe",
-      "SafeToggle": "Safe · clique para marcar como Unsafe",
-      "UnsafeToggle": "Unsafe · clique para marcar como Safe",
-      "LandmarksHint": "Landmarks Safe permitem Safe Rests; os Unsafe não.",
+      "Safe": "Seguro",
+      "Unsafe": "Inseguro",
+      "SafeToggle": "Seguro · clique para marcar como Inseguro",
+      "UnsafeToggle": "Inseguro · clique para marcar como Seguro",
+      "LandmarksHint": "Landmarks Seguros · permitem Descanso Seguro",
       "NPCs": "NPCs",
-      "NPCsHint": "Arraste um Ator aqui para adicionar um NPC.",
+      "NPCsHint": "Arraste um personagem aqui para adicionar um NPC.",
       "NpcAdded": "{actor} foi vinculado a {location}.",
       "OpenNpc": "Abrir ficha",
       "Size": {
