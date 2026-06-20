@@ -216,6 +216,7 @@
         "Character": "Personagem",
         "Traits": "Traits permitidos",
         "TraitsHint": "Marque os Traits permitidos. Nenhum = todos.",
+        "IncludeVehicles": "Incluir traits de veículo",
         "Send": "Enviar ao jogador",
         "Sent": "Rolagem solicitada ao(s) jogador(es) de {actor}.",
         "NoOwner": "Nenhum jogador online controla esse personagem · abrindo a rolagem aqui."
@@ -250,6 +251,10 @@
         "RevealAllTitle": "Revelar seções em todo o codex",
         "RevealAllHint": "Escolha o que os jogadores veem em cada entrada. O que ficar desmarcado fica oculto em todas.",
         "RevealedAll": "{count} entradas do codex reveladas aos jogadores.",
+        "HideAll": "Ocultar o codex inteiro dos jogadores · Ctrl+Click pula a confirmação",
+        "HideAllTitle": "Ocultar o codex inteiro",
+        "HideAllHint": "Isto oculta todas as entradas dos jogadores, voltando todas a serem rumores \"???\". Você pode revelar de novo quando quiser.",
+        "HiddenAll": "{count} entradas do codex ocultadas dos jogadores.",
         "FieldNotes": "Notas de Campo",
         "NotesUnavailable": "As notas compartilhadas ainda não estão prontas · peça ao GM para abrir a party uma vez.",
         "NotesFailed": "Não foi possível salvar sua nota.",
@@ -767,6 +772,7 @@
     "Macro": {
       "RechargeName": "Recarregar Traits",
       "GrantXpName": "Conceder XP",
+      "RequestRollName": "Pedir Rolagem",
       "NewSessionName": "Nova Sessão",
       "ActionRollName": "Action Roll",
       "ClocksName": "Alternar Global Traits",

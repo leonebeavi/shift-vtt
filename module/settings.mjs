@@ -258,7 +258,12 @@ export function registerSettings() {
     }
     applyShiftTheme();
     applyShiftUiTheme();
+    randomizePauseDie();   // garante um dado já no boot (mundo que abre pausado)
   });
+
+  // Bunny Glass: sorteia um novo dado do SHIFT toda vez que o jogo é PAUSADO,
+  // para o ícone central do indicador #pause (ver applyShiftUiTheme / seção K).
+  Hooks.on("pauseGame", paused => { if ( paused ) randomizePauseDie(); });
 }
 
 function applyShiftTheme() {
@@ -275,6 +280,21 @@ function applyShiftTheme() {
 function applyShiftUiTheme() {
   const on = game.settings.get("shift-vtt", "uiTheme") !== false;
   document.body.classList.toggle("shift-ui-theme", on);
+}
+
+/** Bunny Glass: sorteia um dado do SHIFT (d4..d12) e grava sua imagem na custom
+ *  prop --shift-pause-die do body. A seção K do tema (shift.less) lê essa prop
+ *  num #pause::before que pulsa com glow, no lugar do relógio/compasso padrão.
+ *  Sem o tema ligado a prop fica inerte — o CSS só a consome sob .shift-ui-theme. */
+function randomizePauseDie() {
+  const imgs = Object.values(SHIFT.diceImages).filter(Boolean);  // exhausted é null
+  if ( !imgs.length ) return;
+  const pick = imgs[Math.floor(Math.random() * imgs.length)];
+  // URL ABSOLUTA (getRoute → "/systems/shift-vtt/…", respeita route prefix): um
+  // url() RELATIVO numa custom prop é resolvido contra o arquivo CSS (styles/),
+  // não contra a página, e geraria styles/systems/shift-vtt/… → 404.
+  const url = foundry.utils.getRoute(pick);
+  document.body.style.setProperty("--shift-pause-die", `url("${url}")`);
 }
 
 /** Se o sistema opcional de Scale está ligado (chave-mestra). Importada onde quer

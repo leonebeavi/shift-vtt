@@ -88,6 +88,16 @@ function dockToPlayers() {
     const ir = inactive.getBoundingClientRect();
     if (ir.height > 1) topEdge = Math.min(topEdge, ir.top);
   }
+  // O módulo Small Time ancora seu relógio logo ACIMA da lista de Players, no mesmo
+  // canto onde o painel docka. Se estiver presente e encostado ali, dockamos acima
+  // dele para que não se sobreponham. As guardas (overlap horizontal + colado no
+  // topo de Players) evitam reagir a um Small Time fixado em outro lugar da tela.
+  const smalltime = document.getElementById("smalltime-app");
+  if (smalltime) {
+    const sr = smalltime.getBoundingClientRect();
+    const overlapsX = sr.right > rect.left && sr.left < rect.left + rect.width;
+    if (sr.height > 1 && overlapsX && sr.top < topEdge && sr.bottom > topEdge - 100) topEdge = sr.top;
+  }
   const GAP = 6;
   panel.style.left = `${Math.round(rect.left)}px`;
   panel.style.width = `${Math.round(rect.width)}px`;
@@ -102,11 +112,15 @@ function dockToPlayers() {
  * desacoplada do mecanismo interno do Foundry. Idempotente: re-observa sem duplicar.
  */
 function watchPlayers() {
-  const players = document.getElementById("players");
-  if (!players || typeof ResizeObserver === "undefined") return;
+  if (typeof ResizeObserver === "undefined") return;
   if (!playersRO) playersRO = new ResizeObserver(() => positionClocks());
   playersRO.disconnect();
-  playersRO.observe(players);
+  const players = document.getElementById("players");
+  if (players) playersRO.observe(players);
+  // Observa também o Small Time: ao expandir a linha de data ele muda de altura, e o
+  // painel precisa subir junto para continuar acima dele.
+  const smalltime = document.getElementById("smalltime-app");
+  if (smalltime) playersRO.observe(smalltime);
 }
 
 /** Move o painel para um ponto livre (ancorado pelo canto superior esquerdo), totalmente clampado
@@ -597,7 +611,9 @@ export function registerClocks() {
   // Reposiciona acima da lista de Players sempre que ela (re)renderiza ou o layout
   // muda (o V13 dispara renderPlayers; cores mais antigos disparam renderPlayerList). Um
   // painel posicionado de forma custom apenas re-clampa e fica no lugar.
-  for (const hook of ["renderPlayers", "renderPlayerList", "collapseSidebar"]) {
+  // `renderSmallTimeApp` re-docka quando o módulo Small Time aparece/re-renderiza,
+  // pegando o caso de ele subir DEPOIS do painel já ter se posicionado.
+  for (const hook of ["renderPlayers", "renderPlayerList", "collapseSidebar", "renderSmallTimeApp"]) {
     Hooks.on(hook, () => { watchPlayers(); positionClocks(); });
   }
 

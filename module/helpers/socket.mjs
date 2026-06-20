@@ -20,7 +20,8 @@ async function handle(data) {
     if (!actor) return;
     return game.shift?.ShiftRoll?.promptActionRoll(actor, {
       allowedTraits: data.allowedTraits ?? null,
-      rollType: data.rollType ?? null
+      rollType: data.rollType ?? null,
+      includeVehicles: !!data.includeVehicles
     });
   }
 
@@ -101,8 +102,8 @@ export async function emitOrRun(data) {
  * restrito a `allowedTraits` (uuids; vazio = todos) com um `rollType` forçado.
  * Emite para os outros clientes; roda localmente se o GM mirou no próprio usuário.
  */
-export function requestPlayerRoll({ userId, actorUuid, allowedTraits = null, rollType = null } = {}) {
-  const data = { action: "requestRoll", userId, actorUuid, allowedTraits, rollType };
+export function requestPlayerRoll({ userId, actorUuid, allowedTraits = null, rollType = null, includeVehicles = false } = {}) {
+  const data = { action: "requestRoll", userId, actorUuid, allowedTraits, rollType, includeVehicles };
   if (game.user.id === userId) return handle({ ...data });
   game.socket.emit(CHANNEL, data);
 }

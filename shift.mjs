@@ -17,10 +17,10 @@ import {
 import { ShiftRoll } from "./module/dice/shift-roll.mjs";
 import { registerChatHooks } from "./module/chat/chat.mjs";
 import {
-  ShiftCharacterSheet, ShiftAdversarySheet, ShiftVehicleSheet, ShiftLocationSheet, ShiftPartySheet
+  ShiftCharacterSheet, ShiftAdversarySheet, ShiftVehicleSheet, ShiftLocationSheet, ShiftPartySheet, promptGrantXp, promptRequestRoll
 } from "./module/sheets/actor-sheets.mjs";
 import { ShiftActorDirectory } from "./module/apps/party-directory.mjs";
-import { registerParty } from "./module/apps/party.mjs";
+import { registerParty, resolveActiveParty } from "./module/apps/party.mjs";
 import { registerClocks, toggleClocksPanel } from "./module/apps/clocks.mjs";
 import { registerActionHud } from "./module/apps/action-hud.mjs";
 import { registerSession, startSession, promptNewSession } from "./module/session.mjs";
@@ -76,6 +76,12 @@ Hooks.once("init", async () => {
         const a = actor ?? _firstControlledActor();
         if (a) await a.addXP(amount, { limited, reason, toChat: true });
       },
+      /** Abre o prompt "Grant XP" (o mesmo da ficha de Party): escolhe quantia +
+       *  alvos num diálogo. Sem `characters`, mira os characters que você possui. */
+      grantXp: characters => promptGrantXp(characters),
+      /** Abre o diálogo "Request a Roll" do GM (o mesmo do botão da ficha de Party).
+       *  Sem `party`, usa a party ativa. GM-only. */
+      requestRoll: party => promptRequestRoll(party ?? resolveActiveParty()),
       /** Alterna o painel fixado de Clocks. */
       clocks: () => toggleClocksPanel(),
       /** Abre o Item Browser. */

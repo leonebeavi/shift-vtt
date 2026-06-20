@@ -110,7 +110,7 @@ function visibleParties() {
  *   3. o único party visível, se houver exatamente um.
  * Retorna null quando a escolha é ambígua (o caller deve perguntar).
  */
-function resolveActiveParty() {
+export function resolveActiveParty() {
   const own = partiesWithMember(game.user?.character);
   if (own.length === 1) return own[0];
 

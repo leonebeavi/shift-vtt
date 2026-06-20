@@ -465,7 +465,7 @@ export class ShiftActor extends Actor {
         hint: game.i18n.localize("SHIFT.Rest.ResourceHint"),
         options: resources.map(t => ({
           value: t.uuid,
-          name: t.actor === this ? t.name : `${t.actor?.name ?? ""}: ${t.name}`,
+          name: (t.actor === this || t.actor?.type === "vehicle") ? t.name : `${t.actor?.name ?? ""}: ${t.name}`,
           img: CONFIG.SHIFT.diceImages[t.statusKey],
           sub: dieLabel(t.system.currentDie)
         }))

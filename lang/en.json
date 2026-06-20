@@ -216,6 +216,7 @@
         "Character": "Character",
         "Traits": "Allowed Traits",
         "TraitsHint": "Tick allowed Traits. None = all.",
+        "IncludeVehicles": "Include vehicle traits",
         "Send": "Send to player",
         "Sent": "Requested an Action Roll from {actor}'s player(s).",
         "NoOwner": "No online player owns that character · opening the roll here instead."
@@ -250,6 +251,10 @@
         "RevealAllTitle": "Reveal sections across the codex",
         "RevealAllHint": "Pick what players can see for every entry. Anything unchecked is hidden everywhere.",
         "RevealedAll": "Revealed {count} codex entries to players.",
+        "HideAll": "Hide the entire codex from players · Ctrl+Click skips the confirm",
+        "HideAllTitle": "Hide the whole codex",
+        "HideAllHint": "This conceals every entry from players, turning them all back into \"???\" rumors. You can re-reveal anytime.",
+        "HiddenAll": "Hid {count} codex entries from players.",
         "FieldNotes": "Field Notes",
         "NotesUnavailable": "Shared notes aren't ready yet · ask the GM to open the party once.",
         "NotesFailed": "Couldn't save your note.",
@@ -767,6 +772,7 @@
     "Macro": {
       "RechargeName": "Recharge Traits",
       "GrantXpName": "Grant XP",
+      "RequestRollName": "Request Roll",
       "NewSessionName": "New Session",
       "ActionRollName": "Action Roll",
       "ClocksName": "Toggle Global Traits",

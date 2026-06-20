@@ -160,7 +160,6 @@ export async function seedTechniques() {
  * na API pública `game.shift.api` e no novo `actor.rechargeAllTraits()`.
  */
 export async function seedMacros() {
-  if (game.settings.get("shift-vtt", "macrosSeeded")) return;
   const pack = game.packs.get("shift-vtt.shift-macros");
   if (!pack) return;
 
@@ -180,29 +179,9 @@ for (const a of actors) {
 }
 ui.notifications.info(game.i18n.format("SHIFT.Macro.Recharged", { actors: done, traits }));`;
 
-  // Concede XP a personagens escolhidos por uma quantia solicitada via prompt (prêmio do GM sem limite).
-  const grantXpCmd = `
-const chars = game.actors.filter(a => a.type === "character" && a.isOwner);
-if (!chars.length) { ui.notifications.warn(game.i18n.localize("SHIFT.Macro.NoCharacters")); return; }
-const rows = chars.map(a => '<label class="shift-grant-row"><input type="checkbox" name="who" value="' + a.id + '" checked/> <img src="' + a.img + '" width="24" height="24"/> <span>' + foundry.utils.escapeHTML(a.name) + '</span></label>').join("");
-const content = '<div class="shift-grant-xp"><p>' + game.i18n.localize("SHIFT.Macro.GrantXpHint") + '</p><div class="shift-grant-list">' + rows + '</div><label class="shift-grant-amt"><span>' + game.i18n.localize("SHIFT.Macro.Amount") + '</span> <input type="number" name="amt" value="1" min="1"/></label></div>';
-const res = await foundry.applications.api.DialogV2.prompt({
-  window: { title: game.i18n.localize("SHIFT.Macro.GrantXpTitle"), icon: "fa-solid fa-star" },
-  classes: ["shift-vtt", "shift-dialog"],
-  content,
-  rejectClose: false,
-  ok: { label: game.i18n.localize("SHIFT.Common.Confirm"), callback: (e, b) => ({
-    ids: Array.from(b.form.querySelectorAll('input[name="who"]:checked')).map(i => i.value),
-    amt: Number(b.form.elements.amt.value) || 0
-  }) }
-}).catch(() => null);
-if (!res || !res.ids.length || res.amt <= 0) return;
-let n = 0;
-for (const id of res.ids) {
-  const a = game.actors.get(id);
-  if (a) { await a.addXP(res.amt, { limited: false, reason: game.i18n.localize("SHIFT.Macro.GrantXpReason"), toChat: true }); n++; }
-}
-ui.notifications.info(game.i18n.format("SHIFT.Macro.GrantedXp", { amount: res.amt, actors: n }));`;
+  // Concede XP a personagens escolhidos (prêmio do GM sem limite). Wrapper fino: a
+  // lógica e o diálogo bonito vivem na API pública, compartilhados com a ficha de Party.
+  const grantXpCmd = `await game.shift.api.grantXp();`;
 
   // GM: inicia uma nova sessão (renova Techniques, zera o XP da sessão).
   const newSessionCmd = `
@@ -218,22 +197,40 @@ await game.shift.api.actionRoll(actor);`;
   // Alterna o painel fixado de Global Traits.
   const clocksCmd = `game.shift.api.clocks();`;
 
+  // GM: abre o diálogo "Request a Roll" para a party ativa.
+  const requestRollCmd = `await game.shift.api.requestRoll();`;
+
   const docs = [
-    { name: L("SHIFT.Macro.RechargeName"),   img: "icons/magic/time/arrows-circling-green.webp",      command: rechargeCmd },
+    { name: L("SHIFT.Macro.RechargeName"),    img: "icons/magic/time/arrows-circling-green.webp",      command: rechargeCmd },
     { name: L("SHIFT.Macro.GrantXpName"),     img: "icons/magic/light/explosion-star-glow-yellow.webp", command: grantXpCmd },
+    { name: L("SHIFT.Macro.RequestRollName"), img: "icons/sundries/gaming/dice-runed-brown.webp",      command: requestRollCmd },
     { name: L("SHIFT.Macro.NewSessionName"),  img: "icons/magic/time/day-night-sunset-sunrise.webp",   command: newSessionCmd },
     { name: L("SHIFT.Macro.ActionRollName"),  img: "icons/sundries/gaming/dice-pair-white-green.webp", command: actionRollCmd },
     { name: L("SHIFT.Macro.ClocksName"),      img: "icons/magic/time/clock-spinning-gold-pink.webp",   command: clocksCmd }
   ].map(m => ({ name: m.name, type: "script", img: m.img, scope: "global", command: m.command.trim() }));
 
-  const existing = new Set([...await pack.getIndex()].map(e => e.name.toLowerCase()));
-  const toCreate = docs.filter(d => !existing.has(d.name.toLowerCase()));
-
+  // Cria os que faltam e RE-SINCRONIZA o `command` dos já existentes — os comandos
+  // se apoiam na API pública, então uma correção aqui precisa alcançar mundos antigos.
+  const index = [...await pack.getIndex()];
+  const byName = new Map(index.map(e => [e.name.toLowerCase(), e]));
+  const toCreate = [];
+  const toUpdate = [];
+  for (const d of docs) {
+    const ex = byName.get(d.name.toLowerCase());
+    if (!ex) { toCreate.push(d); continue; }
+    const full = await pack.getDocument(ex._id);
+    if (full && full.command !== d.command) toUpdate.push({ doc: full, command: d.command });
+  }
+  if (!toCreate.length && !toUpdate.length) {
+    await game.settings.set("shift-vtt", "macrosSeeded", true);
+    return;
+  }
   try {
     await withUnlockedPack(pack, async () => {
       if (toCreate.length) await Macro.createDocuments(toCreate, { pack: pack.collection });
+      for (const u of toUpdate) await u.doc.update({ command: u.command });
       await game.settings.set("shift-vtt", "macrosSeeded", true);
-      console.log(`shift-vtt | Seeded ${toCreate.length} macro(s) into ${pack.collection}`);
+      console.log(`shift-vtt | Macros: ${toCreate.length} criada(s), ${toUpdate.length} re-sincronizada(s) em ${pack.collection}`);
     });
   } catch (err) {
     console.error("shift-vtt | Macro seeding failed", err);

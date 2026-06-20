@@ -39,8 +39,10 @@ export class ShiftRoll {
    *   (a gama "permitida" de um roll pedido pelo GM); vazio/null = todo Trait rolável.
    * @param {string} [opts.rollType] Força o roll type (pedido pelo GM); o Player
    *   não pode mudar. null = o Player escolhe normalmente.
+   * @param {boolean} [opts.includeVehicles=true] Inclui os Traits do Vehicle
+   *   tripulado. O Request Roll do GM zera por padrão (toggle no diálogo).
    */
-  static async promptActionRoll(actor, { preselect = null, turnOrder = false, allowedTraits = null, rollType = null } = {}) {
+  static async promptActionRoll(actor, { preselect = null, turnOrder = false, allowedTraits = null, rollType = null, includeVehicles = true } = {}) {
     if (!actor) return null;
     let rollable = actor.traits?.filter(t => t.canRoll) ?? [];
     // Um roll pedido pelo GM pode restringir quais Traits são válidos para rolar.
@@ -53,9 +55,13 @@ export class ShiftRoll {
     // Traits de Vehicle tripulado ("contidos em"): um Character que tripula também
     // pode rolar os Traits do Vehicle. Eles formam sua própria coluna.
     const vehicleTraits = [];
-    if (isCharacter) {
+    // O toggle "include vehicle traits" é uma escolha à parte: quando ligado, traz
+    // TODOS os Traits roláveis do Vehicle tripulado. O allow-list do GM restringe só
+    // os Traits do próprio Character (o diálogo nem lista os do Vehicle), então NÃO
+    // se aplica aqui — senão marcar qualquer Trait sumiria com os de Vehicle.
+    if (isCharacter && includeVehicles) {
       for (const v of (actor.crewedVehicles ?? [])) {
-        for (const t of v.items.filter(i => i.type === "trait" && i.canRoll && (!allow || allow.has(i.uuid)))) vehicleTraits.push(t);
+        for (const t of v.items.filter(i => i.type === "trait" && i.canRoll)) vehicleTraits.push(t);
       }
     }
 
@@ -67,7 +73,7 @@ export class ShiftRoll {
 
     const opt = t => ({
       uuid: t.uuid,
-      name: t.actor === actor ? t.name : `${t.actor?.name}: ${t.name}`,
+      name: (t.actor === actor || t.actor?.type === "vehicle") ? t.name : `${t.actor?.name}: ${t.name}`,
       die: t.system.currentDie,
       dieLabel: dieLabel(t.system.currentDie),
       img: CONFIG.SHIFT.diceImages[t.system.currentDie],
@@ -325,7 +331,7 @@ export class ShiftRoll {
       const value = die.results[0].result;
       return {
         item,
-        name: item.actor === actor ? item.name : `${item.actor?.name}: ${item.name}`,
+        name: (item.actor === actor || item.actor?.type === "vehicle") ? item.name : `${item.actor?.name}: ${item.name}`,
         die: item.system.currentDie,
         dieLabel: dieLabel(item.system.currentDie),
         value,
@@ -467,7 +473,7 @@ export class ShiftRoll {
         name: e.name,
         traitName: e.item.name,
         owner: e.item.actor?.name ?? "",
-        showOwner: !!e.item.actor && (multiOwner || e.item.actor !== actor),
+        showOwner: !!e.item.actor && e.item.actor.type !== "vehicle" && (multiOwner || e.item.actor !== actor),
         dieLabel: e.dieLabel,
         die: e.die,
         value: e.value,

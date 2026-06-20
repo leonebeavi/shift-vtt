@@ -33,9 +33,10 @@
               {{#if locked}}<span class="cc-corner lock" data-tooltip="{{localize 'SHIFT.Party.Codex.Locked'}}"><i class="fa-solid fa-lock"></i></span>{{/if}}
               {{#if partlyHidden}}<span class="cc-corner hidden" data-tooltip="{{localize 'SHIFT.Party.Codex.PartlyHidden'}}"><i class="fa-solid fa-eye-slash"></i></span>{{/if}}
             </div>
-            <div class="cc-id"><div class="cc-name">{{name}}</div><div class="cc-role">{{roleLabel}}</div></div>
-          </div>
-          {{#unless locked}}
+            <div class="cc-id">
+              <div class="cc-name">{{name}}</div>
+              <div class="cc-role">{{roleLabel}}</div>
+              {{#unless locked}}
             {{#if hasStatRow}}
               <div class="cc-stats">
                 {{!-- actor (character / adversary) --}}
@@ -54,6 +55,11 @@
                 {{#if showScale}}<span class="cc-stat scale" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i>{{scale}}</span>{{/if}}
               </div>
             {{/if}}
+              {{/unless}}
+            </div>
+          </div>
+          {{!-- Keywords/Drawbacks: alinhados sob o avatar, na borda esquerda do card. --}}
+          {{#unless locked}}
             {{#if tags.length}}<div class="cc-tags">{{#each tags}}<span class="cc-tag {{this.kind}}">{{this.label}}</span>{{/each}}</div>{{/if}}
           {{else}}
             <div class="cc-tags"><span class="cc-tag">{{localize "SHIFT.Party.Codex.Locked"}}</span></div>

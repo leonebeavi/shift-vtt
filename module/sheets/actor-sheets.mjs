@@ -370,7 +370,7 @@ const NPC_TIER_LABEL = {
   elite: "SHIFT.Party.Codex.Role.Elite",
   legendary: "SHIFT.Party.Codex.Role.Legendary"
 };
-const NPC_TIER_COLOR = { commoner: "#2f9fd0", elite: "#f07d39", legendary: "#a06bff" };
+const NPC_TIER_COLOR = { commoner: "#2f9fd0", elite: "#ff5fa2", legendary: "#a06bff" };
 function npcTier(power) {
   const p = power ?? 0;
   return p >= 5 ? "legendary" : p >= 3 ? "elite" : "commoner";
@@ -514,6 +514,140 @@ function byTraitOrder(a, b) {
 }
 
 /**
+ * Prompt compartilhado de "Grant XP" (party sheet + macro `game.shift.api.grantXp`):
+ * escolhe a quantia e quais characters num diálogo e concede XP sem limite (prêmio
+ * do GM, vai pro chat). Sem `characters`, mira todos os characters que o usuário
+ * possui. Lê o form na mão (sem FormDataExtended). Retorna o nº de alvos premiados.
+ * @param {ShiftActor[]} [characters]
+ * @returns {Promise<number>}
+ */
+export async function promptGrantXp(characters) {
+  const chars = (characters ?? game.actors.filter(a => a.type === "character" && a.isOwner))
+    .filter(m => m?.type === "character");
+  if (!chars.length) {
+    ui.notifications.info(game.i18n.localize("SHIFT.Party.NoCharacters"));
+    return 0;
+  }
+  const esc = foundry.utils.escapeHTML;
+  const rows = chars.map(m => `
+      <label class="party-xp-row">
+        <input type="checkbox" name="pick" value="${m.id}" checked/>
+        <img src="${m.img}" alt=""/> <span class="pxr-name">${esc(m.name)}</span>
+        <span class="pxr-xp">${m.system.xp?.value ?? 0} XP</span>
+      </label>`).join("");
+  const content = `
+      <div class="shift-prompt party-xp-prompt">
+        <div class="form-group pxp-amount">
+          <label>${game.i18n.localize("SHIFT.Party.XpAmount")}</label>
+          <input type="number" name="amount" value="1" min="1" step="1" autofocus/>
+        </div>
+        <div class="pxp-list">${rows}</div>
+      </div>`;
+  const res = await foundry.applications.api.DialogV2.prompt({
+    window: { title: game.i18n.localize("SHIFT.Party.GrantXp"), icon: "fa-solid fa-arrow-trend-up" },
+    position: { width: 380 },
+    classes: ["shift-vtt", "shift-dialog"],
+    content, rejectClose: false,
+    ok: {
+      label: game.i18n.localize("SHIFT.Party.GrantXp"),
+      callback: (event, button) => ({
+        amount: Number(button.form.elements.amount.value) || 0,
+        ids: Array.from(button.form.querySelectorAll('input[name="pick"]:checked')).map(i => i.value)
+      })
+    }
+  }).catch(() => null);
+  if (!res) return 0;
+  const amount = Math.max(1, Math.floor(res.amount));
+  if (!amount || !res.ids.length) return 0;
+  let n = 0;
+  for (const id of res.ids) {
+    const m = chars.find(c => c.id === id);
+    if (m && await m.addXP(amount, { limited: false, reason: game.i18n.localize("SHIFT.Party.GrantXp"), toChat: true })) n++;
+  }
+  if (n) ui.notifications.info(game.i18n.format("SHIFT.Party.XpGranted", { amount, count: n }));
+  return n;
+}
+
+/**
+ * Diálogo "Request an Action Roll" do GM (ficha de Party + macro `game.shift.api.requestRoll`):
+ * escolhe o character (cards de retrato), os Traits permitidos (nenhum = todos), o roll type e
+ * se inclui os Traits do Vehicle tripulado (toggle, OFF por padrão); então o(s) Player(s) dono(s)
+ * recebem o prompt de Action Roll restrito. GM-only.
+ * @param {Actor} party
+ */
+export async function promptRequestRoll(party) {
+  if (!game.user.isGM) return;
+  if (!party || party.type !== "party") return void ui.notifications.warn(game.i18n.localize("SHIFT.Party.NoParties"));
+  const chars = party.partyMembers.filter(m => m.type === "character");
+  if (!chars.length) return void ui.notifications.info(game.i18n.localize("SHIFT.Party.NoCharacters"));
+
+  // Espelha o diálogo de Action Roll padrão: character por cards de retrato, Traits
+  // permitidos como cards de trait-opt, radios de tipo de roll, e o toggle de Vehicle.
+  const characters = chars.map(m => ({
+    id: m.id, name: m.name, img: m.img,
+    traits: m.items.filter(t => t.type === "trait" && t.canRoll).map(t => ({
+      uuid: t.uuid, name: t.name,
+      dieLabel: dieLabel(t.system.currentDie),
+      img: CONFIG.SHIFT.diceImages[t.statusKey] ?? null
+    }))
+  }));
+  const rollTypes = ["normal", "risky", "inspired"].map(k => ({ key: k, label: game.i18n.localize(CONFIG.SHIFT.rollTypes[k]) }));
+  const content = await fvtt.renderTemplate("systems/shift-vtt/templates/apps/request-roll-dialog.hbs", { characters, rollTypes });
+
+  let data;
+  try {
+    data = await foundry.applications.api.DialogV2.prompt({
+      window: { title: game.i18n.localize("SHIFT.Party.RequestRoll.Title"), icon: "fa-solid fa-dice" },
+      position: { width: 500 },
+      classes: ["shift-vtt", "shift-dialog", "action-roll-window"],
+      content, rejectClose: false,
+      render: (event, dialog) => {
+        const root = dialog.element ?? dialog;
+        const blocks = root.querySelectorAll(".rr-traits");
+        const sync = () => {
+          for (const lbl of root.querySelectorAll(".rr-char")) lbl.classList.toggle("selected", !!lbl.querySelector("input")?.checked);
+        };
+        for (const radio of root.querySelectorAll("input[name='character']")) {
+          radio.addEventListener("change", () => {
+            for (const b of blocks) b.hidden = b.dataset.char !== radio.value;
+            sync();
+          });
+        }
+      },
+      ok: {
+        label: game.i18n.localize("SHIFT.Party.RequestRoll.Send"),
+        callback: (event, button) => {
+          const form = button.form;
+          const charId = form.elements.character?.value;
+          const block = form.querySelector(`.rr-traits[data-char="${charId}"]`);
+          const traits = Array.from(block?.querySelectorAll("input[name='trait']:checked") ?? []).map(i => i.value);
+          return {
+            charId, traits,
+            rollType: form.elements.rollType?.value || "normal",
+            includeVehicles: !!form.elements.includeVehicles?.checked
+          };
+        }
+      }
+    });
+  } catch (err) { return; }
+  if (!data?.charId) return;
+
+  const character = chars.find(m => m.id === data.charId);
+  if (!character) return;
+  // Mira o(s) Player(s) dono(s) do character online; fallback para o GM.
+  const owners = game.users.filter(u => u.active && !u.isGM && character.testUserPermission(u, "OWNER"));
+  const targets = owners.length ? owners : [game.user];
+  for (const u of targets) {
+    requestPlayerRoll({
+      userId: u.id, actorUuid: character.uuid,
+      allowedTraits: data.traits, rollType: data.rollType, includeVehicles: data.includeVehicles
+    });
+  }
+  if (owners.length) ui.notifications.info(game.i18n.format("SHIFT.Party.RequestRoll.Sent", { count: owners.length, actor: character.name }));
+  else ui.notifications.warn(game.i18n.localize("SHIFT.Party.RequestRoll.NoOwner"));
+}
+
+/**
  * A ficha do Party, um "menu de grupo" de quatro abas: Roster (membros + Vehicle
  * ativo), Traits (os Trait items de status compartilhados do próprio party), Codex
  * (um bestiário por tipo de Actors E Items conhecidos, com reveal por campo do GM
@@ -540,7 +674,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   /** @override */
   static DEFAULT_OPTIONS = {
     classes: ["party"],
-    position: { width: 900, height: 784 },
+    position: { width: 910, height: 784 },
     actions: {
       removeMember: ShiftPartySheet.#onRemoveMember,
       openMember: ShiftPartySheet.#onOpenMember,
@@ -551,6 +685,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       removeCodexEntry: ShiftPartySheet.#onRemoveCodexEntry,
       revealCodexEntry: ShiftPartySheet.#onRevealCodexEntry,
       revealAllCodex: ShiftPartySheet.#onRevealAllCodex,
+      hideAllCodex: ShiftPartySheet.#onHideAllCodex,
       toggleCodexReveal: ShiftPartySheet.#onToggleCodexReveal,
       toggleCodexLandmark: ShiftPartySheet.#onToggleCodexLandmark,
       toggleTraitHide: ShiftPartySheet.#onToggleTraitHide,
@@ -713,6 +848,27 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
   /* --- Quests (tipo próprio; card .ptrait compartilhado) ----------- */
 
+  /** @override — Players com permissão de OBSERVER no party podem ROLAR os Traits e
+   *  Quests compartilhados, mesmo sem possuir o actor (o engine relaya o shift via
+   *  socket para o GM). Editar/shiftar/ocultar continua exigindo OWNER. */
+  get canRollTraits() {
+    return this.document.testUserPermission(game.user, "OBSERVER");
+  }
+
+  /** Toda a descendência (recursiva) de uma Quest, via childQuests. O `seen` guarda
+   *  contra ciclos em dados ruins (parentId circular não trava o cliente). */
+  #questDescendants(quest) {
+    const out = [], seen = new Set([quest.id]);
+    const walk = q => {
+      for (const c of q.childQuests ?? []) {
+        if (seen.has(c.id)) continue;
+        seen.add(c.id); out.push(c); walk(c);
+      }
+    };
+    walk(quest);
+    return out;
+  }
+
   /** Monta o grupo da aba Quests a partir de `actor.quests`, como uma ÁRVORE: as
    *  filhas (system.parentId) aninham sob a mãe, achatadas em ordem DFS com `depth`
    *  para a indentação. Mãe oculta/inexistente → a filha sobe pro topo. */
@@ -810,7 +966,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       maxLabel: dieLabel(sys.maxDie),
       exhausted: sys.exhausted,
       hidden: !sys.revealed,
-      canRoll: q.canRoll && this.isEditable,
+      canRoll: q.canRoll && this.canRollTraits,
       canUp: q.canShiftUp && this.isEditable,
       canDown: q.canShiftDown && this.isEditable,
       desc,
@@ -848,8 +1004,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       const card = this.#codexCard(entries[i], docs[i], isGM);
       if (!card) continue;                              // referência quebrada
       // Conta categorias com conteúdo para que botões de filtro vazios se ocultem.
-      // O rumor travado de um Player não conta (vazaria que uma categoria existe).
-      if (isGM || !card.locked) counts[card.group] = (counts[card.group] ?? 0) + 1;
+      // Rumores travados ("???") TAMBÉM contam: por design eles aparecem na própria
+      // categoria mesmo ocultos, então o botão dessa categoria precisa existir.
+      counts[card.group] = (counts[card.group] ?? 0) + 1;
       all.push(card);
     }
 
@@ -876,9 +1033,8 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       ? new Set([...selected].flatMap(id => CODEX_FILTERS[id] ?? [])) : null;
 
     const cards = all.filter(card => {
-      // Players veem rumores travados só na view "all" (sem filtros), nunca sob um
-      // filtro de categoria (isso revelaria a categoria da coisa oculta).
-      if (card.locked && !isGM && filterGroups) return false;
+      // Uma entrada aparece na sua categoria mesmo travada/oculta ("???") — o filtro
+      // só corta pelo grupo da entrada, sem esconder rumores dos Players.
       if (filterGroups && !filterGroups.has(card.group)) return false;
       return true;
     });
@@ -1686,6 +1842,23 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return this.#promptRevealAllSections();
   }
 
+  /** Oculta o Codex INTEIRO dos Players (botão geral, ao lado do Reveal All): zera o
+   *  reveal de toda entrada, virando todas rumores "???". Clique normal confirma;
+   *  CTRL/⌘+Click oculta sem perguntar. GM ou owner do party. */
+  static async #onHideAllCodex(event) {
+    if (!this.document.isOwner) return;
+    if (!(this.document.system.codex ?? []).length) return;
+    if (!(event.ctrlKey || event.metaKey)) {
+      const ok = await foundry.applications.api.DialogV2.confirm({
+        window: { title: game.i18n.localize("SHIFT.Party.Codex.HideAllTitle"), icon: "fa-solid fa-eye-slash" },
+        content: `<p>${game.i18n.localize("SHIFT.Party.Codex.HideAllHint")}</p>`,
+        classes: ["shift-vtt", "shift-dialog"], rejectClose: false, modal: true
+      }).catch(() => false);
+      if (!ok) return;
+    }
+    return this.#applyCodexRevealAll([], { allLandmarks: false });
+  }
+
   /** Escreve o estado de reveal de uma entrada — `fields` ficam visíveis, o resto
    *  oculto — mais os landmarks, numa única escrita; re-render direcionado do Codex.
    *  GM ou owner do party. */
@@ -1720,7 +1893,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     }
     await this.document.update({ "system.codex": codex }, { render: false });
     this.render({ parts: ["codex"] });
-    ui.notifications.info(game.i18n.format("SHIFT.Party.Codex.RevealedAll", { count: codex.length }));
+    const allHidden = !fields.length && !allLandmarks;
+    ui.notifications.info(game.i18n.format(
+      allHidden ? "SHIFT.Party.Codex.HiddenAll" : "SHIFT.Party.Codex.RevealedAll", { count: codex.length }));
     return true;
   }
 
@@ -1815,6 +1990,17 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const item = id ? this.document.items.get(id) : null;
     if (!item) return;
     const revealed = !item.system.revealed;
+    // Esconder uma Quest com filhas esconde a árvore inteira (não deixa filhas órfãs
+    // visíveis aos Players); aí re-renderiza a aba para refletir o olho das descendentes.
+    const kids = (!revealed && item.type === "quest") ? this.#questDescendants(item) : [];
+    if (kids.length) {
+      await this.document.updateEmbeddedDocuments("Item", [
+        { _id: item.id, "system.revealed": false },
+        ...kids.map(k => ({ _id: k.id, "system.revealed": false }))
+      ]);
+      this.render({ parts: ["quests"] });
+      return;
+    }
     target.classList.toggle("on", !revealed);   // "on" = oculto
     const icon = target.querySelector("i");
     if (icon) { icon.classList.toggle("fa-eye", revealed); icon.classList.toggle("fa-eye-slash", !revealed); }
@@ -1828,7 +2014,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
    *  autoShiftOnRoll, o clock dá ShiftDown = "o tempo acabando"). Não passa pelo
    *  diálogo de Action Roll (esse monta da lista de Traits do actor, sem Quests). */
   static async #onRollQuest(event, target) {
-    if (!this.isEditable) return;
+    if (!this.canRollTraits) return;
     await this.getItem(target)?.roll();
   }
 
@@ -1886,48 +2072,11 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
   /* --- Party-wide actions (GM/owner) ---------------------------- */
 
-  /** Concede XP como a macro: escolhe o valor e quais characters num prompt. */
+  /** Concede XP via o prompt compartilhado (o mesmo do macro), mirando os
+   *  characters desta party. */
   static async #onGrantPartyXp() {
     if (!this.isEditable) return;
-    const chars = this.document.partyMembers.filter(m => m.type === "character");
-    if (!chars.length) return void ui.notifications.info(game.i18n.localize("SHIFT.Party.NoCharacters"));
-    const esc = foundry.utils.escapeHTML;
-    const rows = chars.map(m => `
-      <label class="party-xp-row">
-        <input type="checkbox" name="pick.${m.id}" checked/>
-        <img src="${m.img}" alt=""/> <span class="pxr-name">${esc(m.name)}</span>
-        <span class="pxr-xp">${m.system.xp?.value ?? 0} XP</span>
-      </label>`).join("");
-    const content = `
-      <div class="shift-prompt party-xp-prompt">
-        <div class="form-group pxp-amount">
-          <label>${game.i18n.localize("SHIFT.Party.XpAmount")}</label>
-          <input type="number" name="amount" value="1" min="1" step="1" autofocus/>
-        </div>
-        <div class="pxp-list">${rows}</div>
-      </div>`;
-    let data;
-    try {
-      data = await foundry.applications.api.DialogV2.prompt({
-        window: { title: game.i18n.localize("SHIFT.Party.GrantXp"), icon: "fa-solid fa-arrow-trend-up" },
-        position: { width: 380 },
-        classes: ["shift-vtt", "shift-dialog"],
-        content, rejectClose: false,
-        ok: {
-          label: game.i18n.localize("SHIFT.Party.GrantXp"),
-          callback: (event, button) => new foundry.applications.ux.FormDataExtended(button.form).object
-        }
-      });
-    } catch (err) { return; }
-    if (!data) return;
-    const amount = Math.max(1, Math.floor(Number(data.amount) || 0));
-    if (!amount) return;
-    let n = 0;
-    for (const m of chars) {
-      if (!data.pick?.[m.id]) continue;
-      if (await m.addXP(amount, { limited: false, reason: game.i18n.localize("SHIFT.Party.GrantXp"), toChat: true })) n++;
-    }
-    if (n) ui.notifications.info(game.i18n.format("SHIFT.Party.XpGranted", { amount, count: n }));
+    await promptGrantXp(this.document.partyMembers.filter(m => m.type === "character"));
   }
 
   /** GM: solicita um Action Roll DE um Player. Escolhe o character, o leque de
@@ -1935,68 +2084,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
    *  do character escolhido recebem o prompt de Action Roll (restrito + tipo de roll
    *  predefinido). */
   static async #onRequestRoll() {
-    if (!game.user.isGM) return;
-    const chars = this.document.partyMembers.filter(m => m.type === "character");
-    if (!chars.length) return void ui.notifications.info(game.i18n.localize("SHIFT.Party.NoCharacters"));
-
-    // Espelha o diálogo de Action Roll padrão: o character é escolhido por cards de
-    // retrato (sem dropdown), os Traits permitidos como os mesmos cards de trait-opt,
-    // e radios de tipo de roll.
-    const characters = chars.map(m => ({
-      id: m.id, name: m.name, img: m.img,
-      traits: m.items.filter(t => t.type === "trait" && t.canRoll).map(t => ({
-        uuid: t.uuid, name: t.name,
-        dieLabel: dieLabel(t.system.currentDie),
-        img: CONFIG.SHIFT.diceImages[t.statusKey] ?? null
-      }))
-    }));
-    const rollTypes = ["normal", "risky", "inspired"].map(k => ({ key: k, label: game.i18n.localize(CONFIG.SHIFT.rollTypes[k]) }));
-    const content = await fvtt.renderTemplate("systems/shift-vtt/templates/apps/request-roll-dialog.hbs", { characters, rollTypes });
-
-    let data;
-    try {
-      data = await foundry.applications.api.DialogV2.prompt({
-        window: { title: game.i18n.localize("SHIFT.Party.RequestRoll.Title"), icon: "fa-solid fa-dice" },
-        position: { width: 500 },
-        classes: ["shift-vtt", "shift-dialog", "action-roll-window"],
-        content, rejectClose: false,
-        render: (event, dialog) => {
-          const root = dialog.element ?? dialog;
-          const blocks = root.querySelectorAll(".rr-traits");
-          const sync = () => {
-            for (const lbl of root.querySelectorAll(".rr-char")) lbl.classList.toggle("selected", !!lbl.querySelector("input")?.checked);
-          };
-          for (const radio of root.querySelectorAll("input[name='character']")) {
-            radio.addEventListener("change", () => {
-              for (const b of blocks) b.hidden = b.dataset.char !== radio.value;
-              sync();
-            });
-          }
-        },
-        ok: {
-          label: game.i18n.localize("SHIFT.Party.RequestRoll.Send"),
-          callback: (event, button) => {
-            const form = button.form;
-            const charId = form.elements.character?.value;
-            const block = form.querySelector(`.rr-traits[data-char="${charId}"]`);
-            const traits = Array.from(block?.querySelectorAll("input[name='trait']:checked") ?? []).map(i => i.value);
-            return { charId, traits, rollType: form.elements.rollType?.value || "normal" };
-          }
-        }
-      });
-    } catch (err) { return; }
-    if (!data?.charId) return;
-
-    const character = chars.find(m => m.id === data.charId);
-    if (!character) return;
-    // Mira o(s) Player(s) dono(s) do character que estiverem online; faz fallback para o GM.
-    const owners = game.users.filter(u => u.active && !u.isGM && character.testUserPermission(u, "OWNER"));
-    const targets = owners.length ? owners : [game.user];
-    for (const u of targets) {
-      requestPlayerRoll({ userId: u.id, actorUuid: character.uuid, allowedTraits: data.traits, rollType: data.rollType });
-    }
-    if (owners.length) ui.notifications.info(game.i18n.format("SHIFT.Party.RequestRoll.Sent", { count: owners.length, actor: character.name }));
-    else ui.notifications.warn(game.i18n.localize("SHIFT.Party.RequestRoll.NoOwner"));
+    return promptRequestRoll(this.document);
   }
 
   static async #onPartySafeRest(event) {

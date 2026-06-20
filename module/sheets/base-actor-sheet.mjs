@@ -74,6 +74,13 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     return this.document.testUserPermission(game.user, "OBSERVER");
   }
 
+  /** Quem pode ROLAR os Traits/Quests desta ficha. Por padrão exige edição (OWNER),
+   *  como toda ação; a Party afrouxa para OBSERVER, já que os Traits/Quests são
+   *  compartilhados — o engine de roll relaya o ShiftDown via socket para o GM. */
+  get canRollTraits() {
+    return this.isEditable;
+  }
+
   /** Remove as abas que um Player LIMITED não pode abrir (a aba de notas/biografia). */
   _visibleTabs(tabs) {
     return this.canViewNotes ? tabs : tabs.filter(t => t.id !== "biography");
@@ -182,7 +189,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       // Uma Trait improvisada a partir do Pack mostra um ícone de mochila em vez de texto.
       fromPack: !!sys.source && sys.source === game.i18n.localize("SHIFT.Temporary.Source"),
       rollable: sys.rollable,
-      canRoll: item.canRoll && this.isEditable,
+      canRoll: item.canRoll && this.canRollTraits,
       canUp: item.canShiftUp && this.isEditable,
       canDown: item.canShiftDown && this.isEditable,
       isPack: ["pack", "cargo"].includes(sys.category),
@@ -402,7 +409,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   }
 
   static async #onRollTrait(event, target) {
-    if (!this.isEditable) return;
+    if (!this.canRollTraits) return;
     const item = this.getItem(target);
     if (!item) return;
     if (!item.canRoll) {
