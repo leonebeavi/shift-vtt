@@ -8,8 +8,11 @@ const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
 export function getAdvancements() {
   const custom = game.settings.get("shift-vtt", "advancements") ?? [];
-  if (custom.length) return custom;
-  return CONFIG.SHIFT.advancements.map(a => ({
+  // A lista escolhida (custom armazenada ou padrões do sistema) passa SEMPRE por
+  // localize: para chaves de locale (defaults) devolve o texto traduzido ao vivo,
+  // e para strings literais (labels custom do GM) devolve a entrada inalterada.
+  const source = custom.length ? custom : CONFIG.SHIFT.advancements;
+  return source.map(a => ({
     label: game.i18n.localize(a.label),
     cost: a.cost
   }));
@@ -73,8 +76,11 @@ export class AdvancementConfig extends HandlebarsApplicationMixin(ApplicationV2)
   }
 
   static #onReset() {
+    // Restaura as CHAVES de locale dos defaults (não as strings já traduzidas), as
+    // mesmas usadas em CONFIG.SHIFT.advancements. Assim, após Reset+Save, getAdvancements()
+    // continua localizando ao vivo e os labels não congelam no idioma do GM.
     this.#rows = CONFIG.SHIFT.advancements.map(a => ({
-      label: game.i18n.localize(a.label),
+      label: a.label,
       cost: a.cost
     }));
     this.render();

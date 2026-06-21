@@ -25,8 +25,23 @@ export function registerChatHooks() {
     root.querySelectorAll("[data-shift-crit]").forEach(btn => {
       btn.addEventListener("click", ev => onCritBonus(ev, message));
     });
+    // Orçamento de bônus de crit já esgotado (ex.: reload após gastá-lo): mostra os
+    // botões desabilitados de imediato, sem esperar um clique para travar.
+    {
+      const f = message.flags?.["shift-vtt"] ?? {};
+      const budget = Math.max(1, Number(f.critCount) || 1);
+      if ((Number(f.critBonusUsed) || 0) >= budget) {
+        root.querySelectorAll(".crit-buttons button[data-shift-crit]").forEach(btn => {
+          btn.disabled = true;
+          btn.classList.add("spent");
+        });
+      }
+    }
     root.querySelectorAll("[data-shift-apply]").forEach(btn => {
       btn.addEventListener("click", ev => onApplyToTarget(ev, message));
+    });
+    root.querySelectorAll("[data-shift-pending]").forEach(btn => {
+      btn.addEventListener("click", ev => onApplyPendingShift(ev, message));
     });
     root.querySelectorAll("[data-shift-join]").forEach(btn => {
       btn.addEventListener("click", ev => onJoinGroup(ev, message));
@@ -651,6 +666,71 @@ async function onApplyToTarget(event, message) {
   }
 }
 
+/** Resolve, a partir do manifesto de Traits do card, o Item de Trait do shift
+ *  "pending" clicado. Reconstrói o rótulo exibido (com prefixo "Dono: " só quando
+ *  o Trait não pertence ao roller nem a um Vehicle, igual ao roll engine) para casar
+ *  com `data-shift-name`; com um único Trait no manifesto, dispensa o match. */
+async function pendingTraitFromCard(message, shiftName) {
+  const flags = message.flags?.["shift-vtt"] ?? {};
+  const manifest = Array.isArray(flags.traits) ? flags.traits : [];
+  if (!manifest.length) return null;
+  if (manifest.length === 1) return fromUuid(manifest[0].uuid).catch(() => null);
+  for (const t of manifest) {
+    const owner = t.actorUuid ? await fromUuid(t.actorUuid).catch(() => null) : null;
+    const display = (t.actorUuid === flags.actorUuid || owner?.type === "vehicle")
+      ? t.name
+      : `${owner?.name ?? ""}: ${t.name}`;
+    if (display === shiftName) return fromUuid(t.uuid).catch(() => null);
+  }
+  return null;
+}
+
+/** Aplica manualmente um ShiftDown que ficou "pending" no card (Trait com
+ *  autoShiftOnRoll=false, ex.: uma Quest de Party). Quando o usuário não pode
+ *  escrever o actor do Trait (ex.: um OBSERVER que rolou a Quest), a mutação é
+ *  ROTEADA pelo cliente do GM ativo via emitOrRun; caso contrário, aplica direto. */
+async function onApplyPendingShift(event, message) {
+  event.preventDefault();
+  const btn = event.currentTarget;
+  // Trava de forma síncrona, antes de qualquer await: um duplo-clique não pode
+  // aplicar o mesmo shift pending duas vezes.
+  if (btn?.disabled) return;
+  if (btn) btn.disabled = true;
+
+  const item = await pendingTraitFromCard(message, btn?.dataset?.shiftName ?? "");
+  // hasClock = Trait OU Quest: ambos carregam Shift Die e dão shift down. Checar só
+  // type==="trait" rejeitava Quests (type "quest"), por isso elas não shiftavam ao rolar.
+  if (!item || !item.hasClock) {
+    if (btn) btn.disabled = false;
+    return;
+  }
+  // SEM gate de ownership aqui (igual ao onApplyToTarget): pelas regras, dar shift down
+  // ao rolar uma Quest/Trait de Party é intended mesmo quem não possui o documento. O
+  // que decide se há shift são as flags do item (rollable/autoShiftOnRoll), não a posse.
+  // Quando o usuário não pode escrever o actor do Trait, repassa a mutação ao cliente
+  // do GM ativo (sem clique do GM), em vez de chamar item.update e falhar em silêncio.
+  if (item.actor?.canUserModify?.(game.user, "update") === false) {
+    emitOrRun({ action: "commitShift", traitUuid: item.uuid, steps: 1, xp: 0 });
+    return;
+  }
+  try {
+    await item.shiftDown({ steps: 1, force: true, promptDeath: false });
+  } catch (err) {
+    console.warn("shift-vtt | pending shift apply failed", err);
+    if (btn) btn.disabled = false;
+  }
+}
+
+/** Desabilita visualmente os botões de bônus de Critical Success de um card
+ *  (atributo disabled + classe `spent`), chamado quando o orçamento de bônus se
+ *  esgota. Opera no DOM já renderizado, sem reescrever o conteúdo da mensagem. */
+function disableCritButtons(message) {
+  for (const el of document.querySelectorAll(`[data-message-id="${message.id}"] .crit-buttons button[data-shift-crit]`)) {
+    el.disabled = true;
+    el.classList.add("spent");
+  }
+}
+
 async function onCritBonus(event, message) {
   event.preventDefault();
   const bonus = event.currentTarget.dataset.shiftCrit;
@@ -662,42 +742,84 @@ async function onCritBonus(event, message) {
 
   const flags = message.flags?.["shift-vtt"] ?? {};
   if (flags.turnOrder) return; // rolls de turn-order não têm interação com alvo
-  switch (bonus) {
-    case "own": return critShiftUpOwn(actor);
-    case "ally": return critShiftUpAlly(actor);
-    case "enemy": return applyShiftDownToTarget(actor, {
-      // O bônus de Critical Success "fazer shift down no alvo de novo": UM shift
-      // adicional sobre o ataque base "Apply to Target" (de modo que o alvo acaba
-      // com shift duas vezes quando ambos são usados). Numa Scale maior, um Critical
-      // Exhausta o Trait de imediato. Lê a Scale AO VIVO para que um roll com boost
-      // resolva alto.
-      steps: 1,
-      candidates: (Array.isArray(flags.targetUuids) && flags.targetUuids.length)
-        ? (await Promise.all(flags.targetUuids.map(u => fromUuid(u).catch(() => null)))).filter(Boolean)
-        : null,
-      rollerScale: effectiveRollerScale(message),
-      isCrit: true
-    });
-    case "narrative": return critNarrative(actor);
+
+  // Guard de re-entrância: um único bônus de crit por vez por card, para que dois
+  // cliques (botões diferentes incluídos) não leiam o mesmo `used` antes de a
+  // gravação assentar e estourem o orçamento.
+  if (cardActionInFlight.has(message.id)) return;
+  cardActionInFlight.add(message.id);
+  try {
+    // Orçamento de bônus de Critical Success (pelas regras): 1 com a critRule
+    // "standard", N = quantidade de dados que mostraram 1 com a "everyOne". O
+    // budget é COMPARTILHADO pelos quatro tipos de bônus (own/ally/enemy/narrative),
+    // em qualquer combinação. critCount já foi gravado no flag pela roll engine.
+    const budget = Math.max(1, Number(flags.critCount) || 1);
+    const used = Number(flags.critBonusUsed) || 0;
+    if (used >= budget) {
+      disableCritButtons(message);
+      return void ui.notifications.warn(game.i18n.localize("SHIFT.CritBonus.NoneLeft"));
+    }
+
+    // Aplica o bônus escolhido; cada handler devolve um truthy só quando o efeito
+    // de fato recaiu (um picker cancelado NÃO consome o orçamento).
+    let applied = false;
+    switch (bonus) {
+      case "own": applied = await critShiftUpOwn(actor); break;
+      case "ally": applied = await critShiftUpAlly(actor); break;
+      case "enemy": {
+        // O bônus de Critical Success "fazer shift down no alvo de novo": UM shift
+        // adicional sobre o ataque base "Apply to Target" (de modo que o alvo acaba
+        // com shift duas vezes quando ambos são usados). Numa Scale maior, um Critical
+        // Exhausta o Trait de imediato. Lê a Scale AO VIVO para que um roll com boost
+        // resolva alto.
+        const res = await applyShiftDownToTarget(actor, {
+          steps: 1,
+          candidates: (Array.isArray(flags.targetUuids) && flags.targetUuids.length)
+            ? (await Promise.all(flags.targetUuids.map(u => fromUuid(u).catch(() => null)))).filter(Boolean)
+            : null,
+          rollerScale: effectiveRollerScale(message),
+          isCrit: true
+        });
+        applied = !!res?.landed;
+        break;
+      }
+      case "narrative": applied = await critNarrative(actor); break;
+    }
+    if (!applied) return;
+
+    // Contabiliza o uso. Se a gravação falhar (autor não-GM sem permissão sobre a
+    // mensagem), NÃO perde o efeito de jogo (já aplicado acima): só registra o aviso.
+    const next = used + 1;
+    try {
+      await message.update({ "flags.shift-vtt.critBonusUsed": next });
+    } catch (err) {
+      console.warn("shift-vtt | crit-bonus budget update failed", err);
+    }
+    if (next >= budget) disableCritButtons(message);
+  } finally {
+    cardActionInFlight.delete(message.id);
   }
 }
 
-/** Faz ShiftUp de um dos Traits do próprio roller. */
+/** Faz ShiftUp de um dos Traits do próprio roller.
+ *  @returns {Promise<boolean>} true só quando o ShiftUp recaiu (picker confirmado). */
 async function critShiftUpOwn(actor) {
   const trait = await pickTrait(actor, {
     title: game.i18n.localize("SHIFT.CritBonus.Own"),
     filter: t => t.canShiftUp
   });
-  if (!trait) return;
+  if (!trait) return false;
   const res = await trait.shiftUp({});
   await followUp(actor, game.i18n.format("SHIFT.CritBonus.OwnChat", {
     actor: foundry.utils.escapeHTML(actor.name),
     trait: foundry.utils.escapeHTML(trait.name),
     from: dieLabel(res.from), to: dieLabel(res.to)
   }));
+  return true;
 }
 
-/** Faz ShiftUp do Trait de um aliado disposto. */
+/** Faz ShiftUp do Trait de um aliado disposto.
+ *  @returns {Promise<boolean>} true só quando o ShiftUp recaiu (aliado + Trait confirmados). */
 async function critShiftUpAlly(actor) {
   const seen = new Set();
   const candidates = [];
@@ -712,18 +834,19 @@ async function critShiftUpAlly(actor) {
   for (const a of game.actors.filter(a => a.type === "character")) consider(a);
 
   if (!candidates.length) {
-    return void ui.notifications.info(game.i18n.localize("SHIFT.Warnings.NoAllies"));
+    ui.notifications.info(game.i18n.localize("SHIFT.Warnings.NoAllies"));
+    return false;
   }
   const ally = await pickActor(candidates, {
     title: game.i18n.localize("SHIFT.CritBonus.Ally"),
     hint: game.i18n.localize("SHIFT.CritBonus.AllyHint")
   });
-  if (!ally) return;
+  if (!ally) return false;
   const trait = await pickTrait(ally, {
     title: game.i18n.localize("SHIFT.CritBonus.Ally"),
     filter: t => t.canShiftUp
   });
-  if (!trait) return;
+  if (!trait) return false;
   const res = await trait.shiftUp({});
   await followUp(actor, game.i18n.format("SHIFT.CritBonus.AllyChat", {
     actor: foundry.utils.escapeHTML(actor.name),
@@ -731,13 +854,16 @@ async function critShiftUpAlly(actor) {
     trait: foundry.utils.escapeHTML(trait.name),
     from: dieLabel(res.from), to: dieLabel(res.to)
   }));
+  return true;
 }
 
-/** Um boost narrativo bacana, combinado com o GM. */
+/** Um boost narrativo bacana, combinado com o GM.
+ *  @returns {Promise<boolean>} sempre true (postar a nota É o efeito). */
 async function critNarrative(actor) {
   await followUp(actor, game.i18n.format("SHIFT.CritBonus.NarrativeChat", {
     actor: foundry.utils.escapeHTML(actor.name)
   }));
+  return true;
 }
 
 /* ------------------------------------------------------------------ */

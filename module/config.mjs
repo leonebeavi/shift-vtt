@@ -250,6 +250,9 @@ SHIFT.specialTraitPresets = {
 /* Advancement de Character (custos de XP)                             */
 /* ------------------------------------------------------------------ */
 
+// Cada advancement é só {label, cost}: clicar o chip GASTA o XP e ANUNCIA no chat; a
+// mesa aplica o efeito (a lista é configurável pelo GM, então o sistema não presume o
+// que cada um faz). Custos padrão pelas regras (Keyword 2 / Technique 4 / Trait 6 / Core 8).
 SHIFT.advancements = [
   { label: "SHIFT.Advancement.Keyword", cost: 2 },
   { label: "SHIFT.Advancement.Technique", cost: 4 },

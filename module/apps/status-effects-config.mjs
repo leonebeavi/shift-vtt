@@ -80,6 +80,9 @@ export class StatusEffectsConfig extends HandlebarsApplicationMixin(ApplicationV
   }
 
   static #onReset() {
+    // Volta aos defaults. No editor mostramos o label localizado (UX), mas na
+    // gravação (#onSubmit) reconvertemos para a CHAVE de locale, de modo que o
+    // idioma siga vivo após Reset+Save — getStatusEffects relocaliza a cada leitura.
     this.#rows = DEFAULT_STATUS_EFFECTS.map(s => ({
       id: s.id,
       label: game.i18n.localize(s.label),
@@ -90,7 +93,18 @@ export class StatusEffectsConfig extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onSubmit(event, form, formData) {
     this.#readForm();
-    const rows = this.#rows.filter(r => r.label?.trim());
+    const rows = this.#rows
+      .filter(r => r.label?.trim())
+      .map(r => ({ ...r, label: StatusEffectsConfig.#defaultKeyFor(r) }));
     await game.settings.set("shift-vtt", "statusEffects", rows);
+  }
+
+  /** Se a linha ainda é um default intacto (mesmo id e label igual ao default
+   *  localizado), grava a CHAVE de locale ("SHIFT.Status.*") em vez da string
+   *  traduzida — assim o idioma não congela. Labels editadas/custom ficam literais. */
+  static #defaultKeyFor(row) {
+    const def = DEFAULT_STATUS_EFFECTS.find(d => d.id === row.id);
+    if (def && row.label?.trim() === game.i18n.localize(def.label)) return def.label;
+    return row.label;
   }
 }

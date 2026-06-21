@@ -39,16 +39,24 @@
     </div>
 
     <div class="header-side">
-      <div class="xp-widget{{#if hasXp}} has-xp{{/if}}" data-tooltip="{{localize 'SHIFT.Tooltips.Xp'}}">
-        <span class="xp-label">{{localize "SHIFT.Xp.Title"}}</span>
-        <div class="xp-value">
-          {{#if editable}}<a class="xp-btn" data-action="adjustXp" data-delta="-1"><i class="fa-solid fa-minus"></i></a>{{/if}}
-          <input class="xp-number" type="number" name="system.xp.value" value="{{system.xp.value}}" min="0" step="1" {{#unless editable}}disabled{{/unless}}/>
-          {{#if editable}}<a class="xp-btn" data-action="adjustXp" data-delta="1"><i class="fa-solid fa-plus"></i></a>{{/if}}
+      {{!-- XP granulado: Session (dots do teto automático da sessão) e Banked (total
+            guardado), lado a lado com um divisor sutil. O número é editável SÓ para
+            Trusted Player+ / GM (anti-trapaça): players mudam XP só por ganho automático
+            ou gastando num chip (logado). Players veem o número read-only. --}}
+      <div class="xp-widget{{#if hasXp}} has-xp{{/if}}">
+        <div class="xp-body">
+          <span class="xp-sub">{{localize "SHIFT.Xp.Session"}}</span>
+          <span class="xp-sub">{{localize "SHIFT.Xp.Banked"}}</span>
+          <span class="xp-dots">
+            {{#each xpDots}}<i class="{{#if this.on}}on{{/if}}"></i>{{/each}}
+          </span>
+          {{#if canEditXp}}
+            <input class="xp-number" type="number" name="system.xp.value" value="{{system.xp.value}}" min="0" step="1"/>
+          {{else}}
+            <span class="xp-number ro">{{system.xp.value}}</span>
+          {{/if}}
+          <span class="xp-divider"></span>
         </div>
-        <span class="xp-dots" data-tooltip="{{localize 'SHIFT.Tooltips.XpSession'}} {{system.xp.session}}/{{xpLimit}}">
-          {{#each xpDots}}<i class="{{#if this.on}}on{{/if}}"></i>{{/each}}
-        </span>
       </div>
 
       {{#if editable}}
@@ -75,7 +83,10 @@
 
   <div class="advancement-strip">
     {{#each advancements}}
-      <span class="adv-chip{{#if affordable}} afford{{/if}}">{{label}} <b>{{cost}} XP</b></span>
+      <button type="button" class="adv-chip{{#if affordable}} afford{{/if}}"
+              data-action="buyAdvancement" data-adv-index="{{@index}}"
+              data-tooltip="{{localize 'SHIFT.Advancement.BuyHint'}}"
+              {{#unless affordable}}disabled{{/unless}}>{{label}} <b>{{cost}} XP</b></button>
     {{/each}}
   </div>
 

@@ -32,16 +32,37 @@ function isSameDay(a, b) {
  */
 export async function startSession({ announce = true } = {}) {
   const chars = worldCharacters();
+  // Conta resets de fato bem-sucedidos para não reportar sucesso vazio. Falha
+  // num actor é não-fatal (segue para os demais), mas distinguimos o skip
+  // esperado (sem permissão) de um erro real que o GM precisa investigar.
+  let reset = 0;
+  let failed = 0;
   for (const a of chars) {
-    try { await a.newSession(); } catch (err) { /* sem permissão para este actor */ }
+    try {
+      await a.newSession();
+      reset += 1;
+    } catch (err) {
+      // O GM pode não ter permissão sobre um Actor de outro mundo/import; isso é
+      // esperado. Mas registramos o erro com o nome do Actor para que problemas
+      // reais (ex.: update inválido) fiquem visíveis no console em vez de sumir.
+      failed += 1;
+      console.warn(`SHIFT | newSession falhou para o Actor "${a.name}":`, err);
+    }
   }
   try { await game.settings.set("shift-vtt", "lastSessionStart", Date.now()); } catch (err) { /* sem efeito */ }
+
+  // Se NENHUM character resetou, não mostre um card de sucesso enganoso: avise o
+  // GM. Caso contrário, anuncie usando a contagem real de resets (não chars.length).
+  if (reset === 0) {
+    ui.notifications.warn(game.i18n.format("SHIFT.Session.NoneReset", { failed }));
+    return;
+  }
 
   if (announce) {
     await ChatMessage.create({
       content: `<div class="shift-vtt chat-card info-card combat">
         <h3><i class="fa-solid fa-flag-checkered"></i> ${game.i18n.localize("SHIFT.Session.Title")}</h3>
-        <p>${game.i18n.format("SHIFT.Session.Reset", { count: chars.length })}</p>
+        <p>${game.i18n.format("SHIFT.Session.Reset", { count: reset })}</p>
       </div>`
     });
   }

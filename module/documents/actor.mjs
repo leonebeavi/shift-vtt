@@ -53,14 +53,18 @@ export class ShiftActor extends Actor {
     const trait = (name, sys) => ({ name, type: "trait", img: CONFIG.SHIFT.defaultIcons.trait, system: sys });
     // Traits iniciais são criados como source bruto, então o feature map do
     // _preCreate do Item nunca roda; definimos as features explicitamente aqui.
-    // Padrões pelas regras: Core = só Drawbacks; Attitude = só Keywords.
+    // Padrões pelas regras: Core = só Drawbacks; Attitude = sem keywords (o nome do Trait carrega o humor).
     const core = (name, die) => trait(name, {
       category: "core", maxDie: die, currentDie: die, locked: true,
       features: { usesKeywords: false, usesDrawbacks: true }
     });
+    // Attitude name-based: sem keywords (o NOME do Trait carrega o humor) e já com
+    // Transform habilitado (reset ao próprio die com nova identidade quando exausta).
     const attitude = (name, die, extra = {}) => trait(name, {
       category: "attitude", maxDie: die, currentDie: die, locked: true,
-      features: { usesKeywords: true, usesDrawbacks: false }, ...extra
+      features: { usesKeywords: false, usesDrawbacks: false },
+      transform: { enabled: true, resetDie: die },
+      ...extra
     });
     const items = [];
 
@@ -296,6 +300,45 @@ export class ShiftActor extends Actor {
     if (have < cost) return 0;
     await this.update({ "system.xp.value": have - cost });
     return cost;
+  }
+
+  /**
+   * Efetiva a compra de um advancement: gasta o XP, marca a flag "já avançou nesta
+   * sessão" e ANUNCIA no chat (o rastro de auditoria que torna o gasto transparente).
+   * O EFEITO em si (nova Keyword, Trait, Technique, melhorar um Core…) é aplicado pela
+   * mesa: a lista de advancements é configurável pelo GM, então o sistema não presume
+   * o que cada um faz; ele só cobra o XP e registra.
+   * @param {object} opts
+   * @param {string} [opts.label] rótulo já localizado do advancement comprado
+   * @param {number} [opts.cost] XP a gastar
+   * @param {string|null} [opts.approvedBy] nome do GM que aprovou um gasto extra (se houver)
+   * @returns {Promise<boolean>} true se o gasto foi efetivado
+   */
+  async commitAdvancement({ label = "", cost = 0, approvedBy = null } = {}) {
+    if (this.type !== "character") return false;
+    const c = Math.max(0, Math.floor(cost ?? 0));
+    if (c > 0) {
+      const spent = await this.spendXP(c);
+      if (spent < c) {
+        ui.notifications.warn(game.i18n.format("SHIFT.Advancement.NotEnough", {
+          cost: c, have: this.system.xp?.value ?? 0
+        }));
+        return false;
+      }
+    }
+    await this.setFlag("shift-vtt", "advancedThisSession", true);
+    const esc = foundry.utils.escapeHTML;
+    const approvedLine = approvedBy
+      ? `<p class="xp-note muted"><i class="fa-solid fa-user-shield"></i> ${game.i18n.format("SHIFT.Advancement.ApprovedBy", { gm: esc(approvedBy) })}</p>`
+      : "";
+    await ChatMessage.create({
+      speaker: shiftSpeaker(this),
+      content: `<div class="shift-vtt chat-card info-card advancement">
+        <h3><i class="fa-solid fa-star"></i> ${game.i18n.localize("SHIFT.Advancement.Title")}</h3>
+        <p>${game.i18n.format("SHIFT.Advancement.Chat", { actor: esc(this.name), cost: c, label: esc(label) })}</p>${approvedLine}
+      </div>`
+    });
+    return true;
   }
 
   /* ---------------------------------------------------------------- */
@@ -603,7 +646,11 @@ export class ShiftActor extends Actor {
       }
     }
     if (updates.length) await this.updateEmbeddedDocuments("Item", updates);
-    if (this.type === "character") await this.update({ "system.xp.session": 0 });
+    // Início de sessão zera o XP de sessão e LIBERA o advancement do período (a trava
+    // de "1 por sessão" volta a permitir um novo).
+    if (this.type === "character") {
+      await this.update({ "system.xp.session": 0, "flags.shift-vtt.advancedThisSession": false });
+    }
   }
 
   /**

@@ -98,6 +98,12 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
       removeKeyword: ShiftTraitSheet.#onRemoveKeyword,
       addDrawback: ShiftTraitSheet.#onAddDrawback,
       removeDrawback: ShiftTraitSheet.#onRemoveDrawback,
+      transformTrait: ShiftTraitSheet.#onTransform,
+      transformTo: ShiftTraitSheet.#onTransformTo,
+      createForm: ShiftTraitSheet.#onCreateForm,
+      removeForm: ShiftTraitSheet.#onRemoveForm,
+      moveForm: ShiftTraitSheet.#onMoveForm,
+      openForm: ShiftTraitSheet.#onOpenForm,
       itemTab: ShiftTraitSheet.#onTab
     }
   };
@@ -120,6 +126,7 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
       maxLabel: dieLabel(item.system.maxDie),
       canShiftUp: item.canShiftUp && this.isEditable,
       canShiftDown: item.canShiftDown && this.isEditable,
+      canTransform: item.canTransform && item.transformVisible,
       canRoll: item.canRoll && !!item.actor && this.isEditable,
       categoryLabel: game.i18n.localize(CONFIG.SHIFT.traitCategories[item.system.category] ?? ""),
       isPackLike: ["pack", "cargo"].includes(item.system.category),
@@ -133,6 +140,41 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
       scaleTooltip: `${game.i18n.localize("SHIFT.Trait.Scale")} ${item.effectiveScale}`,
       activeTab: this._activeTab ?? "desc"
     });
+
+    // ----- Aba Transform: formas linkadas resolvidas + estágio atual ---------------
+    const tr = item.system.transform ?? {};
+    // Três níveis: VER+transformar/reposicionar (GM, ou player OWNER com playerVisible) e
+    // EDITAR a estrutura — criar/deletar/configurar (GM ou Trusted Player+). Gateado nos
+    // getters do documento pra ficha, card do Actor e handlers concordarem. `isEditable`
+    // (= OWNER, independe do cadeado) some os botões num compêndio TRAVADO, onde a escrita
+    // seria rejeitada — não afeta o player owner (isEditable = true mesmo travado).
+    context.canViewTransform = item.transformVisible && this.isEditable;
+    context.canEditTransform = item.transformEditable && this.isEditable;
+    const stage = tr.stage ?? -1;
+    context.transformAtBase = stage === -1;
+    // A Base Form exibe o snapshot (o que "voltar à base" traz). Ele se auto-atualiza toda
+    // vez que se SAI da base, então nunca fica desatualizado.
+    context.transformBase = {
+      captured: !!tr.base?.captured,
+      name: tr.base?.name ?? "",
+      die: tr.base?.maxDie ? dieLabel(tr.base.maxDie) : ""
+    };
+    const forms = tr.forms ?? [];
+    context.transformForms = [];
+    for (let i = 0; i < forms.length; i++) {
+      const form = await fromUuid(forms[i]).catch(() => null);
+      context.transformForms.push({
+        index: i,
+        uuid: forms[i],
+        name: form?.name ?? game.i18n.localize("SHIFT.Transform.MissingForm"),
+        die: form ? dieLabel(form.system?.maxDie) : "",
+        img: form?.img ?? null,
+        missing: !form,
+        current: stage === i,
+        first: i === 0,
+        last: i === forms.length - 1
+      });
+    }
     return context;
   }
 
@@ -152,11 +194,36 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
       try { data = fvtt.TextEditor.getDragEventData(ev); } catch (err) { return; }
       if (data?.type !== "Item") return;
       const dropped = await Item.implementation.fromDropData(data);
-      if (!dropped || !["keyword", "drawback"].includes(dropped.type)) return;
-      ev.preventDefault();
-      if (dropped.type === "keyword") await this.document.addKeyword(dropped.name);
-      else await this.document.addDrawback(dropped.name);
-      ui.notifications.info(game.i18n.format("SHIFT.Drop.Attached", { name: dropped.name, trait: this.document.name }));
+      if (!dropped) return;
+      if (["keyword", "drawback"].includes(dropped.type)) {
+        ev.preventDefault();
+        if (dropped.type === "keyword") await this.document.addKeyword(dropped.name);
+        else await this.document.addDrawback(dropped.name);
+        ui.notifications.info(game.i18n.format("SHIFT.Drop.Attached", { name: dropped.name, trait: this.document.name }));
+        return;
+      }
+      // Um Trait solto vira uma FORMA na fila — nível EDITAR (GM/Trusted+).
+      if (dropped.type === "trait" && this.document.transformEditable && dropped.uuid && dropped.uuid !== this.document.uuid) {
+        ev.preventDefault();
+        const forms = [...(this.document.system.transform?.forms ?? [])];
+        if (forms.includes(dropped.uuid)) return;
+        // Se o host é playerVisible, sobe um Item de mundo pra OBSERVER pra que players
+        // OWNER consigam LER a forma (fromUuid) e transformar. Host secreto não expõe.
+        // Embedded/compendium já se resolvem; só quem possui a forma (GM) mexe no ownership.
+        const OWN = CONST.DOCUMENT_OWNERSHIP_LEVELS;
+        if (this.document.system.transform?.playerVisible) {
+          const formDoc = await fromUuid(dropped.uuid).catch(() => null);
+          if (formDoc && !formDoc.parent && formDoc.isOwner && (formDoc.ownership?.default ?? OWN.NONE) < OWN.OBSERVER) {
+            try { await formDoc.update({ "ownership.default": OWN.OBSERVER }); } catch (err) { /* sem permissão */ }
+          }
+        }
+        forms.push(dropped.uuid);
+        const upd = { "system.transform.forms": forms };
+        // Adicionar a 1ª forma já habilita o Transform.
+        if (!this.document.system.transform?.enabled) upd["system.transform.enabled"] = true;
+        await this.document.update(upd);
+        ui.notifications.info(game.i18n.format("SHIFT.Transform.FormAdded", { name: dropped.name }));
+      }
     });
   }
 
@@ -173,6 +240,7 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
   static async #onExhaust() { if (!this.isEditable) return; await this.document.exhaust({}); }
 
   static async #onAddKeyword() {
+    if (!this.isEditable) return;
     // Mesmo fluxo de Browser-ou-digitar da ficha de Actor; quando o Trait pertence a
     // um Actor, o descritor escolhido é copiado para ele, então a pill aponta para um Item real.
     const text = await ShiftBrowser.pickDescriptor({
@@ -185,11 +253,13 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
   }
 
   static async #onRemoveKeyword(event, target) {
+    if (!this.isEditable) return;
     const index = Number(target.dataset.index);
     if (Number.isInteger(index)) await this.document.removeKeyword(index);
   }
 
   static async #onAddDrawback() {
+    if (!this.isEditable) return;
     const text = await ShiftBrowser.pickDescriptor({
       kind: "drawback",
       host: this.document.actor ?? null,
@@ -200,8 +270,128 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
   }
 
   static async #onRemoveDrawback(event, target) {
+    if (!this.isEditable) return;
     const index = Number(target.dataset.index);
     if (Number.isInteger(index)) await this.document.removeDrawback(index);
+  }
+
+  /** Botão "Transform" (✦) da ficha: avança a fila (ou reset aberto da Attitude).
+   *  openSheet:false — já estamos na ficha (ela re-renderiza no update). */
+  static async #onTransform() {
+    if (!this.document.transformVisible) return;
+    // transform() já pergunta: nome (caso aberto) ou qual forma (fila). Cancelar = nada.
+    await this.document.transform();
+  }
+
+  /** Navega a fila pra uma forma específica (data-stage; -1 = base). Trocar de forma é
+   *  nível VER (GM ou player owner com playerVisible). */
+  static async #onTransformTo(event, target) {
+    if (!this.document.transformVisible) return;
+    const stage = Number(target.dataset.stage);
+    if (Number.isInteger(stage)) await this.document.transformTo(stage);
+  }
+
+  /** Remove uma forma da fila (data-index). Reajusta o stage atual se necessário. Deletar
+   *  é nível EDITAR (GM ou Trusted+). */
+  static async #onRemoveForm(event, target) {
+    if (!this.document.transformEditable) return;
+    const i = Number(target.dataset.index);
+    const t = this.document.system.transform ?? {};
+    const forms = [...(t.forms ?? [])];
+    if (!Number.isInteger(i) || i < 0 || i >= forms.length) return;
+    const removingCurrent = (t.stage ?? -1) === i;
+    forms.splice(i, 1);
+    // Mantém o stage coerente: se removeu antes do atual, recua; se removeu o atual, volta à base.
+    let stage = t.stage ?? -1;
+    if (stage === i) stage = -1;
+    else if (stage > i) stage -= 1;
+    await this.document.update({ "system.transform.forms": forms, "system.transform.stage": stage });
+    // Removeu a forma ATUAL: a identidade viva ainda é dela → reaplica a base (snapshot
+    // já existe, pois transformar pra forma i capturou a base). Sem base, transformTo avisa.
+    if (removingCurrent) await this.document.transformTo(-1);
+  }
+
+  /** Reordena uma forma na fila (data-index + data-dir = -1/1). Reposicionar é nível VER
+   *  (o player owner com playerVisible também pode). */
+  static async #onMoveForm(event, target) {
+    if (!this.document.transformVisible) return;
+    const i = Number(target.dataset.index);
+    const dir = Number(target.dataset.dir) || 0;
+    const t = this.document.system.transform ?? {};
+    const forms = [...(t.forms ?? [])];
+    const j = i + dir;
+    if (!Number.isInteger(i) || j < 0 || j >= forms.length) return;
+    [forms[i], forms[j]] = [forms[j], forms[i]];
+    // O cursor segue a forma movida, senão o "atual" passa a apontar pra forma errada.
+    let stage = t.stage ?? -1;
+    if (stage === i) stage = j;
+    else if (stage === j) stage = i;
+    await this.document.update({ "system.transform.forms": forms, "system.transform.stage": stage });
+  }
+
+  /** Abre a ficha do Trait linkado de uma forma (pra editá-la). Nível EDITAR (GM/Trusted+). */
+  static async #onOpenForm(event, target) {
+    if (!this.document.transformEditable) return;
+    const uuid = target.closest("[data-form-uuid]")?.dataset.formUuid;
+    if (!uuid) return;
+    const form = await fromUuid(uuid).catch(() => null);
+    form?.sheet?.render(true);
+  }
+
+  /** Cria um Trait novo já como uma forma da fila e abre a ficha dele pra editar — mais
+   *  intuitivo que só arrastar. Nível EDITAR (GM/Trusted+). Defaults = identidade da BASE
+   *  (só ajustar o que muda). Vai pra uma pasta "Created Forms" (criada se faltar). */
+  static async #onCreateForm() {
+    if (!this.document.transformEditable) return;
+    const folder = await this.#createdFormsFolder();
+    // Origem dos defaults: o snapshot da base (se houver) ou a identidade viva atual.
+    const b = this.document.system.transform?.base;
+    const src = b?.captured ? b : this.document.system;
+    const max = src.maxDie || "d6";
+    const OWN = CONST.DOCUMENT_OWNERSHIP_LEVELS;
+    // Só expõe a forma (OBSERVER) quando o host é playerVisible — assim um player OWNER
+    // consegue LER a forma (fromUuid) e transformar. Forma de Trait SECRETO (adversário,
+    // sem playerVisible) nasce NONE pra não vazar no diretório de Items dos players. O
+    // _onUpdate do host sincroniza isso quando o GM liga/desliga playerVisible depois.
+    const pv = !!this.document.system.transform?.playerVisible;
+    let form;
+    try {
+      [form] = await Item.implementation.create([{
+        type: "trait",
+        name: game.i18n.localize("SHIFT.Transform.NewFormName"),
+        folder: folder?.id ?? null,
+        // O criador (GM/Trusted) fica OWNER pra editá-la; default depende do playerVisible.
+        ownership: { default: pv ? OWN.OBSERVER : OWN.NONE, [game.user.id]: OWN.OWNER },
+        system: {
+          category: this.document.system.category ?? "custom",
+          maxDie: max,
+          currentDie: max,
+          keywords: [...(src.keywords ?? [])],
+          drawbacks: [...(src.drawbacks ?? [])],
+          features: foundry.utils.deepClone(this.document.system.features ?? {}),
+          description: src.description ?? ""
+        }
+      }]);
+    } catch (err) {
+      ui.notifications?.warn(game.i18n.localize("SHIFT.Transform.CreateFailed"));
+      return;
+    }
+    if (!form) return;
+    const forms = [...(this.document.system.transform?.forms ?? []), form.uuid];
+    const upd = { "system.transform.forms": forms };
+    if (!this.document.system.transform?.enabled) upd["system.transform.enabled"] = true;
+    await this.document.update(upd);
+    form.sheet?.render(true);
+  }
+
+  /** Acha (ou cria) a Folder "Created Forms" de Items, pra agrupar as formas geradas. */
+  async #createdFormsFolder() {
+    const name = game.i18n.localize("SHIFT.Transform.FormsFolder");
+    let folder = game.folders.find(f => f.type === "Item" && f.name === name);
+    if (!folder) {
+      try { folder = await Folder.create({ name, type: "Item" }); } catch (err) { /* sem permissão */ }
+    }
+    return folder ?? null;
   }
 
   /** Troca a aba ativa direto no DOM (sem re-render), pra escolha sobreviver ao submitOnChange. */
@@ -528,3 +718,16 @@ export class ShiftLandmarkSheet extends BaseShiftItemSheet {
     body: { template: "systems/shift-vtt/templates/item/landmark-sheet.hbs", scrollable: [""] }
   };
 }
+
+/* Reatividade entre documentos: quando um Trait LINKADO como forma muda (nome/dice/…),
+   re-renderiza as fichas de Trait abertas que o referenciam, pra a lista de formas refletir
+   a edição na hora (sem precisar travar/destravar a ficha). */
+Hooks.on("updateItem", (item) => {
+  const uuid = item?.uuid;
+  if (!uuid || item.type !== "trait") return;
+  for (const app of foundry.applications.instances.values()) {
+    if (app instanceof ShiftTraitSheet && (app.document?.system?.transform?.forms ?? []).includes(uuid)) {
+      app.render(false);
+    }
+  }
+});

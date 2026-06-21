@@ -69,7 +69,15 @@ export function registerSettings() {
     default: true,
     // O Action HUD não é ApplicationV2 (é DOM manual), então o loop de instâncias
     // não o alcança: rebuilda explicitamente para o glow/pip de Scale aparecer/sumir.
-    onChange: () => { refreshActionHud(); for (const app of foundry.applications.instances.values()) app.render?.(); }
+    onChange: () => {
+      refreshActionHud();
+      // Re-renderiza só as SHEETS de Actor/Item (onde marcadores de Scale aparecem),
+      // pulando DialogV2, a janela de Settings e qualquer outra ApplicationV2 viva —
+      // re-renderizar essas fecharia diálogos abertos ou bagunçaria a própria config.
+      for (const app of foundry.applications.instances.values()) {
+        if (app.document instanceof Actor || app.document instanceof Item) app.render?.();
+      }
+    }
   });
 
   reg("enableScaledUp", {
@@ -110,6 +118,17 @@ export function registerSettings() {
     config: true,
     type: Number,
     default: 5
+  });
+
+  // Pelas regras, um personagem só adquire UM advancement por sessão. Ligado por
+  // padrão; o GM pode sobrepor a trava quando clica num chip já travado.
+  reg("oneAdvancementPerSession", {
+    name: "SHIFT.Settings.OneAdvancement.Name",
+    hint: "SHIFT.Settings.OneAdvancement.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
   });
 
   reg("autoXp", {
@@ -232,6 +251,7 @@ export function registerSettings() {
   reg("macrosSeeded", { scope: "world", config: false, type: Boolean, default: false });
   // Migração one-time: Quests legadas (Trait category="quest") → tipo de Item "quest".
   reg("questTypeMigrated", { scope: "world", config: false, type: Boolean, default: false });
+  reg("attitudeTransformMigrated", { scope: "world", config: false, type: Boolean, default: false });
 
   // Estado de UI por jogador (painel Global Traits + posição do Action HUD)
   reg("clocksPanelOpen", { scope: "client", config: false, type: Boolean, default: true });
@@ -241,21 +261,11 @@ export function registerSettings() {
   reg("hudPosition", { scope: "client", config: false, type: Object, default: null });
   // Por jogador: mostra a faixa de distância ao passar o mouse num token na cena.
   reg("showTokenRanges", { scope: "client", config: false, type: Boolean, default: true });
-  // One-time por cliente: marca que já forçamos o Bunny Glass LIGADO por padrão.
-  reg("uiThemeDefaulted", { scope: "client", config: false, type: Boolean, default: false });
-
   // Aplica os temas escolhidos assim que o jogo estiver pronto.
   Hooks.once("ready", async () => {
-    // Bunny Glass ATIVO POR PADRÃO: a setting "uiTheme" já é default:true (instalações
-    // novas já vêm ligadas), mas na 1ª carga após esta versão garantimos uiTheme=on por
-    // cliente — pega quem ficou com a setting OFF durante os testes (um valor de client
-    // guardado vence o default). Toggles futuros são respeitados.
-    if (!game.settings.get("shift-vtt", "uiThemeDefaulted")) {
-      await game.settings.set("shift-vtt", "uiThemeDefaulted", true);
-      if (game.settings.get("shift-vtt", "uiTheme") === false) {
-        await game.settings.set("shift-vtt", "uiTheme", true);
-      }
-    }
+    // Bunny Glass ATIVO POR PADRÃO via default:true da setting "uiTheme": instalações
+    // novas já vêm ligadas. Quem desligou de propósito mantém a escolha — NÃO forçamos
+    // mais o tema ON aqui, só aplicamos o valor atual da setting.
     applyShiftTheme();
     applyShiftUiTheme();
     randomizePauseDie();   // garante um dado já no boot (mundo que abre pausado)

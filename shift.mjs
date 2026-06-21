@@ -37,7 +37,7 @@ import { ShiftBrowser } from "./module/apps/browser.mjs";
 import {
   ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftLandmarkSheet, ShiftQuestSheet
 } from "./module/sheets/item-sheets.mjs";
-import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium, migrateQuestType } from "./module/helpers/migrations.mjs";
+import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium, migrateQuestType, migrateAttitudeTransform } from "./module/helpers/migrations.mjs";
 
 /* ------------------------------------------------------------------ */
 /* Init                                                                */
@@ -237,6 +237,7 @@ Hooks.once("ready", async () => {
   cleanStoredColorValues();
   if (game.user.isGM) {
     await migrateQuestType();
+    await migrateAttitudeTransform();
     await seedCompendium();
     await seedTechniques();
     await seedMacros();

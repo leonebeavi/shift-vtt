@@ -198,8 +198,24 @@ export class ShiftCombat extends Combat {
     await this.resetActionResources();
     if (game.settings.get("shift-vtt", "rerollTurnOrder")) {
       await this.resetTurnOrder({ announce: true });
+    } else {
+      // A fase de Advantage (init 4) só vale no primeiro round. Com reroll OFF
+      // não há reset, então qualquer colocação de Advantage remanescente
+      // persistiria e o lado com vantagem agiria primeiro todo round. Rebaixa
+      // essas colocações para a fase normal de primeira ação (Phase 1, init 3),
+      // preservando que esses combatants ajam cedo sem repetir a vantagem especial.
+      await this.#demoteAdvantage();
     }
     return this;
+  }
+
+  /** Converte colocações de Advantage (init 4) na fase normal de primeira ação
+   *  (init 3), para a vantagem especial de início de Encounter não se repetir. */
+  async #demoteAdvantage() {
+    const updates = this.combatants
+      .filter(c => c.initiative === CONFIG.SHIFT.phases.advantage)
+      .map(c => ({ _id: c.id, initiative: CONFIG.SHIFT.phases.first }));
+    if (updates.length) await this.updateEmbeddedDocuments("Combatant", updates);
   }
 
   /** Limpa as initiatives dos characters para os Players rolarem a ordem de turno do novo round. */

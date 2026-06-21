@@ -48,21 +48,28 @@
         {{#unless system.exhausted}}
           <a class="ta-btn exhaust" data-action="exhaustTrait" data-tooltip="{{localize 'SHIFT.Tooltips.Exhaust'}}"><i class="fa-solid fa-skull"></i></a>
         {{/unless}}
+        {{#if canTransform}}
+          <a class="ta-btn transform" data-action="transformTrait" data-tooltip="{{localize 'SHIFT.Tooltips.Transform'}}"><i class="fa-solid fa-wand-magic-sparkles"></i></a>
+        {{/if}}
       </div>
     {{/if}}
   </section>
 
-  {{!-- Tabs (Description | Customize) — only in edit mode, when there is a
-        second tab to switch to. --}}
-  {{#if editMode}}
+  {{!-- Tabs: Description | Customize (editMode) | Transform (GM, ou player-owner se visível). --}}
+  {{#if (shiftOr editMode canViewTransform)}}
     <nav class="item-tabs">
-      <a class="item-tab{{#unless (shiftEq activeTab 'custom')}} active{{/unless}}" data-action="itemTab" data-tab="desc"><i class="fa-solid fa-align-left"></i> {{localize "SHIFT.ItemSheet.TabDescription"}}</a>
-      <a class="item-tab{{#if (shiftEq activeTab 'custom')}} active{{/if}}" data-action="itemTab" data-tab="custom"><i class="fa-solid fa-sliders"></i> {{localize "SHIFT.ItemSheet.TabCustomize"}}</a>
+      <a class="item-tab{{#if (shiftEq activeTab 'desc')}} active{{/if}}" data-action="itemTab" data-tab="desc"><i class="fa-solid fa-align-left"></i> {{localize "SHIFT.ItemSheet.TabDescription"}}</a>
+      {{#if editMode}}
+        <a class="item-tab{{#if (shiftEq activeTab 'custom')}} active{{/if}}" data-action="itemTab" data-tab="custom"><i class="fa-solid fa-sliders"></i> {{localize "SHIFT.ItemSheet.TabCustomize"}}</a>
+      {{/if}}
+      {{#if canViewTransform}}
+        <a class="item-tab{{#if (shiftEq activeTab 'transform')}} active{{/if}}" data-action="itemTab" data-tab="transform"><i class="fa-solid fa-wand-magic-sparkles"></i> {{localize "SHIFT.Transform.Tab"}}</a>
+      {{/if}}
     </nav>
   {{/if}}
 
   {{!-- TAB: Description --}}
-  <div class="item-tab-panel{{#unless (shiftAnd editMode (shiftEq activeTab 'custom'))}} active{{/unless}}" data-tab="desc">
+  <div class="item-tab-panel{{#if (shiftEq activeTab 'desc')}} active{{/if}}" data-tab="desc">
     {{#if system.features.usesKeywords}}
       {{#if (shiftOr system.keywords.length editMode)}}
         {{> "shift.pill-list" items=system.keywords kind="keyword"
@@ -163,6 +170,78 @@
         <label class="cfg check span2"><input type="checkbox" name="system.adversary.countsTowardTraitLimit" {{checked system.adversary.countsTowardTraitLimit}}/> {{localize "SHIFT.ItemSheet.CountsLimit"}}</label>
 
       </div>
+    </section>
+  </div>
+  {{/if}}
+
+  {{!-- TAB: Transform — fila de formas linkadas. Edição só do GM (canEditTransform); um
+        player-owner com playerVisible vê a lista só-leitura. --}}
+  {{#if canViewTransform}}
+  <div class="item-tab-panel{{#if (shiftEq activeTab 'transform')}} active{{/if}}" data-tab="transform">
+    <section class="transform-panel{{#unless canEditTransform}} readonly{{/unless}}">
+
+      {{#if canEditTransform}}
+        <div class="tf-toggles">
+          <label class="cfg check"><input type="checkbox" name="system.transform.enabled" {{checked system.transform.enabled}}/> {{localize "SHIFT.Transform.Enabled"}}</label>
+          <label class="cfg check"><input type="checkbox" name="system.transform.auto" {{checked system.transform.auto}}/> {{localize "SHIFT.Transform.Auto"}}</label>
+          <label class="cfg check"><input type="checkbox" name="system.transform.playerVisible" {{checked system.transform.playerVisible}}/> {{localize "SHIFT.Transform.PlayerVisible"}}</label>
+          <label class="cfg tf-reset">
+            <span>{{localize "SHIFT.Transform.ResetDie"}}</span>
+            <select name="system.transform.resetDie">
+              {{#each diceList}}<option value="{{this}}" {{#if (shiftEq this @root.system.transform.resetDie)}}selected{{/if}}>{{shiftDieLabel this}}</option>{{/each}}
+            </select>
+          </label>
+        </div>
+        <p class="tf-hint">{{localize "SHIFT.Transform.ResetHint"}}</p>
+      {{/if}}
+
+      <ol class="tf-forms">
+        {{!-- BASE: a identidade própria do Trait. O snapshot se auto-atualiza ao sair dela. --}}
+        <li class="tf-form base{{#if transformAtBase}} current{{/if}}">
+          <span class="tf-stage-dot"></span>
+          <span class="tf-form-name">{{localize "SHIFT.Transform.BaseForm"}}</span>
+          {{#if transformAtBase}}
+            <span class="tf-current-tag">{{localize "SHIFT.Transform.Current"}}</span>
+          {{else}}
+            {{#if transformBase.captured}}<span class="tf-form-snap">{{transformBase.name}}{{#if transformBase.die}} · {{transformBase.die}}{{/if}}</span>{{/if}}
+            {{#if canViewTransform}}
+              <span class="tf-form-actions">
+                <a class="ta-btn" data-action="transformTo" data-stage="-1" data-tooltip="{{localize 'SHIFT.Transform.BecomeThis'}}"><i class="fa-solid fa-wand-magic-sparkles"></i></a>
+              </span>
+            {{/if}}
+          {{/if}}
+        </li>
+        {{#each transformForms}}
+          <li class="tf-form{{#if current}} current{{/if}}{{#if missing}} missing{{/if}}" data-form-uuid="{{uuid}}">
+            <span class="tf-stage-dot"></span>
+            {{#if img}}<img class="tf-form-img" src="{{img}}" alt=""/>{{/if}}
+            {{#if @root.canEditTransform}}
+              <a class="tf-form-name" data-action="openForm" data-tooltip="{{localize 'SHIFT.Transform.OpenForm'}}">{{name}}</a>
+            {{else}}
+              <span class="tf-form-name">{{name}}</span>
+            {{/if}}
+            {{#if die}}<span class="tf-form-die">{{die}}</span>{{/if}}
+            {{#if current}}<span class="tf-current-tag">{{localize "SHIFT.Transform.Current"}}</span>{{/if}}
+            {{#if @root.canViewTransform}}
+              <span class="tf-form-actions">
+                {{!-- Reposicionar (setas) + trocar de forma (✦): nível VER. --}}
+                <a class="ta-btn{{#if first}} disabled{{/if}}" data-action="moveForm" data-index="{{index}}" data-dir="-1" data-tooltip="{{localize 'SHIFT.Common.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></a>
+                <a class="ta-btn{{#if last}} disabled{{/if}}" data-action="moveForm" data-index="{{index}}" data-dir="1" data-tooltip="{{localize 'SHIFT.Common.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></a>
+                {{#unless current}}<a class="ta-btn" data-action="transformTo" data-stage="{{index}}" data-tooltip="{{localize 'SHIFT.Transform.BecomeThis'}}"><i class="fa-solid fa-wand-magic-sparkles"></i></a>{{/unless}}
+                {{!-- Deletar a forma: nível EDITAR (GM/Trusted+). --}}
+                {{#if @root.canEditTransform}}<a class="ta-btn danger" data-action="removeForm" data-index="{{index}}" data-tooltip="{{localize 'SHIFT.Common.Remove'}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+              </span>
+            {{/if}}
+          </li>
+        {{/each}}
+      </ol>
+
+      {{#if canEditTransform}}
+        <div class="tf-add">
+          <div class="tf-dropzone">{{localize "SHIFT.Transform.DropHint"}}</div>
+          <button type="button" class="tf-create" data-action="createForm"><i class="fa-solid fa-plus"></i> {{localize "SHIFT.Transform.CreateForm"}}</button>
+        </div>
+      {{/if}}
     </section>
   </div>
   {{/if}}

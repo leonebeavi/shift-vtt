@@ -3,7 +3,7 @@
  * Concentra todas as transições de estado do Shift Die para que cada chamador
  * (sheets, rolls, botões de chat, macros) compartilhe uma única implementação.
  */
-import { DIE_PROGRESSION, dieIndex, dieLabel, fvtt, enrich, promptText, promptTraitChoice, shiftSpeaker } from "../helpers/utils.mjs";
+import { DIE_PROGRESSION, dieIndex, dieLabel, fvtt, enrich, promptText, promptTraitChoice, promptChoice, shiftSpeaker } from "../helpers/utils.mjs";
 import { computeShift } from "../dice/resolution.mjs";
 
 export class ShiftItem extends Item {
@@ -23,11 +23,31 @@ export class ShiftItem extends Item {
 
     if (this.type !== "trait") return;
 
+    // Um Trait criado SOLTO (sem Actor dono: sidebar de Items ou compêndio) nasce
+    // como Focus Trait. É o caso típico de montar conteúdo reaproveitável, e a
+    // criação do core do Foundry não passa categoria (cairia no default "custom").
+    // Só intervém quando o criador NÃO definiu a categoria: um drop de compêndio,
+    // um duplicar ou a criação por categoria das fichas já trazem system.category,
+    // e essa checagem os preserva.
+    if (!this.parent && !foundry.utils.hasProperty(data, "system.category")) {
+      this.updateSource({ "system.category": "focus" });
+    }
+
     // Party Traits funcionam como status (igual aos Traits de Location): NÃO
     // fazem auto-shift down nos próprios rolls; servem mais como status de
     // grupo do que para rolar. Aplica a menos que o criador defina explicitamente.
     if (this.system.category === "party" && !foundry.utils.hasProperty(data, "system.autoShiftOnRoll")) {
       this.updateSource({ "system.autoShiftOnRoll": false });
+    }
+
+    // Attitude, pelas regras, reseta com uma nova identidade quando exausta → já nasce
+    // com Transform habilitado (modo aberto, reset ao próprio Max Die). A menos que o
+    // criador especifique transform explicitamente.
+    if (this.system.category === "attitude" && !foundry.utils.hasProperty(data, "system.transform")) {
+      this.updateSource({
+        "system.transform.enabled": true,
+        "system.transform.resetDie": this.system.maxDie || "d4"
+      });
     }
 
     if (foundry.utils.hasProperty(data, "system.features")) return;
@@ -39,7 +59,7 @@ export class ShiftItem extends Item {
         ? { usesKeywords: false, usesDrawbacks: true }
         : { usesKeywords: true, usesDrawbacks: true },
       adversary: { usesKeywords: false, usesDrawbacks: true },
-      attitude: { usesKeywords: true, usesDrawbacks: false },
+      attitude: { usesKeywords: false, usesDrawbacks: false },
       pack: { usesKeywords: false, usesDrawbacks: false },
       cargo: { usesKeywords: false, usesDrawbacks: false },
       special: { usesKeywords: false, usesDrawbacks: false },
@@ -134,6 +154,30 @@ export class ShiftItem extends Item {
     if (focus) await this.update({ "system.focus.traitId": focus.id, "system.focus.traitName": focus.name });
   }
 
+  /** Quando o GM liga/desliga "visível pros players" num Trait com Transform, sincroniza o
+   *  ownership das formas linkadas: ON → OBSERVER (players OWNER conseguem LER a forma pra
+   *  transformar), OFF → NONE (formas secretas somem do diretório de Items dos players).
+   *  Só o cliente que fez o update age, e só nas formas (Items de mundo) que ele possui. */
+  async _onUpdate(changed, options, userId) {
+    await super._onUpdate(changed, options, userId);
+    if (!this.isTrait) return;
+    const pv = foundry.utils.getProperty(changed, "system.transform.playerVisible");
+    if (pv === undefined) return;
+    // A sincronia de ownership das formas roda no GM ATIVO (que possui todos os Items de
+    // mundo), não em quem togglou — assim funciona mesmo se um Trusted Player ligar/desligar
+    // playerVisible em formas que ele não possui, sem deixar ownership obsoleto/vazado.
+    const activeGM = game.users?.activeGM;
+    if (!activeGM || activeGM.id !== game.user.id) return;
+    const OWN = CONST.DOCUMENT_OWNERSHIP_LEVELS;
+    const level = pv ? OWN.OBSERVER : OWN.NONE;
+    for (const uuid of (this.system.transform?.forms ?? [])) {
+      const form = await fromUuid(uuid).catch(() => null);
+      if (!form || form.parent || form.pack || !form.isOwner) continue; // só Items de mundo que eu possuo
+      if ((form.ownership?.default ?? OWN.NONE) === level) continue;
+      try { await form.update({ "ownership.default": level }); } catch (err) { /* sem permissão */ }
+    }
+  }
+
   /* ---------------------------------------------------------------- */
   /* Getters de conveniência                                           */
   /* ---------------------------------------------------------------- */
@@ -169,6 +213,35 @@ export class ShiftItem extends Item {
 
   get isAtMax() {
     return this.hasClock && !this.system.exhausted && this.system.currentDie === this.system.maxDie;
+  }
+
+  /** Há uma próxima forma na fila à frente do estágio atual (usado pelo auto-advance). */
+  get hasNextForm() {
+    const t = this.system.transform ?? {};
+    return (t.forms?.length ?? 0) > 0 && (t.stage ?? -1) < (t.forms.length - 1);
+  }
+
+  /** O Trait pode transformar (botão ✦): basta o Transform estar ligado. O ✦ PERGUNTA
+   *  pra qual forma transformar (ou reseta + renomeia, no caso aberto/Attitude). */
+  get canTransform() {
+    return this.isTrait && !!this.system.transform?.enabled;
+  }
+
+  /** Quem pode VER a aba Transform e TROCAR de forma / reposicionar (✦ + setas): o GM
+   *  sempre; um player OWNER do Trait quando o GM ligou `playerVisible`. (Editar a
+   *  estrutura — criar/deletar/configurar — é mais restrito: ver `transformEditable`.) */
+  get transformVisible() {
+    if (!this.isTrait || !this.system.transform?.enabled) return false;
+    return game.user.isGM || (!!this.system.transform.playerVisible && this.isOwner);
+  }
+
+  /** Quem pode EDITAR a estrutura da fila (toggles, criar/deletar forma, abrir forma pra
+   *  editar, dropar Trait): o GM, ou um Trusted Player+ que já enxergue a aba. Players
+   *  comuns (owner) só transformam e reposicionam, não mexem na estrutura. */
+  get transformEditable() {
+    if (!this.isTrait) return false;
+    if (game.user.isGM) return true;
+    return this.transformVisible && game.user.role >= CONST.USER_ROLES.TRUSTED;
   }
 
   /**
@@ -337,6 +410,24 @@ export class ShiftItem extends Item {
     // Quests não têm temporary, Morte de Core, nem Overcome — só Traits seguem abaixo.
     if (!this.isTrait) return;
 
+    // Transform on Exhaust AUTOMÁTICO (formas dramáticas): ao exaurir, vira a nova forma
+    // in place e limpa exhausted, então não há morte/overcome a tratar. Só quando o Trait
+    // está configurado com auto (a Attitude usa o botão manual, pra respeitar a regra de
+    // que exaurir no Encounter conta pro overcome e só reseta depois).
+    // Transform on Exhaust: o GM decide (roda no cliente que aplicou o exhaust, que pro
+    // relay de ataque do player é o GM). Aberto (Attitude): prompt de novo nome (cancelar
+    // = fica exausto). Fila + Auto: avança a sequência. Fila SEM Auto: prompt com as
+    // formas + não-transformar. Se transformou, não há overcome/morte.
+    if (this.system.transform?.enabled && game.user.isGM) {
+      const hasForms = (this.system.transform.forms?.length ?? 0) > 0;
+      let did = false;
+      if (!hasForms) did = await this.promptOpenReset();
+      else if (this.system.transform.auto) {
+        if (this.hasNextForm) did = !!(await this.transformTo((this.system.transform.stage ?? -1) + 1)).changed;
+      } else did = await this.promptFormChoice();
+      if (did) return;
+    }
+
     // Traits temporários se consomem por completo assim que ficam Exhausted.
     if (this.system.temporary) {
       const actor = this.actor;
@@ -424,6 +515,153 @@ export class ShiftItem extends Item {
     const from = this.statusKey;
     await this.update({ "system.currentDie": this.system.maxDie, "system.exhausted": false });
     return { changed: from !== this.statusKey, from, to: this.statusKey };
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Transform on Exhaust (reset da Attitude + formas)                */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * Entrada do gatilho MANUAL (botão ✦). Transforma o Trait IN PLACE (mesmo item → sem
+   * mexer em UUID/contagem/targeting; limpa exhausted → deixa de contar pro overcome). SEM
+   * fila (Attitude): pergunta o novo nome e reseta o die. COM fila: PERGUNTA pra qual forma
+   * transformar (não segue a sequência). Cancelar não faz nada.
+   * @returns {Promise<boolean>} true se transformou
+   */
+  async transform() {
+    if (!this.isTrait || !this.system.transform?.enabled) return false;
+    if ((this.system.transform.forms?.length ?? 0) === 0) return this.promptOpenReset();
+    return this.promptFormChoice();
+  }
+
+  /** Caso ABERTO (Attitude): reseta o die ao resetDie, limpa exhausted e renomeia. */
+  async #openReset(name) {
+    const fromName = this.name;
+    const die = this.system.transform?.resetDie || "d4";
+    const update = { "system.exhausted": false, "system.maxDie": die, "system.currentDie": die };
+    if (name) update.name = name;
+    await this.update(update);
+    await this.#announceTransform(fromName);
+  }
+
+  /** Pergunta o novo nome do reset aberto. Cancelar (Esc/X) = nada acontece → fica exausto. */
+  async promptOpenReset() {
+    const name = await promptText({
+      title: game.i18n.localize("SHIFT.Transform.Title"),
+      label: game.i18n.localize("SHIFT.Transform.NewName"),
+      initial: this.name
+    });
+    if (name === null) return false;
+    await this.#openReset(name || null);
+    return true;
+  }
+
+  /** Pergunta ao GM pra QUAL forma transformar (Base + formas linkadas, menos a atual) e
+   *  aplica. Cancelar = não transformar (fica como está / exausto). */
+  async promptFormChoice() {
+    const t = this.system.transform ?? {};
+    const forms = t.forms ?? [];
+    const cur = t.stage ?? -1;
+    const options = [];
+    if (t.base?.captured && cur !== -1) {
+      options.push({ value: "-1", label: t.base.name || game.i18n.localize("SHIFT.Transform.BaseForm") });
+    }
+    for (let i = 0; i < forms.length; i++) {
+      if (i === cur) continue;
+      const form = await fromUuid(forms[i]).catch(() => null);
+      options.push({ value: String(i), label: form?.name ?? game.i18n.localize("SHIFT.Transform.MissingForm") });
+    }
+    if (!options.length) { ui.notifications?.info(game.i18n.localize("SHIFT.Transform.NoOtherForm")); return false; }
+    const choice = await promptChoice({
+      title: game.i18n.localize("SHIFT.Transform.ChooseForm"),
+      hint: game.i18n.localize("SHIFT.Transform.ChooseHint"),
+      options
+    });
+    if (choice === null) return false;
+    const res = await this.transformTo(Number(choice));
+    return !!res?.changed;
+  }
+
+  /**
+   * Vai pra uma posição específica da fila: -1 = base (snapshot), 0..n = forms[stage].
+   * Copia a identidade da forma alvo IN PLACE. Ao SAIR da base pela 1ª vez, captura o
+   * snapshot da base (pra poder voltar). Usado pela navegação (escolher/voltar) na aba.
+   */
+  async transformTo(stage) {
+    if (!this.isTrait || !this.system.transform?.enabled) return { changed: false };
+    const t = this.system.transform;
+    const fromName = this.name;
+
+    // Captura a base ao SAIR dela (estágio -1 → uma forma). SEMPRE re-captura, pra a base
+    // refletir as edições mais recentes feitas enquanto se estava nela — assim o snapshot
+    // nunca fica desatualizado e voltar à base sempre traz a identidade certa.
+    if ((t.stage ?? -1) === -1 && stage >= 0) await this.#captureBase(true);
+
+    let identity = null;
+    if (stage < 0) {
+      stage = -1;
+      const b = this.system.transform.base;
+      if (!b?.captured) { ui.notifications?.warn(game.i18n.localize("SHIFT.Transform.NoBase")); return { changed: false }; }
+      identity = b;
+    } else {
+      const uuid = (t.forms ?? [])[stage];
+      const form = uuid ? await fromUuid(uuid).catch(() => null) : null;
+      if (!form || form.type !== "trait") { ui.notifications?.warn(game.i18n.localize("SHIFT.Transform.FormMissing")); return { changed: false }; }
+      identity = {
+        name: form.name, maxDie: form.system.maxDie, currentDie: form.system.currentDie,
+        keywords: form.system.keywords, drawbacks: form.system.drawbacks, description: form.system.description
+      };
+    }
+    await this.#applyIdentity(identity, { "system.transform.stage": stage });
+    await this.#announceTransform(fromName);
+    return { changed: true, stage };
+  }
+
+  /** Snapshot da identidade atual como base. force=true regrava mesmo se já capturada. */
+  async #captureBase(force = false) {
+    if (!force && this.system.transform?.base?.captured) return;
+    const s = this.system;
+    await this.update({ "system.transform.base": {
+      captured: true, name: this.name, maxDie: s.maxDie, currentDie: s.currentDie,
+      keywords: [...(s.keywords ?? [])], drawbacks: [...(s.drawbacks ?? [])], description: s.description ?? ""
+    } });
+  }
+
+  /** Aplica uma identidade (nome/dice/keywords/drawbacks/desc) IN PLACE + limpa exhausted.
+   *  `extra` mescla campos adicionais no mesmo update (ex.: o novo stage), pra um único
+   *  write/re-render por transformação em vez de vários. */
+  async #applyIdentity(d, extra = {}) {
+    const update = { "system.exhausted": false, ...extra };
+    if (d.name) update.name = d.name;
+    // Transformar/voltar SEMPRE reseta o die ao Max da forma (uma forma "fresca"); nunca
+    // herda um currentDie velho (que podia estar exausto/abaixado antes do exhaust).
+    const max = d.maxDie || d.currentDie || "d4";
+    update["system.maxDie"] = max;
+    update["system.currentDie"] = max;
+    update["system.keywords"] = [...(d.keywords ?? [])];
+    update["system.drawbacks"] = [...(d.drawbacks ?? [])];
+    if (d.description !== undefined) update["system.description"] = d.description;
+    await this.update(update);
+    for (const k of (d.keywords ?? [])) await this.#ensureDescriptor("keyword", k);
+    for (const k of (d.drawbacks ?? [])) await this.#ensureDescriptor("drawback", k);
+  }
+
+  /** Card de chat (amarelo, com brilho) anunciando uma transformação/reset. */
+  async #announceTransform(fromName) {
+    const actor = this.actor;
+    const esc = foundry.utils.escapeHTML;
+    const die = dieLabel(this.system.currentDie);
+    const renamed = fromName !== this.name;
+    const body = renamed
+      ? game.i18n.format("SHIFT.Transform.Chat", { actor: esc(actor?.name ?? ""), from: esc(fromName), to: esc(this.name), die })
+      : game.i18n.format("SHIFT.Transform.ChatReset", { actor: esc(actor?.name ?? ""), trait: esc(this.name), die });
+    await ChatMessage.create({
+      speaker: shiftSpeaker(actor),
+      content: `<div class="shift-vtt chat-card info-card transform">
+        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> ${game.i18n.localize("SHIFT.Transform.Title")}</h3>
+        <p>${body}</p>
+      </div>`
+    });
   }
 
   /* ---------------------------------------------------------------- */

@@ -33,6 +33,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       shiftUp: BaseShiftActorSheet.#onShiftUp,
       shiftDown: BaseShiftActorSheet.#onShiftDown,
       exhaustTrait: BaseShiftActorSheet.#onExhaustTrait,
+      transformTrait: BaseShiftActorSheet.#onTransformTrait,
       exertTrait: BaseShiftActorSheet.#onExertTrait,
       makeTemporary: BaseShiftActorSheet.#onMakeTemporary,
       safeRest: BaseShiftActorSheet.#onSafeRest,
@@ -46,7 +47,6 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       removeKeyword: BaseShiftActorSheet.#onRemoveKeyword,
       addDrawback: BaseShiftActorSheet.#onAddDrawback,
       removeDrawback: BaseShiftActorSheet.#onRemoveDrawback,
-      adjustXp: BaseShiftActorSheet.#onAdjustXp,
       toggleExpand: BaseShiftActorSheet.#onToggleExpand,
       toggleEdit: BaseShiftActorSheet.#onToggleEdit,
       rechargeAll: BaseShiftActorSheet.#onRechargeAll,
@@ -192,6 +192,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       canRoll: item.canRoll && this.canRollTraits,
       canUp: item.canShiftUp && this.isEditable,
       canDown: item.canShiftDown && this.isEditable,
+      canTransform: item.canTransform && item.transformVisible,
       isPack: ["pack", "cargo"].includes(sys.category),
       usesKeywords: sys.features.usesKeywords,
       usesDrawbacks: sys.features.usesDrawbacks,
@@ -434,6 +435,14 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     await this.getItem(target)?.exhaust({ force: event.ctrlKey || event.metaKey });
   }
 
+  /** Transforma/reseta um Trait (✦). Nível VER: GM, ou player OWNER com playerVisible.
+   *  transform() já pergunta: nome (caso aberto, Attitude) ou pra qual forma (fila). */
+  static async #onTransformTrait(event, target) {
+    const item = this.getItem(target);
+    if (!item?.transformVisible) return;
+    await item.transform();
+  }
+
   static async #onExertTrait(event, target) {
     if (!this.isEditable) return;
     const item = this.getItem(target);
@@ -557,13 +566,6 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     const item = this.getItem(target);
     const index = Number(target.dataset.index);
     if (item && Number.isInteger(index)) await item.removeDrawback(index);
-  }
-
-  static async #onAdjustXp(event, target) {
-    if (!this.isEditable) return;
-    const delta = Number(target.dataset.delta) || 0;
-    const value = Math.max(0, (this.document.system.xp?.value ?? 0) + delta);
-    await this.document.update({ "system.xp.value": value });
   }
 
   static async #onCycleScale() {

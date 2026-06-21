@@ -405,21 +405,26 @@ async function rollClockTrait(clock) {
   // Um dado no seu máximo dá ShiftDown no Global Trait, igual a qualquer Trait.
   const shifts = [];
   if (entry.willShift) {
-    const clocks = getClocks();
-    const live = clocks.find(c => c.id === clock.id);
+    // Calcula o "from" e o "to" para o card a partir do estado atual conhecido, mas
+    // a MUTAÇÃO é DIRECIONADA: emitimos a ação 'shiftClock' com {clockId, steps} para
+    // o GM ativo, que lê o setting autoritativo, acha o clock por id e desce só ele.
+    // Antes salvávamos o array inteiro (saveClocks), o que sobrescrevia todos os
+    // clocks e causava last-writer-wins em rolls concorrentes — o clobber some assim.
+    const live = getClocks().find(c => c.id === clock.id);
     if (live) {
       const from = live.exhausted ? "exhausted" : live.currentDie;
-      shiftClockDown(live);
-      await saveClocks(clocks);
+      const next = foundry.utils.deepClone(live);
+      shiftClockDown(next); // só para projetar o "to" exibido no card
+      await emitOrRun({ action: "shiftClock", clockId: clock.id, steps: 1 });
       shifts.push({
         name: clock.name,
         from: dieLabel(from),
-        to: live.exhausted ? null : dieLabel(live.currentDie),
-        exhausted: live.exhausted,
+        to: next.exhausted ? null : dieLabel(next.currentDie),
+        exhausted: next.exhausted,
         applied: true
       });
       entry.shiftApplied = true;
-      entry.becameExhausted = live.exhausted;
+      entry.becameExhausted = next.exhausted;
     }
   }
 

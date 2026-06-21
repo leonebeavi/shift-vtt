@@ -87,7 +87,10 @@
       "Cancel": "Cancelar",
       "Delete": "Excluir",
       "DeleteConfirm": "Excluir {name}? Esta ação não pode ser desfeita.",
-      "Empty": "Nada por aqui ainda."
+      "Empty": "Nada por aqui ainda.",
+      "Remove": "Remover",
+      "MoveUp": "Mover pra cima",
+      "MoveDown": "Mover pra baixo"
     },
     "New": {
       "trait": "Novo Trait",
@@ -334,12 +337,15 @@
       "PrimaryTrait": "Core Trait",
       "RollType": "Tipo de Rolagem",
       "GMRequested": "O Mestre pediu este Tipo de Rolagem:",
-      "ApplyManually": "aplicar manualmente",
+      "ApplyManually": "Aplicar Manualmente",
+      "ApplyManuallyHint": "Aplicar este shift down manualmente.",
       "PickTraits": "Escolha até dois:",
       "ApplyTarget": "Shift down nos Traits do alvo"
     },
     "Xp": {
       "Title": "XP",
+      "Session": "Sessão",
+      "Banked": "Acumulado",
       "Gained": "{actor} ganha {amount} XP.",
       "PlusN": "+{n} XP",
       "CapReached": "limite de XP da sessão atingido",
@@ -405,6 +411,7 @@
       "AllyChat": "{actor} fortalece {ally}: {trait} sobe de {from} → {to}.",
       "Enemy": "Shift down de novo no alvo",
       "EnemyHint": "Um shift down extra no alvo. Em Escala maior, o Crítico o Exaure.",
+      "NoneLeft": "Sem bônus de Critical Success restantes.",
       "Narrative": "Impulso narrativo",
       "NarrativeHint": "Com o Mestre: remova um Drawback, descubra algo, abra uma porta.",
       "NarrativeChat": "{actor} ganha um impulso narrativo! Combine com o Mestre um efeito extra."
@@ -460,7 +467,49 @@
       "Keyword": "Nova Keyword",
       "Technique": "Nova Técnica",
       "Trait": "Novo Focus Trait",
-      "CoreDie": "Melhorar Max Die de Core"
+      "CoreDie": "Melhorar Max Die de Core",
+      "Title": "Advancement",
+      "BuyTitle": "Gastar XP",
+      "BuyConfirm": "Gastar {cost} XP em {label}?",
+      "BuyHint": "Gastar XP neste advancement",
+      "NotEnough": "XP insuficiente (precisa de {cost}, tem {have}).",
+      "Requested": "Pedido de advancement enviado ao Mestre.",
+      "OverrideTitle": "Já avançou nesta sessão",
+      "OverrideConfirm": "{actor} já adquiriu um advancement nesta sessão. Permitir outro?",
+      "ApprovalTitle": "Pedido de advancement",
+      "ApprovalConfirm": "{user} quer que {actor} gaste {cost} XP em \"{label}\", mas já avançou nesta sessão. Permitir?",
+      "DenyNoXp": "{actor} não tem mais XP suficiente para esse advancement.",
+      "Chat": "{actor} gastou {cost} XP: {label}.",
+      "ApprovedBy": "Aprovado por {gm}."
+    },
+    "Transform": {
+      "Title": "Transformação",
+      "Tab": "Transform",
+      "NewName": "Novo nome",
+      "Chat": "{actor}: {from} vira {to} ({die}).",
+      "ChatReset": "{trait} de {actor} reseta para {die} com uma nova identidade.",
+      "Enabled": "Pode transformar",
+      "Auto": "Automático ao exaurir",
+      "PlayerVisible": "Visível pros players",
+      "ResetDie": "Die de reset",
+      "ResetHint": "Se pode transformar e não contém formas além da Base Form, ele reseta e deixa você renomear.",
+      "BaseForm": "Forma Base",
+      "Current": "atual",
+      "BecomeThis": "Virar esta forma",
+      "ChooseForm": "Transformar em…",
+      "ChooseHint": "Em qual forma transformar?",
+      "NoOtherForm": "Nenhuma outra forma pra transformar.",
+      "CreateFailed": "Não deu pra criar a forma (sem permissão?).",
+      "FormsFolder": "Created Forms",
+      "OpenForm": "Abrir o Trait desta forma",
+      "DropHint": "Arraste um Trait aqui pra adicionar uma forma",
+      "CreateForm": "Criar uma forma",
+      "NewFormName": "Forma Nova",
+      "MissingForm": "(forma ausente)",
+      "NoBase": "Nenhuma base capturada ainda.",
+      "FormMissing": "O Trait dessa forma sumiu.",
+      "BaseRecaptured": "Forma base re-capturada.",
+      "FormAdded": "{name} adicionado como forma de transform."
     },
     "Technique": {
       "UsesLeft": "{value}/{max} usos",
@@ -472,6 +521,7 @@
       "Prompt": "Uma nova sessão começou? Isso zera o XP de sessão acumulado de todos os personagens e renova as Técnicas deles.",
       "Confirm": "Iniciar Nova Sessão",
       "Reset": "XP de sessão zerado para {count} personagem(ns).",
+      "NoneReset": "Nenhum personagem pôde ser resetado ({failed} falharam).",
       "LastStart": "Última sessão iniciada: {date}"
     },
     "Drop": {
@@ -529,6 +579,7 @@
       "ShiftDown": "Shift down",
       "Exert": "Exert: sucesso automático (+1 XP)",
       "Exhaust": "Exaurir",
+      "Transform": "Transform",
       "Expand": "Mostrar detalhes",
       "Edit": "Editar",
       "Delete": "Excluir",
@@ -574,6 +625,10 @@
       "XpLimit": {
         "Name": "Limite de XP por Sessão",
         "Hint": "XP máximo por sessão de shift downs e exerts."
+      },
+      "OneAdvancement": {
+        "Name": "Um Advancement por Sessão",
+        "Hint": "Limita cada personagem a um advancement por sessão (o Mestre pode aprovar extras)."
       },
       "AutoXp": {
         "Name": "XP Automático",

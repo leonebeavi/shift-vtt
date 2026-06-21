@@ -87,7 +87,10 @@
       "Cancel": "Cancel",
       "Delete": "Delete",
       "DeleteConfirm": "Delete {name}? This cannot be undone.",
-      "Empty": "Nothing here yet."
+      "Empty": "Nothing here yet.",
+      "Remove": "Remove",
+      "MoveUp": "Move up",
+      "MoveDown": "Move down"
     },
     "New": {
       "trait": "New Trait",
@@ -334,12 +337,15 @@
       "PrimaryTrait": "Core Trait",
       "RollType": "Roll Type",
       "GMRequested": "The GM requested this Roll Type:",
-      "ApplyManually": "apply manually",
+      "ApplyManually": "Apply Manually",
+      "ApplyManuallyHint": "Apply this shift down manually.",
       "PickTraits": "Choose up to two:",
       "ApplyTarget": "Shift down target's Traits"
     },
     "Xp": {
       "Title": "XP",
+      "Session": "Session",
+      "Banked": "Banked",
       "Gained": "{actor} gains {amount} XP.",
       "PlusN": "+{n} XP",
       "CapReached": "session XP cap reached",
@@ -405,6 +411,7 @@
       "AllyChat": "{actor} bolsters {ally}: {trait} shifts {from} → {to}.",
       "Enemy": "Shift down the target again",
       "EnemyHint": "One extra shift down on the target. At a larger Scale, the Critical Exhausts it.",
+      "NoneLeft": "No Critical Success bonuses left.",
       "Narrative": "Narrative boost",
       "NarrativeHint": "With the GM: drop a Drawback, learn something, open a door.",
       "NarrativeChat": "{actor} earns a narrative boost! Work out an extra effect with the GM."
@@ -460,7 +467,49 @@
       "Keyword": "New Keyword",
       "Technique": "New Technique",
       "Trait": "New Focus Trait",
-      "CoreDie": "Improve Core Max Die"
+      "CoreDie": "Improve Core Max Die",
+      "Title": "Advancement",
+      "BuyTitle": "Spend XP",
+      "BuyConfirm": "Spend {cost} XP on {label}?",
+      "BuyHint": "Spend XP on this advancement",
+      "NotEnough": "Not enough XP (need {cost}, have {have}).",
+      "Requested": "Advancement request sent to the GM.",
+      "OverrideTitle": "Already advanced this session",
+      "OverrideConfirm": "{actor} already took an advancement this session. Allow another?",
+      "ApprovalTitle": "Advancement request",
+      "ApprovalConfirm": "{user} wants {actor} to spend {cost} XP on \"{label}\", but already advanced this session. Allow it?",
+      "DenyNoXp": "{actor} no longer has enough XP for that advancement.",
+      "Chat": "{actor} spent {cost} XP: {label}.",
+      "ApprovedBy": "Approved by {gm}."
+    },
+    "Transform": {
+      "Title": "Transform",
+      "Tab": "Transform",
+      "NewName": "New name",
+      "Chat": "{actor}: {from} becomes {to} ({die}).",
+      "ChatReset": "{actor}'s {trait} resets to {die} with a new identity.",
+      "Enabled": "Can transform",
+      "Auto": "Auto on exhaust",
+      "PlayerVisible": "Visible to players",
+      "ResetDie": "Reset die",
+      "ResetHint": "If it can transform and contains no forms but base form, it resets and lets you rename it.",
+      "BaseForm": "Base Form",
+      "Current": "current",
+      "BecomeThis": "Become this form",
+      "ChooseForm": "Transform into…",
+      "ChooseHint": "Which form should it become?",
+      "NoOtherForm": "No other form to transform into.",
+      "CreateFailed": "Couldn't create the form (insufficient permission?).",
+      "FormsFolder": "Created Forms",
+      "OpenForm": "Open this form's Trait",
+      "DropHint": "Drag a Trait here to add a form",
+      "CreateForm": "Create a form",
+      "NewFormName": "New Form",
+      "MissingForm": "(missing form)",
+      "NoBase": "No base captured yet.",
+      "FormMissing": "That form's Trait is missing.",
+      "BaseRecaptured": "Base form re-captured.",
+      "FormAdded": "Added {name} as a transform form."
     },
     "Technique": {
       "UsesLeft": "{value}/{max} uses",
@@ -472,6 +521,7 @@
       "Prompt": "Has a new session started? This resets every character's accumulated session XP and refreshes their Techniques.",
       "Confirm": "Start New Session",
       "Reset": "Session XP reset for {count} character(s).",
+      "NoneReset": "No characters could be reset ({failed} failed).",
       "LastStart": "Last session started: {date}"
     },
     "Drop": {
@@ -529,6 +579,7 @@
       "ShiftDown": "Shift down",
       "Exert": "Exert: automatic success (+1 XP)",
       "Exhaust": "Exhaust",
+      "Transform": "Transform",
       "Expand": "Show details",
       "Edit": "Edit",
       "Delete": "Delete",
@@ -574,6 +625,10 @@
       "XpLimit": {
         "Name": "Session XP Cap",
         "Hint": "Max XP per session from shift downs and exerts."
+      },
+      "OneAdvancement": {
+        "Name": "One Advancement per Session",
+        "Hint": "Limit each character to a single advancement per session (the GM can approve extras)."
       },
       "AutoXp": {
         "Name": "Automatic XP",

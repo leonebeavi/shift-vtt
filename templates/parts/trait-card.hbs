@@ -52,6 +52,9 @@
         {{#if (shiftAnd canDown (shiftEq @root.actor.type "character"))}}
           <a class="ta-btn exert" data-action="exertTrait" data-tooltip="{{localize 'SHIFT.Tooltips.Exert'}}"><i class="fa-solid fa-hand-fist"></i></a>
         {{/if}}
+        {{#if canTransform}}
+          <a class="ta-btn transform" data-action="transformTrait" data-tooltip="{{localize 'SHIFT.Tooltips.Transform'}}"><i class="fa-solid fa-wand-magic-sparkles"></i></a>
+        {{/if}}
         {{#if @root.editMode}}
           {{#if canDown}}
             <a class="ta-btn exhaust" data-action="exhaustTrait" data-tooltip="{{localize 'SHIFT.Tooltips.Exhaust'}}"><i class="fa-solid fa-skull"></i></a>

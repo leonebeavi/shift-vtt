@@ -17,6 +17,10 @@
 /** Ícone de quadrado branco com cantos arredondados; o Foundry o tinge com a cor de cada marcador. */
 const MARKER_IMG = "systems/shift-vtt/assets/markers/marker.svg";
 
+/** Ícone genérico para entradas especiais sintetizadas (defeated/blind/… de outro
+ *  módulo) que não tinham arte no snapshot nativo; o core exige um `img` válido. */
+const SPECIAL_FALLBACK_IMG = "icons/svg/aura.svg";
+
 /** SVG transparente de 1 quadro: usado para esvaziar o <img> do Token HUD, de
  *  modo que a amostra do CSS (cor de fundo) apareça no lugar da arte branca do marcador. */
 const BLANK_IMG = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E";
@@ -77,13 +81,16 @@ function rawStatusEffects() {
 }
 
 /**
- * A lista de marcadores para o editor, com os labels localizados (padrões) ou
- * mantidos como o GM os digitou (linhas customizadas).
+ * A lista de marcadores para o editor. SEMPRE localiza o label no momento da
+ * leitura: `game.i18n.localize` devolve a entrada inalterada quando ela não é
+ * uma chave de locale, então labels custom literais passam intactos enquanto os
+ * defaults (gravados como chaves "SHIFT.Status.*" pelo Reset+Save) seguem
+ * traduzidos no idioma corrente.
  */
 export function getStatusEffects() {
   const custom = game.settings.get("shift-vtt", "statusEffects") ?? [];
-  if (custom.length) return custom.map(s => ({ ...s }));
-  return DEFAULT_STATUS_EFFECTS.map(s => ({ id: s.id, label: game.i18n.localize(s.label), color: s.color }));
+  const list = custom.length ? custom : DEFAULT_STATUS_EFFECTS;
+  return list.map(s => ({ id: s.id, label: game.i18n.localize(s.label), color: s.color }));
 }
 
 /**
@@ -114,9 +121,14 @@ export function applyStatusEffects() {
 }
 
 /**
- * Readiciona qualquer status id referenciado por CONFIG.specialStatusEffects que
- * nossa lista descartou, oculto do HUD. Sem isso, o "mark defeated", o culling de
+ * Garante que TODO id referenciado por CONFIG.specialStatusEffects exista em
+ * CONFIG.statusEffects, oculto do HUD. Sem isso, o "mark defeated", o culling de
  * invisibilidade e o modo de visão cego quebram silenciosamente.
+ *
+ * Robusto contra registro tardio: ids especiais adicionados por outro módulo
+ * DEPOIS do snapshot nativo (tirado no primeiro apply, em `setup`) não estão em
+ * `nativeStatusEffects`. Para esses, sintetizamos uma entrada mínima oculta em
+ * vez de descartá-los. Quando o snapshot tem os dados nativos, preferimos eles.
  */
 function preserveSpecialStatuses() {
   const special = CONFIG.specialStatusEffects ?? {};
@@ -124,10 +136,26 @@ function preserveSpecialStatuses() {
   for (const id of Object.values(special)) {
     if (!id || present.has(id)) continue;
     const native = nativeStatusEffects?.find(e => e.id === id);
-    if (!native) continue;
-    CONFIG.statusEffects.push({ ...native, hud: false });
+    // Prefere os dados do snapshot nativo; senão sintetiza uma entrada mínima
+    // (nome localizado se houver chave de locale, senão o próprio id).
+    const entry = native
+      ? { ...native, hud: false }
+      : { id, img: SPECIAL_FALLBACK_IMG, name: localizeStatusName(id), hud: false };
+    CONFIG.statusEffects.push(entry);
     present.add(id);
   }
+}
+
+/** Tenta traduzir o nome de um status especial via chaves de locale conhecidas
+ *  do core ("EFFECT.STATUS<Id>") e do SHIFT ("SHIFT.Status.<id>"); recai no id
+ *  cru se nenhuma existir. `localize` devolve a entrada inalterada quando falha. */
+function localizeStatusName(id) {
+  const cap = id.charAt(0).toUpperCase() + id.slice(1);
+  for (const key of [`EFFECT.STATUS${cap}`, `SHIFT.Status.${id}`]) {
+    const out = game.i18n.localize(key);
+    if (out !== key) return out;
+  }
+  return id;
 }
 
 /**

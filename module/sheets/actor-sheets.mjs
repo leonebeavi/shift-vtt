@@ -4,7 +4,7 @@
 import { BaseShiftActorSheet } from "./base-actor-sheet.mjs";
 import { getAdvancements } from "../apps/advancement-config.mjs";
 import { enrich, dieLabel, dieStatusLabel, fvtt } from "../helpers/utils.mjs";
-import { requestPlayerRoll } from "../helpers/socket.mjs";
+import { requestPlayerRoll, emitOrRun } from "../helpers/socket.mjs";
 
 const T = "systems/shift-vtt/templates";
 
@@ -18,7 +18,8 @@ export class ShiftCharacterSheet extends BaseShiftActorSheet {
   /** @override */
   static DEFAULT_OPTIONS = {
     classes: ["character"],
-    position: { width: 720, height: 820 }
+    position: { width: 720, height: 820 },
+    actions: { buyAdvancement: ShiftCharacterSheet.#onBuyAdvancement }
   };
 
   /** @override */
@@ -48,6 +49,9 @@ export class ShiftCharacterSheet extends BaseShiftActorSheet {
       label: a.label, cost: a.cost, affordable: xp >= a.cost
     }));
     context.hasXp = xp > 0;
+    // Editar o número de XP é restrito a Trusted Player+ / GM (anti-trapaça): players
+    // só mudam XP por ganho automático ou gastando num chip (que loga no chat).
+    context.canEditXp = this.isEditable && game.user.role >= CONST.USER_ROLES.TRUSTED;
     const session = this.document.system.xp?.session ?? 0;
     context.xpDots = Array.from({ length: context.xpLimit }, (_, i) => ({ on: i < session }));
     context.tabs = this._visibleTabs([
@@ -56,6 +60,69 @@ export class ShiftCharacterSheet extends BaseShiftActorSheet {
       { id: "biography", label: "SHIFT.Tabs.Notes", icon: "fa-book-open" }
     ]);
     return context;
+  }
+
+  /**
+   * Clica num chip de advancement: confirma, e GASTA o XP (a mesa aplica o efeito,
+   * pois a lista é configurável). Trava de 1 por sessão — o GM contorna a própria
+   * trava por confirmação; um player que tenta um 2º pede aprovação ao GM via socket.
+   * A compra é sempre anunciada no chat (rastro de auditoria; ver commitAdvancement).
+   */
+  static async #onBuyAdvancement(event, target) {
+    if (!this.isEditable) return;
+    const actor = this.document;
+    const adv = getAdvancements()[Number(target.dataset.advIndex)];
+    if (!adv) return;
+    const cost = Math.max(0, Math.floor(adv.cost ?? 0));
+    const have = actor.system.xp?.value ?? 0;
+    if (have < cost) {
+      return void ui.notifications.warn(game.i18n.format("SHIFT.Advancement.NotEnough", { cost, have }));
+    }
+
+    const confirmed = await fvtt.DialogV2.confirm({
+      window: { title: game.i18n.localize("SHIFT.Advancement.BuyTitle") },
+      content: `<p>${game.i18n.format("SHIFT.Advancement.BuyConfirm", {
+        label: foundry.utils.escapeHTML(adv.label), cost
+      })}</p>`,
+      rejectClose: false
+    });
+    if (!confirmed) return;
+
+    const limited = game.settings.get("shift-vtt", "oneAdvancementPerSession");
+    const already = !!actor.getFlag("shift-vtt", "advancedThisSession");
+
+    if (limited && already) {
+      if (game.user.isGM) {
+        // O GM contorna a própria trava de sessão por uma confirmação.
+        const override = await fvtt.DialogV2.confirm({
+          window: { title: game.i18n.localize("SHIFT.Advancement.OverrideTitle") },
+          content: `<p>${game.i18n.format("SHIFT.Advancement.OverrideConfirm", {
+            actor: foundry.utils.escapeHTML(actor.name)
+          })}</p>`,
+          rejectClose: false
+        });
+        if (!override) return;
+        await actor.commitAdvancement({ label: adv.label, cost });
+      } else {
+        // Player: não gasta nada localmente; pede aprovação ao GM ativo, que decide e
+        // efetiva (ele pode escrever o actor). Sem GM ativo, não há como aprovar.
+        if (!game.users.activeGM) {
+          return void ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NoGM"));
+        }
+        emitOrRun({
+          action: "requestAdvancement",
+          actorUuid: actor.uuid,
+          userName: game.user.name,
+          label: adv.label,
+          cost
+        });
+        ui.notifications.info(game.i18n.localize("SHIFT.Advancement.Requested"));
+      }
+      return;
+    }
+
+    // 1º advancement da sessão (ou trava desligada): gasta direto.
+    await actor.commitAdvancement({ label: adv.label, cost });
   }
 }
 
@@ -288,6 +355,7 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
   }
 
   static async #onToggleLandmarkSafe(event, target) {
+    if (!this.isEditable) return;
     const item = this.getItem(target);
     if (item?.type === "landmark") await item.update({ "system.safe": !item.system.safe });
   }
@@ -315,6 +383,7 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
   }
 
   static async #onRemoveNpc(event, target) {
+    if (!this.isEditable) return;
     const uuid = target.closest("[data-npc-uuid]")?.dataset.npcUuid;
     if (!uuid) return;
     const npcs = (this.document.system.npcs ?? []).filter(u => u !== uuid);

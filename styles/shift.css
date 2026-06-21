@@ -231,6 +231,24 @@
   color: var(--shift-text);
   box-shadow: 0 0 6px rgba(255, 210, 63, 0.25);
 }
+.shift-vtt .advancement-strip button.adv-chip {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  line-height: 1.4;
+  margin: 0;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s, color 0.12s, transform 0.1s;
+}
+.shift-vtt .advancement-strip button.adv-chip:hover:not(:disabled) {
+  border-color: var(--shift-yellow);
+  color: var(--shift-text);
+  transform: translateY(-1px);
+}
+.shift-vtt .advancement-strip button.adv-chip:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 .shift-vtt .adv-chips {
   display: flex;
   gap: 8px;
@@ -821,6 +839,10 @@
 .shift-vtt .ta-btn.exert:hover {
   color: var(--outcome-mitigated);
   background: rgba(255, 197, 17, 0.16);
+}
+.shift-vtt .ta-btn.transform:hover {
+  color: var(--shift-yellow);
+  background: rgba(255, 210, 63, 0.16);
 }
 .shift-vtt .ta-btn.edit:hover {
   color: var(--shift-yellow);
@@ -1944,6 +1966,25 @@
 .shift-vtt .pending {
   font-style: italic;
 }
+.shift-vtt .shift-list button.shift-pending {
+  background: var(--shift-bg-soft);
+  border: 1px solid var(--shift-border);
+  border-radius: 6px;
+  color: var(--shift-text);
+  font-size: 0.9em;
+  line-height: 1.3;
+  padding: 1px 7px;
+  margin-left: 2px;
+  cursor: pointer;
+}
+.shift-vtt .shift-list button.shift-pending:hover {
+  border-color: var(--shift-pink);
+  color: var(--shift-pink);
+}
+.shift-vtt .shift-list .pending-mark {
+  color: var(--outcome-crit-failure);
+  font-weight: 700;
+}
 .shift-vtt .xp-note {
   margin: 0;
   font-size: 0.8em;
@@ -2024,6 +2065,20 @@
 }
 .shift-vtt.info-card.xp {
   border-left-color: var(--outcome-crit-success);
+}
+.shift-vtt.info-card.advancement {
+  border-left-color: var(--shift-yellow);
+  box-shadow: 0 0 14px rgba(255, 210, 63, 0.38), inset 0 0 22px rgba(255, 210, 63, 0.08);
+}
+.shift-vtt.info-card.advancement h3 {
+  color: var(--shift-yellow);
+}
+.shift-vtt.info-card.transform {
+  border-left-color: var(--shift-pink);
+  box-shadow: 0 0 14px rgba(255, 95, 162, 0.34), inset 0 0 22px rgba(255, 95, 162, 0.08);
+}
+.shift-vtt.info-card.transform h3 {
+  color: var(--shift-pink);
 }
 .shift-vtt.info-card.death {
   border-left-color: var(--outcome-crit-failure);
@@ -2124,6 +2179,9 @@ body.shift-ui-theme .chat-message:has(.info-card.combat) {
   --shift-result-color: #38bdd4;
 }
 body.shift-ui-theme .chat-message:has(.info-card.combat.group-invite) {
+  --shift-result-color: #ff5fa2;
+}
+body.shift-ui-theme .chat-message:has(.info-card.transform) {
   --shift-result-color: #ff5fa2;
 }
 body.shift-ui-theme .chat-message:has(.technique-card) {
@@ -4231,6 +4289,7 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
   box-shadow: 0 0 0 2px var(--sw);
 }
 #token-hud .palette.status-effects {
+  --effect-columns: 4;
   height: auto;
   max-height: 222px;
   align-content: start;
@@ -4401,7 +4460,7 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
 .shift-vtt .npc-empty {
   grid-column: 1 / -1;
 }
-.shift-vtt .shift-btn, .shift-vtt .card-action, .card-action, .shift-vtt .pill, .shift-vtt .tag, .shift-vtt .meta-chip, .shift-vtt .adv-chip, .shift-vtt .adv-stat, .shift-vtt .stat-pill, .shift-vtt .ft-btn, .shift-vtt .recharge-pill span, .shift-vtt .recharge-chip, .shift-vtt .tech-type, .shift-vtt .roll-tag, .shift-vtt .crit-buttons button, .shift-vtt .roll-type-option span, .shift-vtt .group-add, .shift-vtt .category-pill, .shift-dialog button, .shift-dialog .seg-opt span, .shift-dialog .trait-opt .opt-die, #shift-action-hud .hud-btn {
+.shift-vtt .shift-btn, .shift-vtt .card-action, .card-action, .shift-vtt .shift-list button.shift-pending, .shift-vtt .pill, .shift-vtt .tag, .shift-vtt .meta-chip, .shift-vtt .adv-chip, .shift-vtt .adv-stat, .shift-vtt .stat-pill, .shift-vtt .ft-btn, .shift-vtt .recharge-pill span, .shift-vtt .recharge-chip, .shift-vtt .tech-type, .shift-vtt .roll-tag, .shift-vtt .crit-buttons button, .shift-vtt .roll-type-option span, .shift-vtt .group-add, .shift-vtt .category-pill, .shift-dialog button, .shift-dialog .seg-opt span, .shift-dialog .trait-opt .opt-die, #shift-action-hud .hud-btn {
   font-variant-caps: small-caps;
   letter-spacing: 0.02em;
 }
@@ -4618,20 +4677,54 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
   -webkit-appearance: none;
   margin: 0;
 }
+.shift-vtt .character-header .xp-body {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+  column-gap: 0;
+  row-gap: 5px;
+  width: 100%;
+}
+.shift-vtt .character-header .xp-sub {
+  font-size: 0.62em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.24);
+}
+.shift-vtt .character-header .xp-divider {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  width: 1px;
+  align-self: stretch;
+  margin: 1px 0;
+  background: linear-gradient(rgba(255,255,255,0) 0%, rgba(255,255,255,0.38) 50%, rgba(255,255,255,0) 100%);
+}
 .shift-vtt .character-header .xp-dots {
   display: flex;
-  gap: 3px;
-  margin-top: 1px;
+  align-items: center;
+  gap: 5px;
+  transform: translateY(-2px);
 }
 .shift-vtt .character-header .xp-dots i {
-  width: 6px;
-  height: 6px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: rgba(255,255,255,0.42);
 }
 .shift-vtt .character-header .xp-dots i.on {
   background: #ffd23f;
   box-shadow: 0 0 5px rgba(255,210,63,0.8);
+}
+.shift-vtt .character-header .xp-number.ro {
+  font-size: 1.22em;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  line-height: 1;
+  text-align: center;
 }
 .shift-vtt .character-header .header-actions {
   display: flex;
@@ -5678,9 +5771,26 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
 .shift-vtt .cfg-dense .cfg-group-label:first-child {
   margin-top: 0;
 }
+.shift-vtt .cfg-dense .cfg-sub-label {
+  grid-column: 1 / -1;
+  margin: 3px 0 1px;
+  font-size: 0.6em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--shift-yellow);
+  opacity: 0.85;
+}
+.shift-vtt .cfg-dense .becomes-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
 .shift-vtt .cfg-dense .cfg {
-  font-size: 0.74em;
+  display: flex;
+  flex-direction: column;
   gap: 3px;
+  font-size: 0.74em;
   color: var(--shift-text-muted);
 }
 .shift-vtt .cfg-dense .cfg > span {
@@ -5700,9 +5810,178 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
 }
 .shift-vtt .cfg-dense .cfg.check input {
   flex: 0 0 auto;
+  transform: translateY(-3px);
 }
 .shift-vtt .cfg-dense .cfg.span2 {
   grid-column: 1 / -1;
+}
+.shift-vtt .transform-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
+.shift-vtt .transform-panel .tf-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 14px;
+}
+.shift-vtt .transform-panel .tf-toggles .cfg.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78em;
+  color: var(--shift-text-muted);
+}
+.shift-vtt .transform-panel .tf-toggles .cfg.check input {
+  flex: 0 0 auto;
+  transform: translateY(-3px);
+}
+.shift-vtt .transform-panel .tf-reset {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78em;
+  color: var(--shift-text-muted);
+  margin-left: auto;
+}
+.shift-vtt .transform-panel .tf-reset select {
+  min-height: 24px;
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.shift-vtt .transform-panel .tf-hint {
+  margin: 0;
+  font-size: 0.72em;
+  color: var(--shift-text-muted);
+}
+.shift-vtt .tf-forms {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.shift-vtt .tf-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border-radius: 10px;
+  background: var(--shift-bg-soft);
+  border: 1px solid var(--shift-border);
+}
+.shift-vtt .tf-form.current {
+  border-color: var(--shift-yellow);
+  box-shadow: 0 0 8px rgba(255, 210, 63, 0.28);
+}
+.shift-vtt .tf-form.base {
+  border-style: dashed;
+}
+.shift-vtt .tf-form.missing {
+  opacity: 0.55;
+}
+.shift-vtt .tf-stage-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--shift-border);
+}
+.shift-vtt .tf-form.current .tf-stage-dot {
+  background: var(--shift-yellow);
+  box-shadow: 0 0 6px rgba(255, 210, 63, 0.8);
+}
+.shift-vtt .tf-form-img {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  object-fit: cover;
+  border: 1px solid var(--shift-border);
+}
+.shift-vtt .tf-form-name {
+  font-weight: 600;
+}
+.shift-vtt a.tf-form-name {
+  cursor: pointer;
+}
+.shift-vtt a.tf-form-name:hover {
+  color: var(--shift-pink);
+}
+.shift-vtt .tf-form-die {
+  font-size: 0.76em;
+  color: var(--shift-text-muted);
+}
+.shift-vtt .tf-current-tag {
+  font-size: 0.6em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--shift-yellow);
+}
+.shift-vtt .tf-form-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 3px;
+}
+.shift-vtt .tf-dropzone {
+  border: 1px dashed var(--shift-border);
+  border-radius: 10px;
+  padding: 11px;
+  text-align: center;
+  font-size: 0.74em;
+  color: var(--shift-text-muted);
+  transition: border-color 0.12s, color 0.12s;
+}
+.shift-vtt .drag-over .tf-dropzone {
+  border-color: var(--shift-yellow);
+  color: var(--shift-text);
+}
+.shift-vtt .tf-add {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.shift-vtt .tf-add .tf-dropzone {
+  flex: 1;
+}
+.shift-vtt .tf-create {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  line-height: 1;
+  flex: 0 0 auto;
+  align-self: stretch;
+  height: auto;
+  min-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--shift-bg-soft);
+  border: 1px solid var(--shift-border);
+  color: var(--shift-text);
+  font-size: 0.74em;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.02em;
+  transition: border-color 0.12s, color 0.12s, transform 0.1s;
+}
+.shift-vtt .tf-create:hover {
+  border-color: var(--shift-yellow);
+  color: var(--shift-yellow);
+  transform: translateY(-1px);
+}
+.shift-vtt .tf-form-snap {
+  font-size: 0.78em;
+  color: var(--shift-text-muted);
 }
 .shift-vtt .technique-sheet .uses-chip {
   flex: 0 0 auto;

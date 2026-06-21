@@ -163,6 +163,17 @@ export async function seedMacros() {
   const pack = game.packs.get("shift-vtt.shift-macros");
   if (!pack) return;
 
+  // Carimbo de versão: guarda a versão do sistema do último re-sync. Auto-registrado
+  // aqui (config:false, world) para não depender de settings.mjs. Se o carimbo for
+  // igual à versão atual, já re-sincronizamos neste release → pula o trabalho (early-
+  // return), evitando hidratar e fazer diff de todos os macros a cada login de GM.
+  // Vazio (mundo novo / setting recém-criado) ou diferente (novo release) → re-sync.
+  if (!game.settings.settings.has("shift-vtt.macrosSeededVersion")) {
+    game.settings.register("shift-vtt", "macrosSeededVersion", { scope: "world", config: false, type: String, default: "" });
+  }
+  const stamped = game.settings.get("shift-vtt", "macrosSeededVersion");
+  if (stamped === game.system.version) return;
+
   const L = k => game.i18n.localize(k);
 
   // Restaura todo Trait do(s) token(s) selecionado(s) (ou do seu personagem
@@ -222,14 +233,16 @@ await game.shift.api.actionRoll(actor);`;
     if (full && full.command !== d.command) toUpdate.push({ doc: full, command: d.command });
   }
   if (!toCreate.length && !toUpdate.length) {
-    await game.settings.set("shift-vtt", "macrosSeeded", true);
+    // Nada a criar/atualizar: já está em dia → carimba a versão para pular o diff no próximo login.
+    await game.settings.set("shift-vtt", "macrosSeededVersion", game.system.version);
     return;
   }
   try {
     await withUnlockedPack(pack, async () => {
       if (toCreate.length) await Macro.createDocuments(toCreate, { pack: pack.collection });
       for (const u of toUpdate) await u.doc.update({ command: u.command });
-      await game.settings.set("shift-vtt", "macrosSeeded", true);
+      // Re-sync concluído: carimba a versão atual para que o próximo login pule o trabalho.
+      await game.settings.set("shift-vtt", "macrosSeededVersion", game.system.version);
       console.log(`shift-vtt | Macros: ${toCreate.length} criada(s), ${toUpdate.length} re-sincronizada(s) em ${pack.collection}`);
     });
   } catch (err) {
@@ -447,5 +460,45 @@ export async function migrateQuestType() {
     // Não seta o flag → tenta de novo no próximo load (idempotente pelo fromTrait).
     console.error("shift-vtt | Quest type migration failed", err);
     ui.notifications?.error(game.i18n.localize("SHIFT.Migration.QuestFailed"));
+  }
+}
+
+/**
+ * Habilita Transform on Exhaust nas Attitude Traits que já existiam antes desta feature
+ * (mundos atualizados), pra elas também ganharem o reset a D4 com nova identidade.
+ * CONSERVADORA: só liga o transform (não mexe em nome/keywords/features de Attitudes
+ * existentes, pra não quebrar setups que usavam a keyword como identidade). One-time por
+ * flag, idempotente. Toca apenas Traits de mundo e embutidos em Actors; compêndios de
+ * terceiros não são alterados (e Attitudes importadas de lá pegam o default no _preCreate).
+ */
+export async function migrateAttitudeTransform() {
+  if (game.settings.get("shift-vtt", "attitudeTransformMigrated")) return;
+
+  const needs = i => i.type === "trait" && i.system?.category === "attitude" && !i.system?.transform?.enabled;
+  const dataFor = i => ({
+    _id: i.id,
+    "system.transform.enabled": true,
+    "system.transform.resetDie": i.system?.maxDie || "d4"
+  });
+
+  let migrated = 0;
+  try {
+    const worldTraits = game.items.filter(needs);
+    if (worldTraits.length) {
+      await Item.updateDocuments(worldTraits.map(dataFor));
+      migrated += worldTraits.length;
+    }
+    for (const actor of game.actors) {
+      const traits = actor.items.filter(needs);
+      if (traits.length) {
+        await actor.updateEmbeddedDocuments("Item", traits.map(dataFor));
+        migrated += traits.length;
+      }
+    }
+    await game.settings.set("shift-vtt", "attitudeTransformMigrated", true);
+    if (migrated) console.log(`shift-vtt | Enabled Transform on ${migrated} existing Attitude trait(s).`);
+  } catch (err) {
+    // Sem setar o flag → re-tenta no próximo load (idempotente: já-habilitadas são puladas).
+    console.error("shift-vtt | Attitude transform migration failed", err);
   }
 }

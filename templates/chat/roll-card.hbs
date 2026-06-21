@@ -47,7 +47,10 @@
             {{from}} <i class="fa-solid fa-angles-right"></i>
             {{#if exhausted}}<span class="exhausted-tag">{{localize "SHIFT.DiceStatus.exhausted"}}</span>{{else}}{{to}}{{/if}}
           {{else}}
-            {{from}} <span class="pending">({{localize "SHIFT.Roll.ApplyManually"}})</span>
+            {{from}} <i class="fa-solid fa-angles-right"></i>
+            <span class="pending-mark">?</span>
+            <button type="button" class="shift-pending" data-shift-pending data-shift-name="{{name}}"
+                    data-tooltip="{{localize 'SHIFT.Roll.ApplyManuallyHint'}}">{{localize "SHIFT.Roll.ApplyManually"}}</button>
           {{/if}}
         </li>
       {{/each}}

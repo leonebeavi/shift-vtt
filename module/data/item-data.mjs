@@ -70,6 +70,40 @@ export class ShiftTraitData extends ShiftItemBase {
     schema.keywords = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
     schema.drawbacks = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
 
+    // Transform on Exhaust: o Trait pode "resetar/transformar" IN PLACE (mesmo item, sem
+    // mexer em UUID/contagem/targeting). É a generalização do reset da Attitude (pelas
+    // regras, a Attitude exausta reseta a D4 com nova identidade) e serve pra formas
+    // dramáticas ("this is not even my final form"). Como o reset limpa `exhausted`, o
+    // Trait deixa de contar pro overcome e nunca vira um Trait a mais.
+    schema.transform = new fields.SchemaField({
+      enabled: new fields.BooleanField({ initial: false }),
+      // Dispara sozinho ao exaurir (formas dramáticas). Off (padrão) = prompt do GM ao
+      // exaurir; o correto pra Attitude (exaurir no combate conta pro overcome; o GM
+      // decide depois se reseta).
+      auto: new fields.BooleanField({ initial: false }),
+      // Quando ligado, um player OWNER do Trait VÊ a aba Transform (só leitura — quem
+      // edita/transforma é sempre o GM). Padrão off; útil pra revelar um item mágico.
+      playerVisible: new fields.BooleanField({ initial: false }),
+      // Die de reset do caso ABERTO (fila vazia, ex.: Attitude): reseta a este die e renomeia.
+      resetDie: new fields.StringField({ required: true, initial: "d4", choices: DICE }),
+      // Fila ORDENADA de formas: UUIDs de Trait items LINKADOS (arrastados na aba Transform).
+      // Cada forma é um Trait normal (editado pela própria ficha). Vazia = caso aberto.
+      forms: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+      // Posição atual na fila: -1 = base (identidade própria do Trait), 0..n = forms[stage].
+      stage: new fields.NumberField({ required: true, integer: true, initial: -1 }),
+      // Snapshot da identidade base, capturado ao SAIR dela pela 1ª vez, pra poder voltar.
+      // O GM pode re-capturar (se editar a base depois) pelo botão na aba Transform.
+      base: new fields.SchemaField({
+        captured: new fields.BooleanField({ initial: false }),
+        name: new fields.StringField({ required: false, blank: true, initial: "" }),
+        maxDie: new fields.StringField({ required: false, blank: true, initial: "" }),
+        currentDie: new fields.StringField({ required: false, blank: true, initial: "" }),
+        keywords: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+        drawbacks: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+        description: new fields.HTMLField({ required: false, blank: true, initial: "" })
+      })
+    });
+
     return schema;
   }
 
