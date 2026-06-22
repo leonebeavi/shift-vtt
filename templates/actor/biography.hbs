@@ -1,18 +1,47 @@
+{{!-- SHIFT VTT — aba "Notes" do Actor. Em Character é só a Description (rich-text).
+      Nos demais (Adversary/Vehicle/Location) vira split: Description em cima (o texto
+      que pode ir para o Codex) e a GM Note embaixo, privada do GM e menor. Os dois
+      campos (system.description / system.gmNote) são os MESMOS que o Codex usa. --}}
 <section class="tab biography{{#if (shiftEq activeTab 'biography')}} active{{/if}}" data-tab="biography" data-group="primary">
   {{#if canViewNotes}}
-  {{#if editable}}
-    <prose-mirror name="system.description" value="{{source.description}}" toggled
-                  document-uuid="{{actor.uuid}}" class="bio-prose">
-      {{{enrichedDescription}}}
-    </prose-mirror>
-  {{else}}
-    <div class="bio-display">
-      {{#if enrichedDescription}}
-        {{{enrichedDescription}}}
+    {{#if hasGmNote}}
+      <div class="bio-split">
+        <div class="bio-pane bio-desc">
+          <div class="bio-pane-label"><i class="fa-solid fa-feather"></i> {{localize "SHIFT.Bio.Description"}}</div>
+          {{#if editable}}
+            <prose-mirror name="system.description" value="{{source.description}}" toggled
+                          document-uuid="{{actor.uuid}}" class="bio-prose">
+              {{{enrichedDescription}}}
+            </prose-mirror>
+          {{else}}
+            <div class="bio-display">
+              {{#if enrichedDescription}}{{{enrichedDescription}}}{{else}}<p class="empty">{{localize "SHIFT.Common.Empty"}}</p>{{/if}}
+            </div>
+          {{/if}}
+        </div>
+        {{#if isGM}}
+          <div class="bio-pane bio-gmnote">
+            <div class="bio-pane-label gm"><i class="fa-solid fa-user-secret"></i> {{localize "SHIFT.Bio.GMNote"}}</div>
+            {{!-- Nota simples: textarea de texto puro com auto-save (sem editor rich/markdown). --}}
+            {{#if editable}}
+              <textarea name="system.gmNote" class="gmnote-text" placeholder="{{localize 'SHIFT.Bio.GMNotePlaceholder'}}">{{source.gmNote}}</textarea>
+            {{else}}
+              <div class="bio-display gmnote-text-display">{{#if source.gmNote}}{{source.gmNote}}{{else}}<span class="empty">{{localize "SHIFT.Common.Empty"}}</span>{{/if}}</div>
+            {{/if}}
+          </div>
+        {{/if}}
+      </div>
+    {{else}}
+      {{#if editable}}
+        <prose-mirror name="system.description" value="{{source.description}}" toggled
+                      document-uuid="{{actor.uuid}}" class="bio-prose">
+          {{{enrichedDescription}}}
+        </prose-mirror>
       {{else}}
-        <p class="empty">{{localize "SHIFT.Common.Empty"}}</p>
+        <div class="bio-display">
+          {{#if enrichedDescription}}{{{enrichedDescription}}}{{else}}<p class="empty">{{localize "SHIFT.Common.Empty"}}</p>{{/if}}
+        </div>
       {{/if}}
-    </div>
-  {{/if}}
+    {{/if}}
   {{/if}}
 </section>

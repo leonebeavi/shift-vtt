@@ -1,0 +1,45 @@
+<section class="settings-config-body rest-travel-config-body">
+  <p class="hint">{{localize "SHIFT.Settings.RestTravelMenu.Hint"}}</p>
+
+  <label class="setting-row num master">
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.RestMode.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.RestMode.Hint"}}</em>
+    </span>
+    <select name="restMode">
+      {{#each restModeOptions}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{localize label}}</option>{{/each}}
+    </select>
+  </label>
+
+  <label class="setting-row check">
+    <input type="checkbox" name="enableTravel" {{checked enableTravel}}/>
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.EnableTravel.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.EnableTravel.Hint"}}</em>
+    </span>
+  </label>
+
+  <label class="setting-row num">
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.TravelMode.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.TravelMode.Hint"}}</em>
+    </span>
+    <select name="travelMode">
+      {{#each travelModeOptions}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{localize label}}</option>{{/each}}
+    </select>
+  </label>
+
+  <label class="setting-row check">
+    <input type="checkbox" name="travelRandomCore" {{checked travelRandomCore}}/>
+    <span class="setting-text">
+      <b>{{localize "SHIFT.Settings.TravelRandomCore.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.TravelRandomCore.Hint"}}</em>
+    </span>
+  </label>
+
+  <footer class="form-footer">
+    {{#each buttons}}
+      <button type="{{type}}"><i class="{{icon}}"></i> {{localize label}}</button>
+    {{/each}}
+  </footer>
+</section>

@@ -70,21 +70,17 @@
 
   {{!-- TAB: Description --}}
   <div class="item-tab-panel{{#if (shiftEq activeTab 'desc')}} active{{/if}}" data-tab="desc">
-    {{#if system.features.usesKeywords}}
-      {{#if (shiftOr system.keywords.length editMode)}}
-        {{> "shift.pill-list" items=system.keywords kind="keyword"
-            label=(localize "SHIFT.Keywords.Title")
-            addAction="addKeyword" removeAction="removeKeyword"
-            canEdit=canEditPills addTooltip=(localize "SHIFT.Keywords.Add")}}
-      {{/if}}
+    {{#if (shiftOr system.keywords.length editMode)}}
+      {{> "shift.pill-list" items=system.keywords kind="keyword"
+          label=(localize "SHIFT.Keywords.Title")
+          addAction="addKeyword" removeAction="removeKeyword"
+          canEdit=canEditPills addTooltip=(localize "SHIFT.Keywords.Add")}}
     {{/if}}
-    {{#if system.features.usesDrawbacks}}
-      {{#if (shiftOr system.drawbacks.length editMode)}}
-        {{> "shift.pill-list" items=system.drawbacks kind="drawback"
-            label=(localize "SHIFT.Drawbacks.Title")
-            addAction="addDrawback" removeAction="removeDrawback"
-            canEdit=canEditPills addTooltip=(localize "SHIFT.Drawbacks.Add")}}
-      {{/if}}
+    {{#if (shiftOr system.drawbacks.length editMode)}}
+      {{> "shift.pill-list" items=system.drawbacks kind="drawback"
+          label=(localize "SHIFT.Drawbacks.Title")
+          addAction="addDrawback" removeAction="removeDrawback"
+          canEdit=canEditPills addTooltip=(localize "SHIFT.Drawbacks.Add")}}
     {{/if}}
     {{#if isPackLike}}
       {{#if (shiftOr system.loadout editMode)}}
@@ -110,6 +106,7 @@
         {{/if}}
       </section>
     {{/if}}
+    {{> "shift.item-gmnote"}}
   </div>
 
   {{!-- TAB: Customize (edit mode only) — one dense panel. --}}
@@ -142,8 +139,6 @@
         <label class="cfg check"><input type="checkbox" name="system.rollable" {{checked system.rollable}}/> {{localize "SHIFT.ItemSheet.Rollable"}}</label>
         <label class="cfg check"><input type="checkbox" name="system.autoShiftOnRoll" {{checked system.autoShiftOnRoll}}/> {{localize "SHIFT.ItemSheet.AutoShift"}}</label>
         <label class="cfg check"><input type="checkbox" name="system.temporary" {{checked system.temporary}}/> {{localize "SHIFT.ItemSheet.Temporary"}}</label>
-        <label class="cfg check"><input type="checkbox" name="system.features.usesKeywords" {{checked system.features.usesKeywords}}/> {{localize "SHIFT.Keywords.Title"}}</label>
-        <label class="cfg check span2"><input type="checkbox" name="system.features.usesDrawbacks" {{checked system.features.usesDrawbacks}}/> {{localize "SHIFT.Drawbacks.Title"}}</label>
 
         {{#if enableScale}}
           <span class="cfg-group-label">{{localize "SHIFT.ItemSheet.ScaleConfig"}}</span>

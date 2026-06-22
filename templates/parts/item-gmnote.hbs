@@ -1,0 +1,14 @@
+{{!-- SHIFT VTT — GM Note do Item (só GM). É o MESMO system.gmNote que o Codex do
+      Party lê/edita, então a ficha do Item e o Codex ficam em sync. Nunca é revelada
+      aos players (renderizada só sob {{#if isGM}}). Nota SIMPLES: textarea de texto
+      puro com auto-save (submitOnChange), sem editor rich/markdown. --}}
+{{#if isGM}}
+  <section class="item-description item-gmnote">
+    <div class="bio-pane-label gm"><i class="fa-solid fa-user-secret"></i> {{localize "SHIFT.Bio.GMNote"}}</div>
+    {{#if editMode}}
+      <textarea name="system.gmNote" class="gmnote-text" placeholder="{{localize 'SHIFT.Bio.GMNotePlaceholder'}}">{{source.gmNote}}</textarea>
+    {{else}}
+      <div class="bio-display gmnote-text-display">{{#if source.gmNote}}{{source.gmNote}}{{else}}<span class="empty">{{localize "SHIFT.Common.Empty"}}</span>{{/if}}</div>
+    {{/if}}
+  </section>
+{{/if}}

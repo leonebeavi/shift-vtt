@@ -71,6 +71,49 @@ export function registerParty() {
     }
   });
 
+  // Sincronia ao vivo da GM Note / Description no Codex: ambas vivem na ficha do
+  // próprio Actor (system.gmNote / system.description) e são espelhadas no detalhe
+  // do Codex. Quando um Actor muda uma delas, repinta o Codex de toda sheet de party
+  // aberta cujo detalhe esteja mostrando ESSE Actor — pulando um client que esteja
+  // editando a nota ali (não arranca o texto debaixo de quem digita).
+  Hooks.on("updateActor", (actor, changed) => {
+    const sys = changed?.system ?? {};
+    if (!("gmNote" in sys) && !("description" in sys)) return;
+    for (const party of game.actors) {
+      if (party.type !== "party") continue;
+      if (!(party.system.codex ?? []).some(e => e.uuid === actor.uuid)) continue;
+      for (const app of Object.values(party.apps ?? {})) {
+        if (app._codexOpen !== actor.uuid) continue;     // só o detalhe aberto importa
+        const editing = app.element?.querySelector?.(
+          ".codex-fieldnotes [contenteditable='true'], textarea.cd-gmnote-edit:focus");
+        if (editing) continue;
+        app.render?.({ parts: ["codex"] });
+      }
+    }
+  });
+
+  // Mesma sincronia para Items catalogados (trait/technique/landmark): Description e
+  // GM Note saem do próprio Item, então editar a ficha dele repinta o detalhe do Codex
+  // que o esteja mostrando. Sem pré-filtro por system.codex: um landmark VIRTUAL (de
+  // uma Location) não tem entrada própria no codex, mas seu detalhe abre por uuid — o
+  // teste app._codexOpen === item.uuid já é preciso. Pula quem está digitando ali.
+  Hooks.on("updateItem", (item, changed) => {
+    const sys = changed?.system ?? {};
+    if (!("gmNote" in sys) && !("description" in sys)) return;
+    const uuid = item?.uuid;
+    if (!uuid) return;
+    for (const party of game.actors) {
+      if (party.type !== "party") continue;
+      for (const app of Object.values(party.apps ?? {})) {
+        if (app._codexOpen !== uuid) continue;
+        const editing = app.element?.querySelector?.(
+          ".codex-fieldnotes [contenteditable='true'], textarea.cd-gmnote-edit:focus");
+        if (editing) continue;
+        app.render?.({ parts: ["codex"] });
+      }
+    }
+  });
+
   // Remove Actors deletados do Roster de cada party. O hook dispara em TODO
   // client, então restringe a escrita ao único GM ativo (espelha o idioma de
   // escritor-único em session.mjs / socket.mjs) para evitar updates concorrentes

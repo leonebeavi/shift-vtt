@@ -153,6 +153,11 @@
       "Loadout": "Loadout",
       "LoadoutPlaceholder": "What you carry..."
     },
+    "Bio": {
+      "Description": "Description",
+      "GMNote": "GM Note",
+      "GMNotePlaceholder": "GM-only notes…"
+    },
     "SheetLabels": {
       "Character": "SHIFT Character Sheet",
       "Adversary": "SHIFT Adversary Sheet",
@@ -204,7 +209,8 @@
       "DropVehicle": "Drop a Vehicle here.",
       "NotVehicle": "Only a Vehicle can be set as the active vehicle.",
       "NotLocation": "Only a Location can be set as the party's location.",
-      "OpenLocation": "Open the location sheet",
+      "OpenLocation": "View in the Codex",
+      "OpenVehicle": "View in the Codex",
       "ClearLocation": "Clear the party's location",
       "DropLocation": "Drop a Location here.",
       "NoLandmark": "— No landmark —",
@@ -235,7 +241,8 @@
         "Enemies": "Enemies",
         "Allies": "Allies",
         "NPCs": "NPCs",
-        "Places": "Places",
+        "Locations": "Locations",
+        "Landmarks": "Landmarks",
         "Vehicles": "Vehicles",
         "Traits": "Traits",
         "Techniques": "Techniques",
@@ -269,6 +276,7 @@
         "Notes": "GM Note",
         "NotesPlaceholder": "Weaknesses, behaviour, where you met it…",
         "KnownTraits": "Known traits",
+        "OvercomeHint": "Traits to overcome",
         "RevealTitle": "What players see",
         "OpenSheet": "Open full sheet",
         "Role": {
@@ -291,7 +299,7 @@
           "Defeat": "Defeat",
           "Traits": "Traits",
           "Scale": "Scale",
-          "Note": "Codex Note"
+          "Description": "Description"
         }
       },
       "Quests": {
@@ -363,10 +371,62 @@
       "Chat": "{actor} digs into the Pack and gains the temporary Trait {name} ({die}). It lasts until Exhausted or until the next Safe Rest.",
       "Expired": "{name} burned out and is gone."
     },
+    "Travel": {
+      "Title": "Travel",
+      "Button": "Travel",
+      "Hint": "Start a journey: spend Legs of Pack/Cargo attrition to reach a destination.",
+      "Embark": "Set out",
+      "Custom": "Custom location",
+      "Location": "Location",
+      "NoLocation": "—",
+      "Landmark": "Landmark",
+      "StandaloneLandmarks": "Standalone landmarks",
+      "GeneralLocation": "General location",
+      "LandmarkAt": "{landmark}, in {location}",
+      "CustomName": "Destination name",
+      "CustomPlaceholder": "Where are they headed?",
+      "Flavor": "Flavor",
+      "FlavorPlaceholder": "A note on the journey (optional)",
+      "LegsTotal": "How many Legs?",
+      "Mode": "Mode",
+      "ModeInherit": "Inherit from world",
+      "Transport": "Transport",
+      "OnFoot": "On foot",
+      "ByVehicle": "By vehicle",
+      "Legs": "Legs",
+      "Advance": "Advance a Leg",
+      "Arrive": "Arrive",
+      "Finish": "Finish journey",
+      "FinishConfirm": "Finish the journey to {dest}?",
+      "Abort": "Abort journey",
+      "AbortConfirm": "Cancel this journey?",
+      "AbortPrompt": "Cancel this journey? You can refund the resources spent so far, or keep the losses.",
+      "AbortRefund": "Refund & abort",
+      "AbortNoRefund": "Keep losses",
+      "LegProgress": "Leg {done} / {total}",
+      "ChallengeTitle": "Travel Roll",
+      "ChallengePrompt": "Did the travel Action Roll succeed?",
+      "ChallengeSuccess": "Success −1 resource",
+      "ChallengeFailure": "Failure −2 resources",
+      "CoreChoiceTitle": "Core Trait to spend",
+      "CoreChoiceHint": "{name} is out of supplies — choose a Core Trait to shift down.",
+      "CardArrive": "{party} arrives at {dest}.",
+      "CardSimple": "The journey passes without incident.",
+      "SpentPack": "{name}: Pack → {die}",
+      "SpentCargo": "{vehicle}: Cargo → {die}",
+      "SpentCore": "{name}: {trait} (Core) → {die}",
+      "NothingToSpend": "{name} has no resource left to spend.",
+      "Started": "Journey started.",
+      "AlreadyActive": "A journey is already under way.",
+      "Unknown": "the destination"
+    },
     "Rest": {
       "Safe": "Safe Rest",
       "Unsafe": "Unsafe Rest",
-      "SafeChat": "{actor} takes a Safe Rest. All Traits return to their Max Die and Techniques refresh.",
+      "SafeChat": "{actor} takes a Safe Rest. All Traits return to their Max Die.",
+      "SafeChatCapped": "{actor} takes a Safe Rest. Traits recover only up to the Location's Wealth ({die}).",
+      "SafePackException": "Only the Pack Trait is fully restored.",
+      "SafeTechniques": "Techniques refresh.",
       "UnsafeChat": "{actor} takes an Unsafe Rest. {pack} shifts down to {die}.",
       "UnsafeHint": "Shift down {pack} to restore one Trait.",
       "WealthHint": "Pick the Wealth die to cap recovery, or no limit.",
@@ -415,6 +475,10 @@
       "Narrative": "Narrative boost",
       "NarrativeHint": "With the GM: drop a Drawback, learn something, open a door.",
       "NarrativeChat": "{actor} earns a narrative boost! Work out an extra effect with the GM."
+    },
+    "Shift": {
+      "UpChat": "{actor} shifts {trait} up: {from} → {to}.",
+      "DownChat": "{actor} shifts {trait} down: {from} → {to}."
     },
     "Combat": {
       "TurnOrderRoll": "Turn Order Roll",
@@ -614,6 +678,25 @@
         "standard": "Standard",
         "simple": "Simple",
         "challenging": "Challenging"
+      },
+      "EnableTravel": {
+        "Name": "Enable the Travel System",
+        "Hint": "Optional rule. Off hides the journey control on the Party sheet."
+      },
+      "TravelMode": {
+        "Name": "Travel Mode",
+        "Hint": "Simple: narrated only. Standard: each Leg spends Pack/Cargo. Challenging: adds a per-Leg roll whose failure costs an extra resource.",
+        "simple": "Simple",
+        "standard": "Standard",
+        "challenging": "Challenging"
+      },
+      "RestTravelMenu": {
+        "Name": "Rest & Travel",
+        "Hint": "Rest and Travel building blocks: pick each mode, enable Travel, and choose how the Core fallback is selected."
+      },
+      "TravelRandomCore": {
+        "Name": "Travel: random Core fallback",
+        "Hint": "When Pack/Cargo is exhausted, pick the Core Trait to shift down at random. Off: the player chooses (raw rule)."
       },
       "CritRule": {
         "Name": "Critical Success Rule",

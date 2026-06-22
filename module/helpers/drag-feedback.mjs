@@ -18,7 +18,7 @@ export function bindDragFeedback(root) {
   if (!root || root.dataset.shiftDragFx) return;
   root.dataset.shiftDragFx = "1";
 
-  const DROP_CLASSES = ["drag-over", "drop-before", "drop-after", "drop-left", "drop-right"];
+  const DROP_CLASSES = ["drag-over", "drop-before", "drop-after", "drop-left", "drop-right", "drop-nest"];
   let dragging = null;     // card-fonte arrastado a partir DESTE root (= reorder)
   let current = null;      // alvo realçado no momento
   let currentCls = null;
@@ -53,6 +53,15 @@ export function bindDragFeedback(root) {
       const target = ev.target?.closest?.(CARD);
       if (!target || target === dragging || !root.contains(target)) return setHighlight(null, null);
       const rect = target.getBoundingClientRect();
+      // Quest sobre Quest (espelha #sortQuestOnDrop): a METADE DIREITA (relX > 0.5)
+      // aninha como subquest (realce de "vira filha"); a metade esquerda reordena como
+      // irmã, com a linha de inserção antes/depois pela metade vertical.
+      if (dragging.classList.contains("is-quest") && target.classList.contains("is-quest")) {
+        const relX = rect.width ? (ev.clientX - rect.left) / rect.width : 0;
+        if (relX > 0.5) return setHighlight(target, "drop-nest");
+        const relY = rect.height ? (ev.clientY - rect.top) / rect.height : 0.5;
+        return setHighlight(target, relY <= 0.5 ? "drop-before" : "drop-after");
+      }
       const parentW = target.parentElement?.getBoundingClientRect().width ?? rect.width;
       if (rect.width > parentW * 0.8) {
         setHighlight(target, ev.clientY < rect.top + rect.height / 2 ? "drop-before" : "drop-after");

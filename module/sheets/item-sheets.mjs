@@ -53,6 +53,10 @@ class BaseShiftItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
         relativeTo: item
       })
     });
+
+    // GM Note (só GM): o MESMO system.gmNote que o Codex do Party lê/edita, então a
+    // ficha do Item e o Codex sincronizam. Nota SIMPLES: textarea de texto puro com
+    // auto-save (submitOnChange) — o partial usa source.gmNote direto, sem enrich.
     return context;
   }
 
@@ -368,7 +372,6 @@ export class ShiftTraitSheet extends BaseShiftItemSheet {
           currentDie: max,
           keywords: [...(src.keywords ?? [])],
           drawbacks: [...(src.drawbacks ?? [])],
-          features: foundry.utils.deepClone(this.document.system.features ?? {}),
           description: src.description ?? ""
         }
       }]);

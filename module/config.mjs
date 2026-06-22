@@ -170,6 +170,20 @@ SHIFT.restModes = {
 };
 
 /* ------------------------------------------------------------------ */
+/* Modos de Travel (subsistema OPCIONAL, irmão tonal do Rest)          */
+/* ------------------------------------------------------------------ */
+
+/* Os três Building Blocks de viagem. simple = só narração; standard = atrito de
+   Pack/Cargo por Leg; challenging = standard + uma Action Roll por Leg cuja
+   Failure custa um recurso extra. Espelha SHIFT.restModes, mas é independente
+   (ver setting travelMode + a chave-mestra enableTravel). */
+SHIFT.travelModes = {
+  simple: "SHIFT.Settings.TravelMode.simple",
+  standard: "SHIFT.Settings.TravelMode.standard",
+  challenging: "SHIFT.Settings.TravelMode.challenging"
+};
+
+/* ------------------------------------------------------------------ */
 /* Fases de Encounter (valores de iniciativa)                          */
 /* ------------------------------------------------------------------ */
 
@@ -200,7 +214,6 @@ SHIFT.specialTraitPresets = {
       rollable: true,
       maxDie: "d6",
       currentDie: "d6",
-      features: { usesKeywords: false, usesDrawbacks: false },
       defeat: { counts: true, extraRequired: 1, mustBeExhaustedFirst: false },
       adversary: { countsTowardTraitLimit: false, extraActions: 0 }
     }
@@ -213,7 +226,6 @@ SHIFT.specialTraitPresets = {
       rollable: true,
       maxDie: "d6",
       currentDie: "d6",
-      features: { usesKeywords: false, usesDrawbacks: false },
       defeat: { counts: true, extraRequired: 2, mustBeExhaustedFirst: true },
       adversary: { countsTowardTraitLimit: false, extraActions: 0 }
     }
@@ -226,7 +238,6 @@ SHIFT.specialTraitPresets = {
       rollable: true,
       maxDie: "d6",
       currentDie: "d6",
-      features: { usesKeywords: false, usesDrawbacks: false },
       defeat: { counts: true, extraRequired: 1, mustBeExhaustedFirst: false },
       adversary: { countsTowardTraitLimit: false, extraActions: 1 }
     }
@@ -239,7 +250,6 @@ SHIFT.specialTraitPresets = {
       rollable: true,
       maxDie: "d6",
       currentDie: "d6",
-      features: { usesKeywords: false, usesDrawbacks: false },
       defeat: { counts: true, extraRequired: 2, mustBeExhaustedFirst: false },
       adversary: { countsTowardTraitLimit: false, extraActions: 2 }
     }

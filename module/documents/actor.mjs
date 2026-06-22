@@ -51,26 +51,20 @@ export class ShiftActor extends Actor {
     if (data.items?.length) return;
     const i18n = k => game.i18n.localize(k);
     const trait = (name, sys) => ({ name, type: "trait", img: CONFIG.SHIFT.defaultIcons.trait, system: sys });
-    // Traits iniciais são criados como source bruto, então o feature map do
-    // _preCreate do Item nunca roda; definimos as features explicitamente aqui.
-    // Padrões pelas regras: Core = só Drawbacks; Attitude = sem keywords (o nome do Trait carrega o humor).
     const core = (name, die) => trait(name, {
-      category: "core", maxDie: die, currentDie: die, locked: true,
-      features: { usesKeywords: false, usesDrawbacks: true }
+      category: "core", maxDie: die, currentDie: die, locked: true
     });
-    // Attitude name-based: sem keywords (o NOME do Trait carrega o humor) e já com
-    // Transform habilitado (reset ao próprio die com nova identidade quando exausta).
+    // Attitude name-based: o NOME do Trait carrega o humor, e já nasce com Transform
+    // habilitado (reset ao próprio die com nova identidade quando exausta).
     const attitude = (name, die, extra = {}) => trait(name, {
       category: "attitude", maxDie: die, currentDie: die, locked: true,
-      features: { usesKeywords: false, usesDrawbacks: false },
       transform: { enabled: true, resetDie: die },
       ...extra
     });
     const items = [];
 
     const packLike = (name, category) => trait(name, {
-      category, maxDie: "d6", currentDie: "d6", locked: true,
-      features: { usesKeywords: false, usesDrawbacks: false }
+      category, maxDie: "d6", currentDie: "d6", locked: true
     });
     switch (this.type) {
       case "character":
@@ -96,8 +90,8 @@ export class ShiftActor extends Actor {
         // nunca dão ShiftDown a partir das próprias Action Rolls.
         items.push(
           attitude(i18n("SHIFT.Trait.Attitude"), "d6", { autoShiftOnRoll: false }),
-          { ...core(i18n("SHIFT.Trait.Wealth"), "d8"), system: { category: "core", maxDie: "d8", currentDie: "d8", locked: true, autoShiftOnRoll: false, features: { usesKeywords: false, usesDrawbacks: true } } },
-          { ...core(i18n("SHIFT.Trait.Security"), "d8"), system: { category: "core", maxDie: "d8", currentDie: "d8", locked: true, autoShiftOnRoll: false, features: { usesKeywords: false, usesDrawbacks: true } } }
+          { ...core(i18n("SHIFT.Trait.Wealth"), "d8"), system: { category: "core", maxDie: "d8", currentDie: "d8", locked: true, autoShiftOnRoll: false } },
+          { ...core(i18n("SHIFT.Trait.Security"), "d8"), system: { category: "core", maxDie: "d8", currentDie: "d8", locked: true, autoShiftOnRoll: false } }
         );
         break;
     }
@@ -433,8 +427,9 @@ export class ShiftActor extends Actor {
   /**
    * Safe Rest: todo dado de Core, Focus e Pack Trait dá ShiftUp de volta ao seu
    * Max Die e Techniques recuperam todos os usos. Focus Traits temporários
-   * expiram. O modo challenging limita a restauração ao dado de Wealth da Location
-   * (o Pack Trait sempre retorna ao seu máximo D6).
+   * expiram. O modo challenging limita a restauração ao dado de Wealth da Location;
+   * só o Pack Trait é isento (sempre volta ao seu máximo D6). O Cargo de um Vehicle,
+   * como Core/Focus, respeita o teto de Wealth.
    */
   async safeRest({ wealthDie = null } = {}) {
     const mode = game.settings.get("shift-vtt", "restMode");
@@ -464,9 +459,10 @@ export class ShiftActor extends Actor {
     const updates = [];
     for (const t of this.traits) {
       const maxIdx = dieIndex(t.system.maxDie);
-      const isPackLike = ["pack", "cargo"].includes(t.system.category);
+      // Só o Pack é isento do teto de Wealth; o Cargo (como Core/Focus) o respeita.
+      const isPack = t.system.category === "pack";
       let targetIdx = maxIdx;
-      if (wealthCapIdx >= 0 && !isPackLike) targetIdx = Math.max(maxIdx, wealthCapIdx);
+      if (wealthCapIdx >= 0 && !isPack) targetIdx = Math.max(maxIdx, wealthCapIdx);
       // O teto limita a recuperação; nunca piora um dado que já esteja acima dele.
       if (!t.system.exhausted) targetIdx = Math.min(targetIdx, dieIndex(t.system.currentDie));
       updates.push({ _id: t.id, "system.currentDie": DIE_PROGRESSION[targetIdx], "system.exhausted": false });
@@ -479,11 +475,25 @@ export class ShiftActor extends Actor {
     }
     if (updates.length) await this.updateEmbeddedDocuments("Item", updates);
 
+    // O card aponta o teto: se Wealth limitou a recuperação, nomeia o dado e
+    // ressalva o Pack (única isenção); senão, a mensagem de restauração total.
+    let safeBody;
+    if (wealthCapIdx >= 0) {
+      const die = dieLabel(DIE_PROGRESSION[wealthCapIdx]);
+      safeBody = game.i18n.format("SHIFT.Rest.SafeChatCapped", { actor: foundry.utils.escapeHTML(this.name), die });
+      if (this.traits.some(t => t.system.category === "pack")) {
+        safeBody += " " + game.i18n.localize("SHIFT.Rest.SafePackException");
+      }
+    } else {
+      safeBody = game.i18n.format("SHIFT.Rest.SafeChat", { actor: foundry.utils.escapeHTML(this.name) });
+    }
+    // Só menciona Techniques se o Actor tiver alguma (Vehicles não têm).
+    if (this.techniques.length) safeBody += " " + game.i18n.localize("SHIFT.Rest.SafeTechniques");
     await ChatMessage.create({
       speaker: shiftSpeaker(this),
       content: `<div class="shift-vtt chat-card info-card rest safe">
         <h3><i class="fa-solid fa-campground"></i> ${game.i18n.localize("SHIFT.Rest.Safe")}</h3>
-        <p>${game.i18n.format("SHIFT.Rest.SafeChat", { actor: foundry.utils.escapeHTML(this.name) })}</p>
+        <p>${safeBody}</p>
       </div>`
     });
   }
@@ -667,5 +677,188 @@ export class ShiftActor extends Actor {
       .map(t => ({ _id: t.id, "system.currentDie": t.system.maxDie, "system.exhausted": false }));
     if (updates.length) await this.updateEmbeddedDocuments("Item", updates);
     return updates.length;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Travel (subsistema opcional; só Party)                            */
+  /* ---------------------------------------------------------------- */
+
+  /** O travelMode efetivo de uma jornada: o override da própria jornada, senão o
+   *  do mundo. */
+  get travelMode() {
+    if (this.type !== "party") return null;
+    return this.system.journey?.mode || game.settings.get("shift-vtt", "travelMode");
+  }
+
+  /**
+   * Inicia uma jornada nesta Party. Legs é uma contagem abstrata escolhida pelo
+   * GM (sem milhas/tempo). O destino é opcional: uma Location (+Landmark) ou só um
+   * rótulo de texto.
+   */
+  async startJourney({ destName = "", destUuid = "", destLandmark = "", flavor = "", legsTotal = 3, mode = "", onFoot = true } = {}) {
+    if (this.type !== "party") return;
+    await this.update({ "system.journey": {
+      active: true, destName, destUuid, destLandmark, flavor,
+      legsTotal: Math.max(1, Math.floor(Number(legsTotal)) || 1),
+      legsDone: 0, mode, onFoot: !!onFoot, spent: []
+    } });
+  }
+
+  /** Cancela a jornada ativa. Com `refund`, devolve (shiftUp) cada recurso gasto na
+   *  jornada — exato, porque shiftDown/shiftUp são simétricos passo a passo. */
+  async abortJourney({ refund = false } = {}) {
+    if (this.type !== "party") return;
+    if (refund) await this.#refundJourney();
+    await this.update({ "system.journey.active": false, "system.journey.legsDone": 0, "system.journey.spent": [] });
+  }
+
+  /** Reverte os shift downs registrados em system.journey.spent (lista de uuids de
+   *  Trait, uma entrada por passo gasto). Agrega por Trait e dá shiftUp pelo total. */
+  async #refundJourney() {
+    const spent = this.system.journey?.spent ?? [];
+    if (!spent.length) return;
+    const steps = {};
+    for (const u of spent) steps[u] = (steps[u] ?? 0) + 1;
+    for (const [uuid, n] of Object.entries(steps)) {
+      const trait = await fromUuid(uuid);
+      if (trait?.shiftUp) await trait.shiftUp({ steps: n });
+    }
+  }
+
+  /**
+   * Avança um Leg: gasta o recurso por Leg e incrementa a contagem.
+   * - simple: não gasta nada (puro narrativo).
+   * - standard/challenging: a pé, cada character baixa o próprio Pack; de veículo,
+   *   o Cargo do Vehicle ativo baixa um (cobre o grupo) e, se Exausto, cada
+   *   character cai no próprio Pack. Pack/Cargo Exausto (ou ausente) → baixa um
+   *   Core do personagem (a mordida das regras).
+   * @param {object} [opts]
+   * @param {number} [opts.extra=1] Recursos a gastar neste Leg (2 numa Failure de Challenging Travel).
+   */
+  async advanceJourneyLeg({ extra = 1 } = {}) {
+    if (this.type !== "party") return null;
+    const j = this.system.journey;
+    if (!j?.active) return null;
+
+    const mode = this.travelMode;
+    const lines = [];
+    const spent = [];   // uuids de Trait gastos neste Leg (1 entrada = 1 passo), para refund
+    if (mode !== "simple") {
+      const times = Math.max(1, Math.floor(Number(extra)) || 1);
+      const chars = this.partyMembers.filter(m => m.type === "character");
+
+      if (!j.onFoot && this.system.vehicle) {
+        const v = await fromUuid(this.system.vehicle);
+        const cargo = v?.getTraits?.("cargo")?.[0] ?? null;
+        for (let n = 0; n < times; n++) {
+          if (cargo && !cargo.system.exhausted) {
+            const r = await cargo.shiftDown({ force: true, transform: false });
+            lines.push(game.i18n.format("SHIFT.Travel.SpentCargo", {
+              vehicle: v?.name ?? "", die: this.#travelDie(r) }));
+            spent.push(cargo.uuid);
+          } else {
+            // Cargo Exausto: cada character cobre o Leg com o próprio Pack/Core.
+            for (const m of chars) { const s = await this.#spendTravelChar(m); lines.push(s.line); if (s.uuid) spent.push(s.uuid); }
+          }
+        }
+      } else {
+        for (const m of chars) {
+          for (let n = 0; n < times; n++) { const s = await this.#spendTravelChar(m); lines.push(s.line); if (s.uuid) spent.push(s.uuid); }
+        }
+      }
+    }
+
+    const total = Math.max(1, j.legsTotal ?? 1);
+    const done = Math.min(total, (j.legsDone ?? 0) + 1);
+    await this.update({ "system.journey.legsDone": done, "system.journey.spent": [...(j.spent ?? []), ...spent] });
+    await this.#postTravelCard({ kind: "leg", done, total, mode, lines: lines.filter(Boolean) });
+    return { done, total, complete: done >= total };
+  }
+
+  /**
+   * Encerra a jornada (chegada). Se havia um destino vinculado, passa a Location
+   * (e Landmark) atual da Party para ele — daí o Safe Rest na ficha já fica
+   * ciente de Wealth/segurança do lugar, como sempre.
+   */
+  async arriveJourney({ simple = false } = {}) {
+    if (this.type !== "party") return;
+    const j = this.system.journey;
+    if (!j?.active) return;
+    const updates = { "system.journey.active": false };
+    let dest = j.destName;
+    if (j.destUuid) {
+      updates["system.location"] = j.destUuid;
+      updates["system.landmark"] = j.destLandmark || "";
+      if (!dest) dest = (await fromUuid(j.destUuid))?.name ?? "";
+    }
+    await this.update(updates);
+    await this.#postTravelCard({ kind: "arrive", dest: dest || game.i18n.localize("SHIFT.Travel.Unknown"), simple });
+  }
+
+  /** Gasta o recurso de viagem de um character: o próprio Pack, ou — se Exausto/
+   *  ausente — um Core (escolhido pelo player ou sorteado). Devolve {uuid, line}:
+   *  o Trait gasto (para o log de refund) e a linha de resumo do card. */
+  async #spendTravelChar(m) {
+    const pack = m.getTraits("pack")[0] ?? null;
+    if (pack && !pack.system.exhausted) {
+      const r = await pack.shiftDown({ force: true, transform: false });
+      return { uuid: pack.uuid, line: game.i18n.format("SHIFT.Travel.SpentPack", { name: m.name, die: this.#travelDie(r) }) };
+    }
+    const cores = m.getTraits("core").filter(t => !t.system.exhausted);
+    if (!cores.length) return { uuid: null, line: game.i18n.format("SHIFT.Travel.NothingToSpend", { name: m.name }) };
+    const core = await this.#pickFallbackCore(m, cores);
+    // Atrito de viagem não dispara o prompt de morte de Core nem Transform-on-Exhaust:
+    // é gasto de suprimento (e o refund do abort precisa de um shift down reversível).
+    const r = await core.shiftDown({ force: true, promptDeath: false, transform: false });
+    return { uuid: core.uuid, line: game.i18n.format("SHIFT.Travel.SpentCore", { name: m.name, trait: core.name, die: this.#travelDie(r) }) };
+  }
+
+  /** Escolhe o Core a baixar quando o recurso esgota. Pelas regras CRUAS, o player
+   *  escolhe; o setting travelRandomCore troca para sorteio. Um único Core não
+   *  pergunta; um prompt cancelado cai no de melhor dado. */
+  async #pickFallbackCore(m, cores) {
+    if (cores.length === 1) return cores[0];
+    if (game.settings.get("shift-vtt", "travelRandomCore")) {
+      return cores[Math.floor(Math.random() * cores.length)];
+    }
+    const id = await promptTraitChoice({
+      title: game.i18n.localize("SHIFT.Travel.CoreChoiceTitle"),
+      hint: game.i18n.format("SHIFT.Travel.CoreChoiceHint", { name: m.name }),
+      options: cores.map(c => ({
+        value: c.uuid, name: c.name,
+        img: CONFIG.SHIFT.diceImages[c.statusKey],
+        sub: dieLabel(c.system.currentDie)
+      }))
+    });
+    return cores.find(c => c.uuid === id)
+      ?? [...cores].sort((a, b) => dieIndex(a.system.currentDie) - dieIndex(b.system.currentDie))[0];
+  }
+
+  /** Rótulo do dado após um shiftDown (Exhausted quando caiu fora da escada). */
+  #travelDie(r) {
+    return r?.becameExhausted ? game.i18n.localize("SHIFT.DiceStatus.exhausted") : dieLabel(r?.to);
+  }
+
+  /** Posta o card informativo de um Leg avançado ou da chegada. */
+  async #postTravelCard({ kind, done = 0, total = 0, mode = "", lines = [], dest = "", simple = false } = {}) {
+    const esc = foundry.utils.escapeHTML;
+    const flavorText = this.system.journey?.flavor;
+    const flavor = flavorText ? `<p class="travel-flavor"><em>${esc(flavorText)}</em></p>` : "";
+    let body;
+    if (kind === "arrive") {
+      const narr = simple ? `<p>${game.i18n.localize("SHIFT.Travel.CardSimple")}</p>` : "";
+      body = `<h3><i class="fa-solid fa-flag-checkered"></i> ${game.i18n.localize("SHIFT.Travel.Title")}</h3>${flavor}${narr}
+        <p>${game.i18n.format("SHIFT.Travel.CardArrive", { party: esc(this.name), dest: esc(dest) })}</p>`;
+    } else {
+      const prog = game.i18n.format("SHIFT.Travel.LegProgress", { done, total });
+      const narr = mode === "simple" ? `<p>${game.i18n.localize("SHIFT.Travel.CardSimple")}</p>` : "";
+      const list = lines.length
+        ? `<ul class="travel-spent">${lines.map(l => `<li>${esc(l)}</li>`).join("")}</ul>` : "";
+      body = `<h3><i class="fa-solid fa-route"></i> ${game.i18n.localize("SHIFT.Travel.Title")} &middot; ${prog}</h3>${flavor}${narr}${list}`;
+    }
+    await ChatMessage.create({
+      speaker: shiftSpeaker(this),
+      content: `<div class="shift-vtt chat-card info-card travel ${kind}">${body}</div>`
+    });
   }
 }

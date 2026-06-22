@@ -77,20 +77,18 @@
     </div>
   {{/if}}
 
-  {{#if usesKeywords}}
+  {{#if (shiftOr keywords.length @root.editMode)}}
     {{> "shift.pill-list" items=keywords kind="keyword"
         label=(localize "SHIFT.Keywords.Title")
         addAction="addKeyword" removeAction="removeKeyword"
         canEdit=@root.editMode addTooltip=(localize "SHIFT.Keywords.Add")}}
   {{/if}}
 
-  {{#if usesDrawbacks}}
-    {{#if (shiftOr drawbacks.length @root.editMode)}}
-      {{> "shift.pill-list" items=drawbacks kind="drawback"
-          label=(localize "SHIFT.Drawbacks.Title")
-          addAction="addDrawback" removeAction="removeDrawback"
-          canEdit=@root.editMode addTooltip=(localize "SHIFT.Drawbacks.Add")}}
-    {{/if}}
+  {{#if (shiftOr drawbacks.length @root.editMode)}}
+    {{> "shift.pill-list" items=drawbacks kind="drawback"
+        label=(localize "SHIFT.Drawbacks.Title")
+        addAction="addDrawback" removeAction="removeDrawback"
+        canEdit=@root.editMode addTooltip=(localize "SHIFT.Drawbacks.Add")}}
   {{/if}}
 
   {{#if showAdversaryMeta}}

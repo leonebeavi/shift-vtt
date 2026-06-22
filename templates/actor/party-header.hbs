@@ -47,6 +47,12 @@
                 data-tooltip="{{localize 'SHIFT.Party.UnsafeRestHint'}}">
           <i class="fa-solid fa-fire"></i> {{localize "SHIFT.Rest.Unsafe"}}
         </button>
+        {{#if isGM}}{{#if travelEnabled}}{{#unless journey}}
+          <button type="button" class="party-btn pa-travel" data-action="travelStart"
+                  data-tooltip="{{localize 'SHIFT.Travel.Hint'}}">
+            <i class="fa-solid fa-compass"></i> {{localize "SHIFT.Travel.Button"}}
+          </button>
+        {{/unless}}{{/if}}{{/if}}
       </div>
     {{/if}}
   </header>
@@ -60,7 +66,8 @@
       {{#if locationInfo}}
         <div class="party-location pc-field" data-drop="location">
           <span class="pl-icon"><i class="fa-solid fa-map-location-dot"></i></span>
-          {{#if locationInfo.img}}<img class="pl-img" src="{{locationInfo.img}}" alt="{{locationInfo.name}}"/>{{/if}}
+          {{#if locationInfo.img}}<img class="pl-img" src="{{locationInfo.img}}" alt="{{locationInfo.name}}"
+               data-action="openLocation" data-tooltip="{{localize 'SHIFT.Party.OpenLocation'}}"/>{{/if}}
           <div class="pl-body">
             <a class="pl-name" data-action="openLocation" data-tooltip="{{localize 'SHIFT.Party.OpenLocation'}}">{{locationInfo.name}}</a>
             {{#if locationInfo.hasLandmarks}}
@@ -94,10 +101,11 @@
       {{#if activeVehicle}}
         <div class="roster-vehicle pc-field" data-drop="vehicle">
           <span class="rv-icon"><i class="fa-solid fa-car-side"></i></span>
-          {{#if activeVehicle.img}}<img class="rv-img" src="{{activeVehicle.img}}" alt="{{activeVehicle.name}}"/>{{/if}}
+          {{#if activeVehicle.img}}<img class="rv-img" src="{{activeVehicle.img}}" alt="{{activeVehicle.name}}"
+               data-action="openVehicle" data-tooltip="{{localize 'SHIFT.Party.OpenVehicle'}}"/>{{/if}}
           <div class="rv-body">
             <span class="rv-label">{{localize "SHIFT.Party.ActiveVehicle"}}</span>
-            <span class="rv-name">{{activeVehicle.name}}</span>
+            <a class="rv-name" data-action="openVehicle" data-tooltip="{{localize 'SHIFT.Party.OpenVehicle'}}">{{activeVehicle.name}}</a>
           </div>
           <span class="rv-crew" data-tooltip="{{localize 'SHIFT.Party.Codex.Crew'}}"><i class="fa-solid fa-users"></i> {{activeVehicle.crewCount}}</span>
           {{#if editMode}}<a class="rv-clear edit-only" data-action="clearVehicle" data-tooltip="{{localize 'SHIFT.Party.ClearVehicle'}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
@@ -105,6 +113,44 @@
       {{else if editMode}}
         <div class="roster-vehicle pc-field empty edit-only" data-drop="vehicle">
           <i class="fa-solid fa-car-side"></i> {{localize "SHIFT.Party.DropVehicle"}}
+        </div>
+      {{/if}}
+    </div>
+  {{/if}}
+
+  {{!-- Faixa de jornada de Travel (subsistema opcional): destino + Legs em
+        bolinhas + modo; controles (Avançar/Chegar/Abortar) só para o GM, que
+        conduz a viagem. Os players veem o progresso. --}}
+  {{#if journey}}
+    <div class="party-journey{{#if journey.complete}} complete{{/if}}{{#if journey.simple}} simple{{/if}}">
+      <span class="pj-icon"><i class="fa-solid fa-route"></i></span>
+      <div class="pj-body">
+        <div class="pj-top">
+          <span class="pj-dest">{{journey.destName}}</span>
+          {{#if journey.modeLabel}}<span class="pj-mode">{{journey.modeLabel}}</span>{{/if}}
+          <span class="pj-transport" data-tooltip="{{#if journey.onFoot}}{{localize 'SHIFT.Travel.OnFoot'}}{{else}}{{localize 'SHIFT.Travel.ByVehicle'}}{{/if}}">
+            <i class="fa-solid {{#if journey.onFoot}}fa-person-walking{{else}}fa-truck-fast{{/if}}"></i>
+          </span>
+        </div>
+        {{#if journey.flavor}}<div class="pj-flavor">{{journey.flavor}}</div>{{/if}}
+        {{#unless journey.simple}}
+          <div class="pj-legs">
+            {{#each journey.dots}}<span class="pj-dot{{#if done}} done{{/if}}"></span>{{/each}}
+            <span class="pj-count">{{localize "SHIFT.Travel.Legs"}} {{journey.legsDone}} / {{journey.legsTotal}}</span>
+          </div>
+        {{/unless}}
+      </div>
+      {{#if isGM}}
+        <div class="pj-actions">
+          {{#if journey.simple}}
+            <a class="pj-btn arrive ready" data-action="travelFinish" data-tooltip="{{localize 'SHIFT.Travel.Finish'}}"><i class="fa-solid fa-flag-checkered"></i></a>
+          {{else}}
+            {{#unless journey.complete}}
+              <a class="pj-btn advance" data-action="travelAdvance" data-tooltip="{{localize 'SHIFT.Travel.Advance'}}"><i class="fa-solid fa-person-hiking"></i></a>
+            {{/unless}}
+            <a class="pj-btn arrive{{#if journey.complete}} ready{{/if}}" data-action="travelArrive" data-tooltip="{{localize 'SHIFT.Travel.Arrive'}}"><i class="fa-solid fa-flag-checkered"></i></a>
+          {{/if}}
+          <a class="pj-btn abort" data-action="travelAbort" data-tooltip="{{localize 'SHIFT.Travel.Abort'}}"><i class="fa-solid fa-xmark"></i></a>
         </div>
       {{/if}}
     </div>

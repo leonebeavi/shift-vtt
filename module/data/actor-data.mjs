@@ -3,6 +3,14 @@
  */
 const fields = foundry.data.fields;
 
+/** Nota privada do GM, em rich-text. Vive na ficha do próprio Actor (Adversary,
+ *  Vehicle, Location — nunca Character) e é o MESMO campo que o Codex do Party lê
+ *  e edita, então as duas visões ficam sincronizadas. Nunca é revelada aos
+ *  players; a descrição (system.description) é que pode ser revelada no Codex. */
+function gmNoteField() {
+  return new fields.HTMLField({ required: false, blank: true, initial: "" });
+}
+
 /* ------------------------------------------------------------------ */
 /* Base                                                                */
 /* ------------------------------------------------------------------ */
@@ -46,6 +54,7 @@ export class ShiftAdversaryData extends ShiftActorBase {
     // publicados, mas homebrew e ameaças Scaled podem passar disso, então sem máximo fixo).
     schema.power = new fields.NumberField({ required: true, integer: true, min: 1, initial: 1 });
     schema.concept = new fields.StringField({ required: false, blank: true, initial: "" });
+    schema.gmNote = gmNoteField();
     return schema;
   }
 
@@ -87,6 +96,7 @@ export class ShiftLocationData extends ShiftActorBase {
   static defineSchema() {
     const schema = super.defineSchema();
     schema.concept = new fields.StringField({ required: false, blank: true, initial: "" });
+    schema.gmNote = gmNoteField();
     /** UUIDs de Actor dos NPCs ligados a esta Location, mostrados como cards. */
     schema.npcs = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
     return schema;
@@ -101,6 +111,7 @@ export class ShiftVehicleData extends ShiftActorBase {
   static defineSchema() {
     const schema = super.defineSchema();
     schema.concept = new fields.StringField({ required: false, blank: true, initial: "" });
+    schema.gmNote = gmNoteField();
     /** Domínio do veículo (terrestre, naval, aéreo, espacial, subterrâneo, misto).
      *  Em branco = não definido. Tinge/rotula o card no Codex (ver CONFIG.SHIFT.vehicleDomains). */
     schema.domain = new fields.StringField({ required: false, blank: true, initial: "" });
@@ -135,15 +146,20 @@ export class ShiftPartyData extends foundry.abstract.TypeDataModel {
 
       /** Codex: o bestiário/diretório de Actors E Items que a party encontrou
        *  (um inimigo, um aliado, um lugar, um vehicle, um Trait ou uma Technique).
-       *  A entrada é um ÍNDICE ({uuid, note, reveal, revealLandmarks}); todo o
-       *  resto é lido AO VIVO do documento referenciado. `reveal` é o controle do
-       *  GM, por campo, do que os PLAYERS veem (o GM sempre vê tudo). Uma entrada
-       *  só é um rumor travado "???" quando NADA está revelado; esconder só o nome
-       *  mantém a entrada navegável sob um placeholder. `revealLandmarks` lista os
-       *  ids dos landmark Items (dentro de uma entrada de Location) que os players
-       *  podem ver. */
+       *  A entrada é um ÍNDICE ({uuid, reveal, revealLandmarks}); todo o resto é
+       *  lido AO VIVO do documento referenciado — inclusive a GM Note, que mora em
+       *  system.gmNote do próprio Actor (sincronizada com a ficha dele). `reveal` é
+       *  o controle do GM, por campo, do que os PLAYERS veem (o GM sempre vê tudo).
+       *  Uma entrada só é um rumor travado "???" quando NADA está revelado; esconder
+       *  só o nome mantém a entrada navegável sob um placeholder. `revealLandmarks`
+       *  lista os ids dos landmark Items (dentro de uma entrada de Location) que os
+       *  players podem ver. */
       codex: new fields.ArrayField(new fields.SchemaField({
         uuid: new fields.StringField({ required: true, blank: false }),
+        // DEPRECATED: nota por-entrada do Codex. A GM Note agora vive em system.gmNote do
+        // Actor/Item REFERENCIADO (sincronizada com a ficha). Mantido só para a migração
+        // one-time migrateCodexNote ler o dado legado SEM PERDA; some num release futuro,
+        // depois que os mundos migrarem. A UI não lê mais este campo.
         note: new fields.HTMLField({ required: false, blank: true, initial: "" }),
         reveal: new fields.SchemaField({
           // Falha FECHADO: uma entrada malformada/legada sem `reveal` continua
@@ -154,7 +170,7 @@ export class ShiftPartyData extends foundry.abstract.TypeDataModel {
           defeat: new fields.BooleanField({ initial: false }),
           traits: new fields.BooleanField({ initial: false }),
           scale: new fields.BooleanField({ initial: false }),
-          note: new fields.BooleanField({ initial: false })      // a nota de codex do GM
+          description: new fields.BooleanField({ initial: false }) // a Description (system.description) do Actor
         }),
         revealLandmarks: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] })
       }), { initial: [] }),
@@ -164,15 +180,48 @@ export class ShiftPartyData extends foundry.abstract.TypeDataModel {
        *  de dado rolável, shift up/down, exhaust, keywords/drawbacks, descrição e
        *  esconder-dos-players pela própria flag `revealed` do Trait.) */
 
-      /** A Location atual da party (um uuid "Actor.xxxx") e o landmark específico
-       *  dentro dela (um id de `landmark` Item). Quando definida, a Location está
-       *  sempre presente no codex e dirige as regras de Rest cientes de local. */
+      /** O "lugar" atual da party (um uuid): normalmente uma Location "Actor.xxxx"
+       *  com `landmark` apontando um `landmark` Item específico DENTRO dela (um id);
+       *  mas também pode ser um landmark AVULSO ("Item.xxxx", sem Location-pai) solto
+       *  direto no slot — aí `landmark` fica vazio e o próprio Item carrega o
+       *  safe/unsafe. Quando definido, o lugar está sempre no codex e dirige as regras
+       *  de Rest cientes de local. */
       location: new fields.StringField({ required: false, blank: true, initial: "" }),
       landmark: new fields.StringField({ required: false, blank: true, initial: "" }),
 
       /** Vehicle ativo (um uuid "Actor.xxxx"). Quando definido, os membros character
        *  da party são auto-sincronizados como a crew desse vehicle. */
       vehicle: new fields.StringField({ required: false, blank: true, initial: "" }),
+
+      /** Jornada de Travel em andamento (subsistema OPCIONAL; ver setting
+       *  enableTravel/travelMode). Estado leve e efêmero: Legs são uma CONTAGEM
+       *  abstrata (sem milhas/velocidade/tempo), o atrito por Leg gasta Pack/Cargo
+       *  (e Core no fallback), e o destino é uma Location/Landmark opcional ou só
+       *  um rótulo de texto. `active` falso = sem viagem (o controle some). */
+      journey: new fields.SchemaField({
+        active: new fields.BooleanField({ initial: false }),
+        // Rótulo livre do destino (nome mostrado na faixa/card); preenchido a partir
+        // da Location/Landmark quando uma é escolhida, ou digitado à mão.
+        destName: new fields.StringField({ required: false, blank: true, initial: "" }),
+        // Destino opcional: uuid de um Actor "location" e, dentro dele, o id de um
+        // `landmark` Item. Vazio = destino só de texto. Setados em system.location/
+        // landmark na chegada (gateiam Safe Rest + Wealth como sempre).
+        destUuid: new fields.StringField({ required: false, blank: true, initial: "" }),
+        destLandmark: new fields.StringField({ required: false, blank: true, initial: "" }),
+        // Flavor LIVRE da jornada (não é o nome do destino: destName é sempre o
+        // local escolhido). Aparece como subtítulo na faixa e nos cards.
+        flavor: new fields.StringField({ required: false, blank: true, initial: "" }),
+        legsTotal: new fields.NumberField({ required: true, integer: true, min: 1, initial: 3 }),
+        legsDone: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
+        // "" = herda o travelMode do mundo; senão simple/standard/challenging.
+        mode: new fields.StringField({ required: false, blank: true, initial: "" }),
+        // true = a pé (cada character gasta o próprio Pack); false = de veículo (o
+        // Cargo do Vehicle ativo cobre o grupo, com fallback no Pack ao Exaurir).
+        onFoot: new fields.BooleanField({ initial: true }),
+        // Log de refund: uuids de Trait gastos na jornada (uma entrada por passo de
+        // shift down). O abort-com-devolução reverte cada um via shiftUp.
+        spent: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] })
+      }),
 
       /** O JournalEntry auto-criado e de posse do jogador que embasa as "Field
        *  Notes" compartilhadas do codex (uma página por entrada). Definido na

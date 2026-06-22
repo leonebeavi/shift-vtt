@@ -19,14 +19,56 @@ export function registerSettings() {
      GM · Regras e rolagens, escopo de mundo (só o GM altera)
      ============================================================ */
 
+  // Rest e Travel são Building Blocks agrupados no submenu "Rest & Travel"
+  // (config:false → escondidos da lista plana; ver registerMenu em shift.mjs).
+  // Settings config:false ainda disparam onChange no set().
   reg("restMode", {
     name: "SHIFT.Settings.RestMode.Name",
     hint: "SHIFT.Settings.RestMode.Hint",
     scope: "world",
-    config: true,
+    config: false,
     type: String,
     choices: SHIFT.restModes,
     default: "standard"
+  });
+
+  // enableTravel é a chave-mestra de Travel: desligada, o controle de viagem some
+  // da ficha de Party. travelMode escolhe o Building Block sem se acoplar ao
+  // restMode. travelRandomCore: quando os suprimentos esgotam, escolhe o Core a
+  // baixar aleatoriamente (ligado) ou por prompt do player (desligado, = raw).
+  reg("enableTravel", {
+    name: "SHIFT.Settings.EnableTravel.Name",
+    hint: "SHIFT.Settings.EnableTravel.Hint",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: false,
+    // A ficha de Party não é alcançada pelo loop de instâncias se estiver fechada;
+    // re-renderiza as ApplicationV2 de Actor vivas para o controle aparecer/sumir.
+    onChange: () => {
+      for (const app of foundry.applications.instances.values()) {
+        if (app.document instanceof Actor) app.render?.();
+      }
+    }
+  });
+
+  reg("travelMode", {
+    name: "SHIFT.Settings.TravelMode.Name",
+    hint: "SHIFT.Settings.TravelMode.Hint",
+    scope: "world",
+    config: false,
+    type: String,
+    choices: SHIFT.travelModes,
+    default: "simple"
+  });
+
+  reg("travelRandomCore", {
+    name: "SHIFT.Settings.TravelRandomCore.Name",
+    hint: "SHIFT.Settings.TravelRandomCore.Hint",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: true
   });
 
   reg("critRule", {
@@ -252,6 +294,11 @@ export function registerSettings() {
   // Migração one-time: Quests legadas (Trait category="quest") → tipo de Item "quest".
   reg("questTypeMigrated", { scope: "world", config: false, type: Boolean, default: false });
   reg("attitudeTransformMigrated", { scope: "world", config: false, type: Boolean, default: false });
+  // Migração one-time: remove o campo morto system.features das Traits (Keywords/Drawbacks
+  // deixaram de ser opcionais por Trait; agora toda Trait tem ambos).
+  reg("traitFeaturesRemoved", { scope: "world", config: false, type: Boolean, default: false });
+  // Migração one-time: re-aloja a GM Note legada do Codex (system.codex[].note → system.gmNote do Actor/Item referenciado).
+  reg("codexNoteMigrated", { scope: "world", config: false, type: Boolean, default: false });
 
   // Estado de UI por jogador (painel Global Traits + posição do Action HUD)
   reg("clocksPanelOpen", { scope: "client", config: false, type: Boolean, default: true });
@@ -311,4 +358,10 @@ function randomizePauseDie() {
  *  que um controle ou marcador de Scale deva sumir quando Scale está desligado. */
 export function scaleEnabled() {
   return game.settings.get("shift-vtt", "enableScale") !== false;
+}
+
+/** Se o subsistema opcional de Travel está ligado (chave-mestra). Importada onde
+ *  o controle de viagem da Party deve aparecer/sumir. */
+export function travelEnabled() {
+  return game.settings.get("shift-vtt", "enableTravel") === true;
 }

@@ -108,7 +108,8 @@ export async function preloadTemplates() {
     "shift.pill-list": "systems/shift-vtt/templates/parts/pill-list.hbs",
     "shift.party-traits": "systems/shift-vtt/templates/parts/party-trait-tiles.hbs",
     "shift.ptrait-card": "systems/shift-vtt/templates/parts/ptrait-card.hbs",
-    "shift.item-source": "systems/shift-vtt/templates/parts/item-source.hbs"
+    "shift.item-source": "systems/shift-vtt/templates/parts/item-source.hbs",
+    "shift.item-gmnote": "systems/shift-vtt/templates/parts/item-gmnote.hbs"
   });
 }
 

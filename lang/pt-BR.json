@@ -153,6 +153,11 @@
       "Loadout": "Loadout",
       "LoadoutPlaceholder": "O que você carrega..."
     },
+    "Bio": {
+      "Description": "Descrição",
+      "GMNote": "Nota do GM",
+      "GMNotePlaceholder": "Notas só do GM…"
+    },
     "SheetLabels": {
       "Character": "Ficha de Personagem SHIFT",
       "Adversary": "Ficha de Adversário SHIFT",
@@ -204,7 +209,8 @@
       "DropVehicle": "Solte um Veículo aqui.",
       "NotVehicle": "Apenas um Veículo pode ser definido como veículo ativo.",
       "NotLocation": "Apenas uma Localidade pode ser definida como local da party.",
-      "OpenLocation": "Abrir a ficha da localidade",
+      "OpenLocation": "Ver no Codex",
+      "OpenVehicle": "Ver no Codex",
       "ClearLocation": "Limpar o local da party",
       "DropLocation": "Solte uma Localidade aqui.",
       "NoLandmark": "— Sem landmark —",
@@ -235,7 +241,8 @@
         "Enemies": "Inimigos",
         "Allies": "Aliados",
         "NPCs": "NPCs",
-        "Places": "Lugares",
+        "Locations": "Localidades",
+        "Landmarks": "Landmarks",
         "Vehicles": "Veículos",
         "Traits": "Traits",
         "Techniques": "Técnicas",
@@ -269,6 +276,7 @@
         "Notes": "Nota do Mestre",
         "NotesPlaceholder": "Fraquezas, comportamento, onde encontraram…",
         "KnownTraits": "Traits conhecidos",
+        "OvercomeHint": "Traits para overcome",
         "RevealTitle": "O que os jogadores veem",
         "OpenSheet": "Abrir ficha completa",
         "Role": {
@@ -291,7 +299,7 @@
           "Defeat": "Defeat",
           "Traits": "Traits",
           "Scale": "Escala",
-          "Note": "Nota do Codex"
+          "Description": "Descrição"
         }
       },
       "Quests": {
@@ -363,10 +371,62 @@
       "Chat": "{actor} vasculha a Mochila e ganha o Trait temporário {name} ({die}). Ele dura até ficar Exausto ou até o próximo Descanso Seguro.",
       "Expired": "{name} se esgotou e desapareceu."
     },
+    "Travel": {
+      "Title": "Viagem",
+      "Button": "Viajar",
+      "Hint": "Inicia uma jornada: gasta Legs de atrito de Pack/Cargo até um destino.",
+      "Embark": "Partir",
+      "Custom": "Localidade personalizada",
+      "Location": "Localidade",
+      "NoLocation": "—",
+      "Landmark": "Landmark",
+      "StandaloneLandmarks": "Landmarks avulsos",
+      "GeneralLocation": "Localidade em geral",
+      "LandmarkAt": "{landmark}, em {location}",
+      "CustomName": "Nome do destino",
+      "CustomPlaceholder": "Para onde vão?",
+      "Flavor": "Flavor",
+      "FlavorPlaceholder": "Uma nota sobre a viagem (opcional)",
+      "LegsTotal": "Quantos Legs?",
+      "Mode": "Modo",
+      "ModeInherit": "Herdar do mundo",
+      "Transport": "Transporte",
+      "OnFoot": "A pé",
+      "ByVehicle": "De veículo",
+      "Legs": "Legs",
+      "Advance": "Avançar um Leg",
+      "Arrive": "Chegar",
+      "Finish": "Concluir viagem",
+      "FinishConfirm": "Concluir a viagem para {dest}?",
+      "Abort": "Cancelar viagem",
+      "AbortConfirm": "Cancelar esta jornada?",
+      "AbortPrompt": "Cancelar esta jornada? Você pode devolver os recursos já gastos ou manter o gasto.",
+      "AbortRefund": "Devolver e cancelar",
+      "AbortNoRefund": "Manter o gasto",
+      "LegProgress": "Leg {done} / {total}",
+      "ChallengeTitle": "Rolagem de Viagem",
+      "ChallengePrompt": "A Action Roll de viagem teve sucesso?",
+      "ChallengeSuccess": "Sucesso −1 recurso",
+      "ChallengeFailure": "Falha −2 recursos",
+      "CoreChoiceTitle": "Core Trait para gastar",
+      "CoreChoiceHint": "{name} ficou sem suprimentos — escolha um Core Trait para baixar.",
+      "CardArrive": "{party} chega a {dest}.",
+      "CardSimple": "A viagem transcorre sem incidentes.",
+      "SpentPack": "{name}: Pack → {die}",
+      "SpentCargo": "{vehicle}: Cargo → {die}",
+      "SpentCore": "{name}: {trait} (Core) → {die}",
+      "NothingToSpend": "{name} não tem mais recurso para gastar.",
+      "Started": "Jornada iniciada.",
+      "AlreadyActive": "Já há uma jornada em andamento.",
+      "Unknown": "o destino"
+    },
     "Rest": {
       "Safe": "Descanso Seguro",
       "Unsafe": "Descanso Arriscado",
-      "SafeChat": "{actor} faz um Descanso Seguro. Todos os Traits voltam ao Max Die e as Técnicas são renovadas.",
+      "SafeChat": "{actor} faz um Descanso Seguro. Todos os Traits voltam ao Max Die.",
+      "SafeChatCapped": "{actor} faz um Descanso Seguro. Os Traits se recuperam só até a Riqueza da Localidade ({die}).",
+      "SafePackException": "Só o Pack Trait é restaurado por completo.",
+      "SafeTechniques": "As Técnicas são renovadas.",
       "UnsafeChat": "{actor} faz um Descanso Arriscado. {pack} sofre shift down para {die}.",
       "UnsafeHint": "Dê shift down em {pack} para restaurar um Trait.",
       "WealthHint": "Escolha o dado de Riqueza para limitar a recuperação, ou sem limite.",
@@ -415,6 +475,10 @@
       "Narrative": "Impulso narrativo",
       "NarrativeHint": "Com o Mestre: remova um Drawback, descubra algo, abra uma porta.",
       "NarrativeChat": "{actor} ganha um impulso narrativo! Combine com o Mestre um efeito extra."
+    },
+    "Shift": {
+      "UpChat": "{actor} faz shift up em {trait}: {from} → {to}.",
+      "DownChat": "{actor} faz shift down em {trait}: {from} → {to}."
     },
     "Combat": {
       "TurnOrderRoll": "Rolagem de Ordem de Turno",
@@ -614,6 +678,25 @@
         "standard": "Padrão",
         "simple": "Simples",
         "challenging": "Desafiador"
+      },
+      "EnableTravel": {
+        "Name": "Ativar o Sistema de Travel",
+        "Hint": "Regra opcional. Desligada, esconde o controle de jornada na ficha de Party."
+      },
+      "TravelMode": {
+        "Name": "Modo de Travel",
+        "Hint": "Simples: só narrado. Padrão: cada Leg gasta Pack/Cargo. Desafiador: adiciona uma rolagem por Leg cuja falha custa um recurso extra.",
+        "simple": "Simples",
+        "standard": "Padrão",
+        "challenging": "Desafiador"
+      },
+      "RestTravelMenu": {
+        "Name": "Rest & Travel",
+        "Hint": "Building Blocks de descanso e viagem: escolha cada modo, ative o Travel e como o fallback de Core é escolhido."
+      },
+      "TravelRandomCore": {
+        "Name": "Travel: fallback de Core aleatório",
+        "Hint": "Quando Pack/Cargo esgota, escolhe o Core a baixar aleatoriamente. Desligado: o player escolhe (regra crua)."
       },
       "CritRule": {
         "Name": "Regra de Sucesso Crítico",

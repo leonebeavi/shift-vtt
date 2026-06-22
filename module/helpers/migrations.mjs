@@ -49,8 +49,7 @@ export async function seedCompendium() {
       maxDie: "d6",
       currentDie: "d6",
       source,
-      description: `<p>${desc}</p>`,
-      features: { usesKeywords: false, usesDrawbacks: true }
+      description: `<p>${desc}</p>`
     }
   });
 
@@ -500,5 +499,88 @@ export async function migrateAttitudeTransform() {
   } catch (err) {
     // Sem setar o flag → re-tenta no próximo load (idempotente: já-habilitadas são puladas).
     console.error("shift-vtt | Attitude transform migration failed", err);
+  }
+}
+
+/**
+ * Migração one-time: apaga o campo morto `system.features` das Traits. A opção de
+ * customizar "esta Trait usa Keywords / usa Drawbacks" foi descontinuada — toda Trait
+ * passa a ter ambos (eles só aparecem na ficha quando preenchidos). O dado antigo
+ * vira lixo no source do documento, então esta migração o remove com a sintaxe `-=`.
+ * CONSERVADORA: só apaga `features`, não toca em mais nada. One-time por flag,
+ * idempotente (Traits já limpas são puladas). Toca apenas Traits de mundo e embutidas
+ * em Actors; o source extra em compêndios de terceiros é inofensivo e fica intocado.
+ */
+export async function migrateTraitFeatures() {
+  if (game.settings.get("shift-vtt", "traitFeaturesRemoved")) return;
+
+  const needs = i => i.type === "trait" && foundry.utils.hasProperty(i._source, "system.features");
+  const dataFor = i => ({ _id: i.id, "system.-=features": null });
+
+  let migrated = 0;
+  try {
+    const worldTraits = game.items.filter(needs);
+    if (worldTraits.length) {
+      await Item.updateDocuments(worldTraits.map(dataFor));
+      migrated += worldTraits.length;
+    }
+    for (const actor of game.actors) {
+      const traits = actor.items.filter(needs);
+      if (traits.length) {
+        await actor.updateEmbeddedDocuments("Item", traits.map(dataFor));
+        migrated += traits.length;
+      }
+    }
+    await game.settings.set("shift-vtt", "traitFeaturesRemoved", true);
+    if (migrated) console.log(`shift-vtt | Removed legacy system.features from ${migrated} trait(s).`);
+  } catch (err) {
+    // Sem setar o flag → re-tenta no próximo load (idempotente: já-limpas são puladas).
+    console.error("shift-vtt | Trait features removal migration failed", err);
+  }
+}
+
+/**
+ * Migração one-time: re-aloja a GM Note legada do Codex. Cada entrada de Codex tinha uma
+ * nota por-entrada (system.codex[i].note, no Actor Party); a GM Note agora mora em
+ * system.gmNote do Actor/Item REFERENCIADO (sincronizada com a ficha dele). Esta migração
+ * copia a nota legada para o gmNote do documento referenciado, SEM sobrescrever uma nota já
+ * escrita lá. Uma entrada que aponta para um Character (sem campo gmNote) não tem destino: a
+ * nota fica preservada na própria entrada do Codex e logamos um aviso para o GM recuperar à
+ * mão — nunca é descartada calada. One-time por flag, idempotente (gmNote já preenchido é
+ * pulado, e a nota legada nunca é apagada). O campo legado `note` segue no schema do Codex só
+ * para esta leitura ser garantida; some num release futuro.
+ */
+export async function migrateCodexNote() {
+  if (game.settings.get("shift-vtt", "codexNoteMigrated")) return;
+  const hasText = html => !!html && html.replace(/<[^>]*>/g, "").trim().length > 0;
+
+  let moved = 0, orphaned = 0;
+  try {
+    for (const party of game.actors) {
+      if (party.type !== "party") continue;
+      for (const e of party.system.codex ?? []) {
+        if (!hasText(e.note)) continue;
+        const doc = await fromUuid(e.uuid);
+        if (!doc) continue;                            // referência morta: deixa a nota onde está
+        if (doc.pack) {                                // doc de compêndio: pack travado, não dá pra gravar
+          orphaned++;
+          console.warn(`shift-vtt | Codex GM note for "${doc.name}" lives in a locked compendium; left on the codex entry for manual recovery.`);
+          continue;
+        }
+        if (doc.system?.gmNote === undefined) {        // Character/Party não têm gmNote
+          orphaned++;
+          console.warn(`shift-vtt | Codex GM note for "${doc.name}" (${doc.type}) has no gmNote field; left on the codex entry for manual recovery.`);
+          continue;
+        }
+        if (hasText(doc.system.gmNote)) continue;      // não sobrescreve uma nota já escrita no Actor/Item
+        await doc.update({ "system.gmNote": e.note });
+        moved++;
+      }
+    }
+    await game.settings.set("shift-vtt", "codexNoteMigrated", true);
+    if (moved || orphaned) console.log(`shift-vtt | Codex GM notes: ${moved} moved to gmNote, ${orphaned} left in place (no target field).`);
+  } catch (err) {
+    // Sem setar o flag → re-tenta no próximo load (idempotente: gmNote já preenchido é pulado).
+    console.error("shift-vtt | Codex note migration failed", err);
   }
 }

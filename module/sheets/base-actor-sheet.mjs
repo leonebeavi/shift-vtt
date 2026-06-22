@@ -1,7 +1,7 @@
 /**
  * SHIFT VTT, comportamento compartilhado da ficha de Actor (ApplicationV2).
  */
-import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker, bindDescriptionSecrets } from "../helpers/utils.mjs";
+import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker, bindDescriptionSecrets, shiftSpeaker } from "../helpers/utils.mjs";
 import { bindDragFeedback } from "../helpers/drag-feedback.mjs";
 import { ShiftBrowser } from "../apps/browser.mjs";
 import { scaleEnabled } from "../settings.mjs";
@@ -117,6 +117,13 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
         : ""
     });
 
+    // GM Note: campo privado do GM nas fichas que NÃO são de Character (Adversary,
+    // Vehicle, Location têm system.gmNote; Character não). É o mesmo campo que o Codex
+    // do Party lê/edita → as duas visões sincronizam. Só o GM o vê/edita. Nota SIMPLES:
+    // editada por um <textarea name="system.gmNote"> (auto-save via submitOnChange), texto
+    // puro — então o template usa source.gmNote direto, sem enrich.
+    context.hasGmNote = "gmNote" in actor.system;
+
     context.traitGroups = await this.#prepareTraitGroups();
     context.techniques = await this.#prepareTechniques();
     return context;
@@ -194,11 +201,8 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       canDown: item.canShiftDown && this.isEditable,
       canTransform: item.canTransform && item.transformVisible,
       isPack: ["pack", "cargo"].includes(sys.category),
-      usesKeywords: sys.features.usesKeywords,
-      usesDrawbacks: sys.features.usesDrawbacks,
       keywords: (sys.keywords ?? []).map(k => this.#pillContext("keyword", k)),
       drawbacks: (sys.drawbacks ?? []).map(d => this.#pillContext("drawback", d)),
-      hasDrawbacks: (sys.drawbacks ?? []).length > 0,
       loadout: sys.loadout ?? "",
       showScaleTag: item.scaleIsOverride && scaleEnabled(),
       effectiveScale: item.effectiveScale,
@@ -422,12 +426,41 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
 
   static async #onShiftUp(event, target) {
     if (!this.isEditable) return;
-    await this.getItem(target)?.shiftUp({});
+    const item = this.getItem(target);
+    if (!item) return;
+    const res = await item.shiftUp({});
+    if (res?.changed) await BaseShiftActorSheet.#announceSheetShift(item, res, "up");
   }
 
   static async #onShiftDown(event, target) {
     if (!this.isEditable) return;
-    await this.getItem(target)?.shiftDown({ force: event.ctrlKey || event.metaKey });
+    const item = this.getItem(target);
+    if (!item) return;
+    const res = await item.shiftDown({ force: event.ctrlKey || event.metaKey });
+    if (res?.changed) await BaseShiftActorSheet.#announceSheetShift(item, res, "down");
+  }
+
+  /** Registra no chat um shift up/down feito DIRETO num botão da ficha de Actor.
+   *  Só os handlers acima chamam aqui: rolls (auto-shift) e os botões de chat
+   *  (crit bonus, Scaled Up, ataque ao alvo) já têm seus próprios anúncios, e os
+   *  botões de shift das fichas de Item ficam de fora por design. */
+  static async #announceSheetShift(item, res, direction) {
+    const actor = item.actor;
+    // Só personagens registram no chat: Adversary/Vehicle/Location/Party fazem muito
+    // bookkeeping de dado na ficha e gerariam ruído. O efeito é dos PCs.
+    if (!actor || actor.type !== "character") return;
+    const up = direction === "up";
+    const text = game.i18n.format(up ? "SHIFT.Shift.UpChat" : "SHIFT.Shift.DownChat", {
+      actor: foundry.utils.escapeHTML(actor.name),
+      trait: foundry.utils.escapeHTML(item.name),
+      from: dieLabel(res.from),
+      to: dieLabel(res.to)
+    });
+    const icon = up ? "fa-arrow-up" : "fa-arrow-down";
+    await ChatMessage.create({
+      speaker: shiftSpeaker(actor),
+      content: `<div class="shift-vtt chat-card info-card shift${up ? "up" : "down"}"><p><i class="fa-solid ${icon}"></i> ${text}</p></div>`
+    });
   }
 
   static async #onExhaustTrait(event, target) {

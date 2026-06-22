@@ -18,6 +18,11 @@ class ShiftItemBase extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     return {
       description: new fields.HTMLField({ required: false, blank: true, initial: "" }),
+      /** Nota privada do GM, em rich-text — espelha system.gmNote dos Actors. Vive na
+       *  ficha do próprio Item e é o MESMO campo que o Codex do Party lê e edita, então
+       *  as duas visões ficam sincronizadas. Nunca é revelada aos players; a description
+       *  é que pode ser revelada no Codex. */
+      gmNote: new fields.HTMLField({ required: false, blank: true, initial: "" }),
       /** Procedência em texto livre (livro, suplemento, homebrew). Alimenta o
        *  filtro de source do Browser para ordenar o conteúdo de compendium. */
       source: new fields.StringField({ required: false, blank: true, initial: "" })
@@ -44,11 +49,6 @@ export class ShiftTraitData extends ShiftItemBase {
     schema.revealed = new fields.BooleanField({ initial: true });
     schema.rollable = new fields.BooleanField({ initial: true });
     schema.autoShiftOnRoll = new fields.BooleanField({ initial: true });
-
-    schema.features = new fields.SchemaField({
-      usesKeywords: new fields.BooleanField({ initial: true }),
-      usesDrawbacks: new fields.BooleanField({ initial: true })
-    });
 
     schema.defeat = new fields.SchemaField({
       counts: new fields.BooleanField({ initial: true }),

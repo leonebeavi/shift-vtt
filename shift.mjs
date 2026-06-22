@@ -30,6 +30,7 @@ import { StatusEffectsConfig } from "./module/apps/status-effects-config.mjs";
 import { ScaleConfig } from "./module/apps/scale-config.mjs";
 import { ActionHudConfig } from "./module/apps/action-hud-config.mjs";
 import { RangesConfig } from "./module/apps/ranges-config.mjs";
+import { RestTravelConfig } from "./module/apps/rest-travel-config.mjs";
 import { registerRanges } from "./module/apps/ranges.mjs";
 import { registerStatusEffects } from "./module/helpers/status-effects.mjs";
 import { registerUserConfig } from "./module/helpers/user-config.mjs";
@@ -37,7 +38,7 @@ import { ShiftBrowser } from "./module/apps/browser.mjs";
 import {
   ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftLandmarkSheet, ShiftQuestSheet
 } from "./module/sheets/item-sheets.mjs";
-import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium, migrateQuestType, migrateAttitudeTransform } from "./module/helpers/migrations.mjs";
+import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium, migrateQuestType, migrateAttitudeTransform, migrateTraitFeatures, migrateCodexNote } from "./module/helpers/migrations.mjs";
 
 /* ------------------------------------------------------------------ */
 /* Init                                                                */
@@ -169,6 +170,16 @@ Hooks.once("init", async () => {
 
   registerSettings();
 
+  // Submenu de Rest & Travel (Building Blocks de descanso e viagem, agrupados).
+  game.settings.registerMenu("shift-vtt", "restTravelMenu", {
+    name: "SHIFT.Settings.RestTravelMenu.Name",
+    label: "SHIFT.Settings.RestTravelMenu.Name",
+    hint: "SHIFT.Settings.RestTravelMenu.Hint",
+    icon: "fa-solid fa-route",
+    type: RestTravelConfig,
+    restricted: true
+  });
+
   // Submenu de Advancement (o que o XP pode comprar).
   game.settings.registerMenu("shift-vtt", "advancementMenu", {
     name: "SHIFT.Settings.Advancements.Name",
@@ -238,6 +249,8 @@ Hooks.once("ready", async () => {
   if (game.user.isGM) {
     await migrateQuestType();
     await migrateAttitudeTransform();
+    await migrateTraitFeatures();
+    await migrateCodexNote();
     await seedCompendium();
     await seedTechniques();
     await seedMacros();

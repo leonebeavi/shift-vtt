@@ -5,6 +5,7 @@ import { BaseShiftActorSheet } from "./base-actor-sheet.mjs";
 import { getAdvancements } from "../apps/advancement-config.mjs";
 import { enrich, dieLabel, dieStatusLabel, fvtt } from "../helpers/utils.mjs";
 import { requestPlayerRoll, emitOrRun } from "../helpers/socket.mjs";
+import { travelEnabled } from "../settings.mjs";
 
 const T = "systems/shift-vtt/templates";
 
@@ -403,7 +404,7 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
  *  navegado pelo que a coisa É. */
 const ROLE_GROUP = {
   boss: "enemy", elite: "enemy", minion: "enemy",
-  ally: "ally", npc: "npc", place: "place", vehicle: "vehicle", trait: "trait", technique: "technique"
+  ally: "ally", npc: "npc", place: "location", vehicle: "vehicle", trait: "trait", technique: "technique"
 };
 const ROLE_ICONS = {
   boss: "fa-skull", elite: "fa-fire", minion: "fa-paw",
@@ -448,7 +449,8 @@ function npcTier(power) {
  *  ocultados na renderização (ver #codexContext), então só aparecem categorias
  *  com conteúdo. */
 const CODEX_FILTERS = {
-  all: null, enemy: ["enemy"], ally: ["ally"], npc: ["npc"], place: ["place"],
+  all: null, enemy: ["enemy"], ally: ["ally"], npc: ["npc"],
+  location: ["location"], landmark: ["landmark"],
   trait: ["trait"], technique: ["technique"], vehicle: ["vehicle"]
 };
 /** Botões de filtro ordenados (chaves de label). `all` sempre aparece; os demais
@@ -458,13 +460,16 @@ const CODEX_FILTER_BUTTONS = [
   { id: "enemy", label: "SHIFT.Party.Codex.Enemies", group: "enemy" },
   { id: "ally", label: "SHIFT.Party.Codex.Allies", group: "ally" },
   { id: "npc", label: "SHIFT.Party.Codex.NPCs", group: "npc" },
-  { id: "place", label: "SHIFT.Party.Codex.Places", group: "place" },
+  { id: "location", label: "SHIFT.Party.Codex.Locations", group: "location" },
+  { id: "landmark", label: "SHIFT.Party.Codex.Landmarks", group: "landmark" },
   { id: "vehicle", label: "SHIFT.Party.Codex.Vehicles", group: "vehicle" },
   { id: "trait", label: "SHIFT.Party.Codex.Traits", group: "trait" },
   { id: "technique", label: "SHIFT.Party.Codex.Techniques", group: "technique" }
 ];
-/** As sete flags de reveal por campo, em ordem de exibição (fonte única de verdade). */
-const REVEAL_FIELDS = ["name", "concept", "stats", "defeat", "traits", "scale", "note"];
+/** As flags de reveal por campo, em ordem de exibição (fonte única de verdade).
+ *  "description" revela a Description (system.description) do Actor; a GM Note é
+ *  sempre privada do GM, então NÃO tem flag de reveal. */
+const REVEAL_FIELDS = ["name", "concept", "stats", "defeat", "traits", "scale", "description"];
 
 const PARTY_TRAIT_ORDER = ["core", "attitude", "focus", "adversary", "pack", "cargo", "special", "party", "custom"];
 
@@ -507,7 +512,11 @@ const cap = s => String(s ?? "").charAt(0).toUpperCase() + String(s ?? "").slice
  *  guiados pela disposition: HOSTILE → um nível de inimigo por Power; FRIENDLY →
  *  ally; NEUTRAL ou SECRET → npc. */
 function deriveCodexRole(doc) {
-  if (doc instanceof Item) return doc.type === "technique" ? "technique" : "trait";
+  if (doc instanceof Item) {
+    if (doc.type === "technique") return "technique";
+    if (doc.type === "landmark") return "place";   // role cosmético; o GRUPO de filtro do landmark é "landmark" (ver #landmarkCardShape)
+    return "trait";
+  }
   if (doc?.type === "location") return "place";
   if (doc?.type === "vehicle") return "vehicle";
   const D = CONST.TOKEN_DISPOSITIONS;
@@ -522,7 +531,11 @@ function deriveCodexRole(doc) {
 
 /** O "kind" do codex; seleciona o layout de card/detalhe por tipo no template. */
 function codexKind(doc) {
-  if (doc instanceof Item) return doc.type === "technique" ? "technique" : "trait";
+  if (doc instanceof Item) {
+    if (doc.type === "technique") return "technique";
+    if (doc.type === "landmark") return "landmark";
+    return "trait";
+  }
   if (doc?.type === "location") return "location";
   if (doc?.type === "vehicle") return "vehicle";
   return "actor"; // character / adversary
@@ -537,6 +550,7 @@ function typeLabelOf(doc) {
  *  a CATEGORIA (narrative/mechanical/scaledUp); os demais, o role. */
 const TECH_ACCENT = { narrative: "var(--shift-yellow)", mechanical: "var(--shift-blue)", scaledUp: "var(--shift-pink)" };
 function codexAccent(doc, role, kind) {
+  if (kind === "landmark") return doc.system.safe ? "var(--shift-safe)" : "var(--shift-unsafe)";
   if (kind === "technique") return TECH_ACCENT[doc.system.techniqueType] ?? ROLE_COLORS.technique;
   if (kind === "trait") return `var(--die-${doc.system.maxDie || "d6"})`;
   if (kind === "vehicle") return VEHICLE_DOMAIN_COLOR[doc.system.domain] ?? ROLE_COLORS.vehicle;
@@ -549,6 +563,10 @@ function codexAccent(doc, role, kind) {
  *  "Minion · Adversary", Vehicles "Vehicle · Vehicle", Traits "Trait · Focus Trait",
  *  Techniques "Technique · Mechanical". */
 function codexRoleLabel(doc, role, kind) {
+  if (kind === "landmark") {
+    const sub = game.i18n.localize(doc.system.safe ? "SHIFT.Location.Safe" : "SHIFT.Location.Unsafe");
+    return `${typeLabelOf(doc)} · ${sub}`;   // "Landmark · Safe" / "Landmark · Unsafe"
+  }
   if (kind === "trait") {
     const cat = game.i18n.localize(CONFIG.SHIFT.traitCategories[doc.system.category] ?? "");
     return cat ? `${typeLabelOf(doc)} · ${cat}` : typeLabelOf(doc);
@@ -734,6 +752,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   _openTile = null;
   /** Guarda de reentrância para a criação lazy do journal de codex no lado do GM. */
   #ensuringJournal = false;
+  /** Drag-data bruto do drop em curso (capturado em _onDrop antes do core resolver
+   *  o documento de forma async); só vale durante o handling de um drop. */
+  #dropData = null;
   /** Quests-mãe com as filhas RECOLHIDAS (ids). Estado de view transitório. */
   #questCollapsed = new Set();
   /** Quests com o corpo INVERTIDO do padrão de abertura (clique do usuário). O
@@ -757,6 +778,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       hideAllCodex: ShiftPartySheet.#onHideAllCodex,
       toggleCodexReveal: ShiftPartySheet.#onToggleCodexReveal,
       toggleCodexLandmark: ShiftPartySheet.#onToggleCodexLandmark,
+      toggleLandmarkVisible: ShiftPartySheet.#onToggleLandmarkVisible,
       toggleTraitHide: ShiftPartySheet.#onToggleTraitHide,
       rollQuest: ShiftPartySheet.#onRollQuest,
       questResolve: ShiftPartySheet.#onQuestResolve,
@@ -769,10 +791,16 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       clearLocation: ShiftPartySheet.#onClearLocation,
       openLocation: ShiftPartySheet.#onOpenLocation,
       clearVehicle: ShiftPartySheet.#onClearVehicle,
+      openVehicle: ShiftPartySheet.#onOpenVehicle,
       grantPartyXp: ShiftPartySheet.#onGrantPartyXp,
       requestPartyRoll: ShiftPartySheet.#onRequestRoll,
       partySafeRest: ShiftPartySheet.#onPartySafeRest,
-      partyUnsafeRest: ShiftPartySheet.#onPartyUnsafeRest
+      partyUnsafeRest: ShiftPartySheet.#onPartyUnsafeRest,
+      travelStart: ShiftPartySheet.#onTravelStart,
+      travelAdvance: ShiftPartySheet.#onTravelAdvance,
+      travelArrive: ShiftPartySheet.#onTravelArrive,
+      travelFinish: ShiftPartySheet.#onTravelFinish,
+      travelAbort: ShiftPartySheet.#onTravelAbort
     }
   };
 
@@ -848,6 +876,8 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
     context.locationInfo = await this.#locationContext();
     context.activeVehicle = await this.#vehicleContext();
+    context.travelEnabled = travelEnabled();
+    context.journey = this.#travelContext();
 
     context.memberCount = context.members.length;
     context.codexCount = (sys.codex ?? []).length;
@@ -882,8 +912,8 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
    *  keyword/drawback). O drawer expandido também mostra a description enriquecida. */
   async #traitTile(t, host, canView, ownerUuid) {
     const sys = t.system;
-    const keywords = sys.features?.usesKeywords ? this.#descriptors("keyword", sys.keywords, host, canView) : [];
-    const drawbacks = sys.features?.usesDrawbacks ? this.#descriptors("drawback", sys.drawbacks, host, canView) : [];
+    const keywords = this.#descriptors("keyword", sys.keywords, host, canView);
+    const drawbacks = this.#descriptors("drawback", sys.drawbacks, host, canView);
     const desc = (canView && sys.description) ? await enrich(sys.description, { relativeTo: t }) : "";
     const hasDetail = !!desc || (keywords.length + drawbacks.length > 0);
     return {
@@ -1068,10 +1098,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       // Bloqueio por pré-requisito: card de cadeado + pills das quests; não resolve enquanto travada.
       locked,
       requiresPending: pending,
-      canResolve, canFail, canReopen,
-      // Rodapé INTEIRO (divisória + links + desfecho) só quando EXPANDIDA: a
-      // compacta é só o cabeçalho — esconde tudo acima/abaixo da linha de divisão.
-      showFoot: expanded && ((this.isEditable && (canResolve || canFail || canReopen)) || links.length > 0)
+      canResolve, canFail, canReopen
+      // (O rodapé é só de links: renderiza quando `expanded && links.length`. O
+      //  desfecho Resolve/Fail/Reopen agora mora no cabeçalho — ver ptrait-card.hbs.)
     };
   }
 
@@ -1087,16 +1116,33 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     // Resolve todos os docs referenciados em paralelo (evita N awaits seriais de fromUuid).
     const docs = await Promise.all(entries.map(e => fromUuid(e.uuid).catch(() => null)));
 
+    // Landmarks de uma Location catalogada são exibidos como cards próprios (grupo
+    // Places), sincronizados com o revealLandmarks da Location. Junta os UUIDs deles
+    // para deduplicar uma eventual entrada SOLTA do mesmo landmark embutido.
+    const embeddedLm = new Set();
+    for (const doc of docs)
+      if (doc?.type === "location")
+        for (const lm of doc.items?.filter?.(i => i.type === "landmark") ?? []) embeddedLm.add(lm.uuid);
+
     const all = [];
     const counts = {};
-    for (let i = 0; i < entries.length; i++) {
-      const card = this.#codexCard(entries[i], docs[i], isGM);
-      if (!card) continue;                              // referência quebrada
-      // Conta categorias com conteúdo para que botões de filtro vazios se ocultem.
-      // Rumores travados ("???") TAMBÉM contam: por design eles aparecem na própria
-      // categoria mesmo ocultos, então o botão dessa categoria precisa existir.
+    // Conta categorias com conteúdo para que botões de filtro vazios se ocultem.
+    // Rumores travados ("???") TAMBÉM contam: por design eles aparecem na própria
+    // categoria mesmo ocultos, então o botão dessa categoria precisa existir.
+    const push = card => {
+      if (!card) return;                                // referência quebrada / oculto a players
       counts[card.group] = (counts[card.group] ?? 0) + 1;
       all.push(card);
+    };
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i], doc = docs[i];
+      // Um landmark embutido já é exibido pela sua Location: não o duplica como entrada solta.
+      if (doc instanceof Item && doc.type === "landmark" && embeddedLm.has(entry.uuid)) continue;
+      push(this.#codexCard(entry, doc, isGM));
+      // Location → expande cada landmark embutido num card de Place próprio.
+      if (doc?.type === "location")
+        for (const lm of doc.items?.filter?.(i => i.type === "landmark") ?? [])
+          push(this.#landmarkCard(entry, lm, isGM));
     }
 
     // Codex sempre exibido em ordem alfabética (a ordem de inserção não importa).
@@ -1166,9 +1212,55 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return [...collect("keywords", "kw", 4), ...collect("drawbacks", "db", 3)];
   }
 
+  /** Card de Place para um landmark, no formato compartilhado por entradas SOLTAS
+   *  (Item de landmark catalogado por si) e VIRTUAIS (landmark embutido de uma
+   *  Location, exibido como página própria). Tudo all-or-nothing: um landmark é um
+   *  lugar conhecido ou um rumor "???". */
+  #landmarkCardShape(lm, { uuid, virtual, locked, partlyHidden, landmarkVisible }) {
+    const safe = !!lm.system?.safe;
+    // Landmark embutido numa Location → chip com o nome dela (pin de local, como nos
+    // links de Quest). Um landmark solto (parent nulo) não tem chip; um rumor "???" também não.
+    const loc = (lm.parent?.documentName === "Actor" && lm.parent.type === "location") ? lm.parent : null;
+    const locationName = locked ? "" : (loc?.name ?? "");
+    return {
+      uuid, role: "place", kind: "landmark", group: "landmark",
+      virtual, locked, nameHidden: false, partlyHidden, landmarkVisible, safe, locationName,
+      name: locked ? "???" : lm.name,
+      img: locked ? null : (lm.img || null),
+      icon: safe ? "fa-shield-heart" : "fa-triangle-exclamation",
+      accent: safe ? "var(--shift-safe)" : "var(--shift-unsafe)",
+      hasStatRow: false, showScale: false, scale: 1,
+      roleLabel: locked ? game.i18n.localize("SHIFT.Party.Codex.Locked") : codexRoleLabel(lm, "place", "landmark"),
+      nameLower: locked ? "" : String(lm.name).toLowerCase(),
+      tagsLower: ""
+    };
+  }
+
+  /** Card virtual de um landmark embutido numa Location catalogada. Visível ao player
+   *  só quando o GM revelou o landmark (revealLandmarks); ao GM, sempre (com selo de
+   *  "parcialmente oculto"). Devolve null quando deve sumir para o player. */
+  #landmarkCard(locEntry, lm, isGM) {
+    const revealed = !!locEntry.revealLandmarks?.includes(lm.id);
+    if (!isGM && !revealed) return null;                // players: oculto até ser revelado
+    return this.#landmarkCardShape(lm, {
+      uuid: lm.uuid, virtual: true,
+      locked: false, partlyHidden: isGM && !revealed, landmarkVisible: revealed
+    });
+  }
+
   /** Um card da GRADE do codex, customizado por kind. `doc` já vem resolvido pelo chamador. */
   #codexCard(entry, doc, isGM) {
     if (!doc) return null;
+    // Landmark solto (Item catalogado por si): visível ao player só quando o nome foi
+    // revelado; senão é um rumor "???" (consistente com as demais entradas catalogadas).
+    if (codexKind(doc) === "landmark") {
+      const reveal = entry.reveal ?? {};
+      const visible = isGM || !!reveal.name;
+      return this.#landmarkCardShape(doc, {
+        uuid: entry.uuid, virtual: false,
+        locked: !visible, partlyHidden: isGM && !reveal.name, landmarkVisible: !!reveal.name
+      });
+    }
     const r = entry.reveal ?? {};
     const see = k => isGM || !!r[k];
     const anyRevealed = isGM || REVEAL_FIELDS.some(k => r[k]) || (entry.revealLandmarks?.length > 0);
@@ -1235,14 +1327,69 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     });
   }
 
+  /** Resolve um UUID aberto do codex no seu alvo: uma entrada SOLTA real, ou um
+   *  landmark VIRTUAL (embutido numa Location catalogada — então sem entrada própria,
+   *  mas navegável pela entrada da Location). Devolve null quando nada resolve. */
+  async #resolveCodexTarget(uuid) {
+    const codex = this.document.system.codex ?? [];
+    const doc = await fromUuid(uuid).catch(() => null);
+    if (!doc) return null;
+    const entry = codex.find(e => e.uuid === uuid);
+    if (entry) return { entry, doc, virtual: false };
+    // Virtual: um landmark embutido cuja Location-mãe está catalogada.
+    if (doc instanceof Item && doc.type === "landmark" && doc.parent instanceof Actor) {
+      const locEntry = codex.find(e => e.uuid === doc.parent.uuid);
+      if (locEntry) return { entry: locEntry, doc, virtual: true, lmId: doc.id };
+    }
+    return null;
+  }
+
+  /** Detalhe de uma página de landmark (solto OU virtual). Visibilidade all-or-nothing;
+   *  a do virtual segue o revealLandmarks da Location-mãe (sincronizado com a lista
+   *  aninhada). Field Notes só no landmark SOLTO (o virtual é leve, parte da Location).
+   *  Description e GM Note saem direto do Item (mesma config das demais entradas):
+   *  a Description aparece quando o landmark está visível; a GM Note é só do GM. */
+  async #landmarkDetailContext({ entry, doc, virtual, lmId }) {
+    const isGM = game.user.isGM;
+    const safe = !!doc.system.safe;
+    const landmarkVisible = virtual
+      ? !!entry.revealLandmarks?.includes(lmId)
+      : !!entry.reveal?.name;
+    if (!isGM && !landmarkVisible) return null;          // um landmark oculto não abre para o player
+    const canViewDesc = isGM || !!doc.testUserPermission?.(game.user, "OBSERVER");
+    const loc = (doc.parent?.documentName === "Actor" && doc.parent.type === "location") ? doc.parent : null;
+    const hasGmNote = "gmNote" in (doc.system ?? {});
+    const showDesc = canViewDesc && !!this.#plain(doc.system.description).trim();
+    return {
+      uuid: doc.uuid, isGM, kind: "landmark", role: "place",
+      roleColor: safe ? "var(--shift-safe)" : "var(--shift-unsafe)",
+      name: doc.name, img: doc.img || null,
+      icon: safe ? "fa-shield-heart" : "fa-triangle-exclamation",
+      roleLabel: codexRoleLabel(doc, "place", "landmark"),
+      locationName: loc?.name ?? "",
+      safe, canOpenSheet: isGM, canEditReveal: isGM,
+      landmarkVisible, landmarkVirtual: virtual,
+      showDesc,
+      desc: showDesc ? await enrich(doc.system.description, { secrets: isGM, relativeTo: doc }) : "",
+      showGmNote: isGM && hasGmNote,
+      gmNoteSource: (isGM && hasGmNote) ? (doc.system._source?.gmNote ?? doc.system.gmNote ?? "") : "",
+      fieldNotes: virtual ? null : await this.#fieldNotesContext(entry),
+      editable: this.isEditable
+    };
+  }
+
   async #codexDetailContext() {
     const uuid = this._codexOpen;
     if (!uuid) return null;
-    const entry = (this.document.system.codex ?? []).find(e => e.uuid === uuid);
-    if (!entry) return null;
-    const doc = await fromUuid(uuid);
-    if (!doc) return null;
+    const target = await this.#resolveCodexTarget(uuid);
+    if (!target) return null;
+    const { entry, doc } = target;
     const isGM = game.user.isGM;
+    const kind = codexKind(doc);
+
+    // Landmark: página própria de um landmark solto ou embutido (visibilidade sincronizada).
+    if (kind === "landmark") return this.#landmarkDetailContext(target);
+
     const r = entry.reveal ?? {};
     const see = k => isGM || !!r[k];
     const anyRevealed = isGM || REVEAL_FIELDS.some(k => r[k]) || (entry.revealLandmarks?.length > 0);
@@ -1250,7 +1397,18 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const nameHidden = !see("name");
     const canViewDesc = isGM || !!doc.testUserPermission?.(game.user, "OBSERVER");
     const role = deriveCodexRole(doc);
-    const kind = codexKind(doc);
+
+    // Description (system.description): bloco read-only revelável aos players, igual em
+    // TODA entrada que tem descrição própria (actor/location/vehicle + trait/technique).
+    // Só os kinds com um campo `concept` SEPARADO (actor/location/vehicle) mostram também
+    // o subtítulo curto; trait/technique não têm concept próprio (era um excerto da própria
+    // descrição), então deixam só a Description full pra não duplicar.
+    const kindHasDesc = ["actor", "location", "vehicle", "trait", "technique"].includes(kind);
+    const kindHasConcept = ["actor", "location", "vehicle"].includes(kind);
+    const showDesc = kindHasDesc && see("description") && !!this.#plain(doc.system.description).trim();
+    // GM Note: o MESMO system.gmNote da ficha do Actor (Adversary/Vehicle/Location),
+    // sempre privada do GM, editável aqui e sincronizada com a ficha.
+    const hasGmNote = "gmNote" in (doc.system ?? {});
 
     const base = {
       uuid, isGM, kind, reveal: r, canEditReveal: isGM, nameHidden,
@@ -1258,15 +1416,22 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       name: nameHidden ? game.i18n.localize("SHIFT.Party.Codex.Unknown") : doc.name,
       img: nameHidden ? null : doc.img, icon: ROLE_ICONS[role] ?? "fa-question",
       roleLabel: codexRoleLabel(doc, role, kind),
-      showNote: see("note"), note: entry.note ?? "", editable: this.isEditable,
-      canOpenSheet: isGM,
+      editable: this.isEditable, canOpenSheet: isGM,
+      showDesc,
+      desc: showDesc
+        ? await enrich(doc.system.description, { secrets: isGM, rollData: doc.getRollData?.() ?? {}, relativeTo: doc })
+        : "",
+      showGmNote: isGM && hasGmNote,
+      gmNoteSource: (isGM && hasGmNote) ? (doc.system._source?.gmNote ?? doc.system.gmNote ?? "") : "",
       fieldNotes: await this.#fieldNotesContext(entry),
-      revealFields: REVEAL_FIELDS.map(f => ({ f, on: !!r[f], label: `SHIFT.Party.Codex.Field.${cap(f)}` }))
+      revealFields: REVEAL_FIELDS
+        .filter(f => (f !== "description" || kindHasDesc) && (f !== "concept" || kindHasConcept))
+        .map(f => ({ f, on: !!r[f], label: `SHIFT.Party.Codex.Field.${cap(f)}` }))
     };
 
     if (kind === "technique") {
       return Object.assign(base, {
-        concept: see("concept") ? this.#plain(doc.system.description) : "",
+        concept: "",   // sem subtítulo derivado: a Description full já mostra o texto
         showTech: see("stats"),
         techType: game.i18n.localize(CONFIG.SHIFT.techniqueTypes[doc.system.techniqueType] ?? ""),
         techUses: doc.system.uses ?? null,
@@ -1277,7 +1442,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (kind === "trait") {
       const traits = see("traits") ? [await this.#traitTile(doc, doc.parent ?? doc, canViewDesc, doc.uuid)] : [];
       return Object.assign(base, {
-        concept: see("concept") ? this.#plain(doc.system.description) : "",
+        concept: "",   // sem subtítulo derivado: a Description full já mostra o texto
         showDie: see("stats"), statusKey: doc.statusKey, dieImg: CONFIG.SHIFT.diceImages[doc.statusKey] ?? null,
         statusLabel: dieStatusLabel(doc.statusKey), maxLabel: dieLabel(doc.system.maxDie),
         showScale: see("scale"), scale: doc.system.scale?.value ?? 1,
@@ -1322,7 +1487,6 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       concept: see("concept") ? (doc.system.concept ?? "") : "",
       showStats: see("stats"), power: doc.system.power ?? 0, actions: doc.system.actions ?? doc.system.power ?? 0,
       showDefeat: see("defeat") && !!defeat.max, defeat,
-      defeatPct: defeat.max ? Math.round((defeat.value / defeat.max) * 100) : 0,
       showScale: see("scale"), scale: doc.system.scale ?? 1,
       traits, hasTraits: traits.length > 0
     });
@@ -1405,6 +1569,30 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return t?.system.currentDie ?? null;
   }
 
+  /** Estado da jornada de Travel para o header (null = subsistema off ou sem
+   *  viagem ativa). Legs viram bolinhas; o destino é só um rótulo aqui. */
+  #travelContext() {
+    if (!travelEnabled()) return null;
+    const j = this.document.system.journey;
+    if (!j?.active) return null;
+    const total = Math.max(1, j.legsTotal ?? 1);
+    const done = Math.min(total, j.legsDone ?? 0);
+    const mode = j.mode || game.settings.get("shift-vtt", "travelMode");
+    return {
+      destName: j.destName || game.i18n.localize("SHIFT.Travel.Unknown"),
+      flavor: j.flavor,
+      hasDest: !!j.destUuid,
+      legsTotal: total,
+      legsDone: done,
+      remaining: total - done,
+      complete: done >= total,
+      onFoot: j.onFoot,
+      simple: mode === "simple",
+      modeLabel: game.i18n.localize(CONFIG.SHIFT.travelModes[mode] ?? ""),
+      dots: Array.from({ length: total }, (_, i) => ({ done: i < done }))
+    };
+  }
+
   /** Resolve a Location atual do party + o landmark escolhido (para a faixa do header
    *  e para as regras de Rest sensíveis à localização). */
   async #locationContext() {
@@ -1412,6 +1600,18 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (!uuid) return null;
     const loc = await fromUuid(uuid);
     if (!loc) return null;
+    // O "lugar" pode ser um landmark AVULSO (Item de mundo) solto direto no slot:
+    // não tem sub-landmarks nem Wealth die, e carrega o próprio safe/unsafe — que
+    // alimenta o bloqueio de Safe Rest num ponto Unsafe, como um landmark normal.
+    if (loc instanceof Item && loc.type === "landmark") {
+      const safe = !!loc.system.safe;
+      return {
+        uuid, name: loc.name, img: loc.img, wealthDie: null,
+        landmarks: [], hasLandmarks: false,
+        landmarkId: "", landmarkName: loc.name, landmarkSafe: safe,
+        loose: true, canEdit: this.isEditable
+      };
+    }
     const landmarks = (loc.items?.filter?.(i => i.type === "landmark") ?? [])
       .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name))
       .map(l => ({ id: l.id, name: l.name, safe: !!l.system.safe }));
@@ -1443,7 +1643,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   /** Navegação somente-leitura + o editor de Field-Notes editável pelo Player, que
    *  precisa continuar usável mesmo quando a ficha não é editável (um Player OBSERVER). */
   static VIEW_ACTIONS = ["codexBack", "codexFilter", "openCodexEntry", "openMember",
-    "openLocation", "toggleTile"];
+    "openLocation", "openVehicle", "toggleTile"];
 
   /** @override — o DocumentSheetV2 desabilita TODO controle de formulário (inclusive
    *  `<button>`s) quando a ficha não é editável, o que travaria o clique do botão de
@@ -1454,7 +1654,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     super._toggleDisabled(disabled);
     if (!disabled || !this.element) return;
     const sel = ShiftPartySheet.VIEW_ACTIONS.map(a => `[data-action="${a}"]`).join(", ")
-      + ", prose-mirror.codex-fieldnotes";
+      + ", prose-mirror.codex-fieldnotes, textarea.cd-gmnote-edit";
     for (const el of this.element.querySelectorAll(sel)) el.disabled = false;
   }
 
@@ -1520,6 +1720,47 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
           catch (err) { ui.notifications.error(game.i18n.localize("SHIFT.Party.Codex.NotesFailed")); }
         });
       }
+
+      // GM Note do codex → o MESMO system.gmNote do documento referenciado (Actor OU
+      // Item: adversary/vehicle/location e trait/technique/landmark), sincronizando com
+      // a ficha dele. Nota simples: <textarea> sem `name` (o form do party o ignora);
+      // salva no change (= blur), igual à nota de codex original. Só GM.
+      if (game.user.isGM) {
+        for (const el of this.element.querySelectorAll("textarea.cd-gmnote-edit")) {
+          el.addEventListener("change", async ev => {
+            ev.stopPropagation();
+            const doc = el.dataset.documentUuid ? await fromUuid(el.dataset.documentUuid) : null;
+            if (!doc) return;
+            // Salva no próprio documento: a ficha dele (se aberta) reflete na hora; o
+            // Codex aberto é repintado pelos hooks updateActor/updateItem (que pulam quem digita).
+            try { await doc.update({ "system.gmNote": el.value ?? "" }); }
+            catch (err) { ui.notifications.error(game.i18n.localize("SHIFT.Party.Codex.NotesFailed")); }
+          });
+        }
+      }
+
+      // GM: cada card do codex vira origem de arraste, exatamente como arrastar o
+      // Actor/Item ligado — pode ser solto no slot de Location/Vehicle (vide
+      // _onDropActor), no canvas, ou em outra ficha. Só para o GM: cards "locked"
+      // (rumores "???") também ficam arrastáveis, então o gate evita vazar a um
+      // player o uuid do documento por trás do segredo. (Drag e click coexistem: o
+      // data-action="openCodexEntry" segue funcionando no clique.)
+      if (game.user.isGM) {
+        for (const card of this.element.querySelectorAll(".codex-card[data-codex-uuid]")) {
+          card.setAttribute("draggable", "true");
+          if (card.dataset.shiftDragBound) continue;
+          card.dataset.shiftDragBound = "1";
+          card.addEventListener("dragstart", ev => {
+            const data = ShiftPartySheet.#codexDragData(card.dataset.codexUuid);
+            if (!data) return;
+            // Carimba a origem: soltar de volta neste mesmo codex é no-op silencioso
+            // (a entrada já está catalogada — foi daqui que ela saiu). Vide _onDrop.
+            data.shiftCodexSource = this.document.uuid;
+            ev.dataTransfer.setData("text/plain", JSON.stringify(data));
+            ev.dataTransfer.effectAllowed = "copy";
+          });
+        }
+      }
     }
 
     if (!this.isEditable) return;
@@ -1533,22 +1774,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
     // (Quests agora são Trait Items, editados pela ficha de Trait padrão, não por um
     // listener de campo de quest dedicado.)
-
-    // Nota do codex → system.codex[uuid].note (campo de curadoria só do GM).
-    if (did("codex") && game.user.isGM) {
-      for (const ta of this.element.querySelectorAll("[data-codex-note]")) {
-        ta.addEventListener("change", async ev => {
-          const uuid = ev.currentTarget.dataset.codexNote;
-          const codex = foundry.utils.deepClone(this.document.system.codex ?? []);
-          const e = codex.find(x => x.uuid === uuid);
-          if (!e) return;
-          e.note = ev.currentTarget.value;
-          // Sem render; o GM está digitando nesta própria textarea, e um re-render
-          // roubaria o foco e piscaria o detalhe.
-          await this.document.update({ "system.codex": codex }, { render: false });
-        });
-      }
-    }
+    //
+    // (A GM Note do codex não mora mais aqui: é system.gmNote do próprio documento,
+    // editada pelo <textarea class="cd-gmnote-edit"> acima.)
   }
 
   #applyCodexSearch(query) {
@@ -1565,6 +1793,23 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   /* Drops                                                           */
   /* ---------------------------------------------------------------- */
 
+  /** @override — guarda o drag-data BRUTO deste drop antes que o core resolva o
+   *  documento (a resolução é async; depois dela `dataTransfer.getData` já não é
+   *  confiável). Os handlers `_onDropActor/_onDropItem` leem `#dropData` para saber
+   *  se a entrada veio do PRÓPRIO codex (campo `shiftCodexSource`) e, nesse caso,
+   *  evitar o aviso "já catalogado" ao soltá-la de volta. */
+  async _onDrop(event) {
+    try { this.#dropData = JSON.parse(event.dataTransfer?.getData("text/plain") || "null"); }
+    catch (_) { this.#dropData = null; }
+    return super._onDrop(event);
+  }
+
+  /** Verdadeiro se o drop atual é uma entrada arrastada do codex DESTE party (e
+   *  portanto já catalogada) — usado para silenciar o "já catalogado" no auto-drop. */
+  #isOwnCodexDrag() {
+    return this.#dropData?.shiftCodexSource === this.document.uuid;
+  }
+
   /** @override — o alvo do drop decide: o slot de Location/Vehicle → define ele; a
    *  aba Codex → uma entrada de codex; em qualquer outro lugar → um membro do roster. */
   async _onDropActor(event, actor) {
@@ -1580,7 +1825,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     // Uma Location/Vehicle solta em seu slot vira o place/vehicle do party.
     if (this.#isLocationDrop(event)) return this.#setLocation(a);
     if (this.#isVehicleDrop(event)) return this.#setVehicle(a);
-    if (this.#isCodexDrop(event)) return this.#addCodexEntry(a.uuid);
+    if (this.#isCodexDrop(event)) return this.#isOwnCodexDrag() ? true : this.#addCodexEntry(a.uuid);
     // Locations/Vehicles/parties NÃO são membros do roster; eles têm seus próprios slots.
     if (["party", "location", "vehicle"].includes(a.type)) {
       ui.notifications.warn(game.i18n.localize("SHIFT.Party.CannotAdd"));
@@ -1600,14 +1845,31 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const doc = (item instanceof Item) ? item : await Item.implementation.fromDropData(item);
     if (!doc) return false;
 
-    // Reordenar: um card (Trait/Quest) possuído solto sobre um irmão → integer sort.
-    if (doc.parent === this.document && await this.#sortTraitOnDrop(event, doc)) return true;
+    // Quest arrastada DENTRO da aba Quests:
+    //  • já é uma quest DESTA party (id confere) → reordena/aninha pelo gesto de
+    //    posição (metade direita = FILHA; esquerda = irmã antes/depois).
+    //  • veio de FORA (mundo/compendium/outra party) → CRIA como quest desta party.
+    // Em nenhum caso vira link de outra quest; o evento é sempre consumido aqui.
+    // Detecção por id (não por doc.parent), robusto a instâncias diferentes do drag.
+    if (doc.type === "quest" && this.#isQuestDrop(event)) {
+      if (this.document.quests.some(q => q.id === doc.id)) await this.#sortQuestOnDrop(event, doc);
+      else await this.#createQuestFromDrop(doc);
+      return true;
+    }
 
-    // Um Item externo solto sobre um card de Quest vira um link daquela Quest.
+    // Reorder de um Trait possuído (mesma categoria).
+    if (doc.parent === this.document && doc.type === "trait" && await this.#sortTraitOnDrop(event, doc)) return true;
+
+    // Um Item externo (NÃO-quest) solto sobre um card de Quest vira um link daquela Quest.
     const questId = this.#questDropTarget(event);
-    if (questId && doc.uuid) return this.#addQuestLink(questId, doc.uuid);
+    if (questId && doc.uuid && doc.type !== "quest") return this.#addQuestLink(questId, doc.uuid);
 
-    if (["trait", "technique"].includes(doc.type) && this.#isCodexDrop(event)) return this.#addCodexEntry(doc.uuid);
+    // Um Landmark solto no slot de Location aponta o party para a Location-pai E
+    // marca aquele landmark específico de uma vez (atalho de "estamos aqui").
+    if (doc.type === "landmark" && this.#isLocationDrop(event)) return this.#setLandmark(doc);
+
+    if (["trait", "technique", "landmark"].includes(doc.type) && this.#isCodexDrop(event))
+      return this.#isOwnCodexDrag() ? true : this.#addCodexEntry(doc.uuid);
 
     // Um Trait externo solto FORA da aba Quests vira um Party Trait (estilo status).
     // Na aba Quests, soltar coisas vira link (Etapa C) — nunca mais converte Trait→Quest.
@@ -1623,27 +1885,90 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return super._onDropItem(event, item);
   }
 
-  /** Reordena um card por integer sort quando solto sobre um irmão: Quests entre
-   *  Quests, Traits entre Traits da mesma categoria. Retorna true se tratou o evento. */
+  /** Reordena um Trait por integer sort quando solto sobre um irmão da MESMA
+   *  categoria. (Quests usam #sortQuestOnDrop.) Retorna true se tratou o evento. */
   async #sortTraitOnDrop(event, source) {
     const targetId = event.target?.closest?.("[data-item-id]")?.dataset.itemId;
     if (!targetId || targetId === source.id) return false;
     const target = this.document.items.get(targetId);
-    if (!target) return false;
-
-    let siblings;
-    if (source.type === "quest") {
-      if (target.type !== "quest") return false;
-      siblings = this.document.items.filter(i => i.type === "quest" && i.id !== source.id);
-    } else {
-      if (target.type !== "trait" || target.system.category !== source.system.category) return false;
-      siblings = this.document.items.filter(i =>
-        i.type === "trait" && i.system.category === source.system.category && i.id !== source.id);
-    }
+    if (target?.type !== "trait" || target.system.category !== source.system.category) return false;
+    const siblings = this.document.items.filter(i =>
+      i.type === "trait" && i.system.category === source.system.category && i.id !== source.id);
     const updates = foundry.utils.performIntegerSort(source, { target, siblings })
       .map(u => ({ _id: u.target.id, sort: u.update.sort }));
     if (updates.length) await this.document.updateEmbeddedDocuments("Item", updates);
     return true;
+  }
+
+  /** Conjunto de ids da subárvore de uma Quest (ela + todas as descendentes), para
+   *  barrar que ela vire filha de si mesma ou de uma descendente (evita ciclo). */
+  #questSubtreeIds(quest) {
+    const ids = new Set([quest.id]);
+    const walk = id => {
+      for (const c of this.document.quests)
+        if (c.system.parentId === id && !ids.has(c.id)) { ids.add(c.id); walk(c.id); }
+    };
+    walk(quest.id);
+    return ids;
+  }
+
+  /** Gesto de arraste de Quest sobre Quest: a POSIÇÃO no card alvo decide, 50/50.
+   *   • metade DIREITA (relX > 0.5) → ANINHA a source como subquest do alvo.
+   *   • metade ESQUERDA → vira IRMÃ do alvo: topo = ANTES, base = DEPOIS,
+   *     herdando o parentId do alvo (some-se ao mesmo nível dele).
+   *  Espelha exatamente o feedback visual de drag-feedback.mjs (mesmos limiares). A
+   *  source é resolvida PELO ID dentro desta party (robusto a instâncias diferentes
+   *  do drag). O sort é recalculado DENTRO do grupo de destino pra casar com a árvore
+   *  de #questGroup. Ciclos (alvo na própria subárvore) viram no-op. Uma escrita só. */
+  async #sortQuestOnDrop(event, srcDoc) {
+    const source = this.document.quests.find(q => q.id === srcDoc?.id);
+    if (!source) return false;                              // quest de outra origem: ignora
+    const card = event.target?.closest?.(".party-quests .ptrait[data-item-id]");
+    const targetId = card?.dataset.itemId;
+    if (!targetId || targetId === source.id) return false;  // fora de um card / sobre si: no-op
+    const target = this.document.items.get(targetId);
+    if (target?.type !== "quest") return false;
+
+    const banned = this.#questSubtreeIds(source);          // source + descendentes (anti-ciclo)
+    const rect = card.getBoundingClientRect();
+    const relX = rect.width ? (event.clientX - rect.left) / rect.width : 0;
+    const relY = rect.height ? (event.clientY - rect.top) / rect.height : 0.5;
+    const nest = relX > 0.5;                                // metade direita = vira filha
+
+    let parentId, sortTarget, sortBefore;
+    if (nest) {
+      if (banned.has(target.id)) return true;              // aninhar sob descendente = ciclo
+      parentId = target.id;
+    } else {
+      parentId = target.system.parentId ?? "";
+      if (banned.has(parentId)) return true;               // herdaria pai descendente = ciclo
+    }
+    const group = this.document.quests.filter(q => (q.system.parentId ?? "") === parentId && q.id !== source.id);
+    if (nest) { sortTarget = group[group.length - 1] ?? null; sortBefore = false; }  // anexa ao fim das filhas
+    else { sortTarget = target; sortBefore = relY <= 0.5; }
+
+    // Recalcula o sort dentro do grupo de destino; injeta o parentId no update da
+    // source mesmo quando ela só troca de pai (sem mudar de posição).
+    const updates = sortTarget
+      ? foundry.utils.performIntegerSort(source, { target: sortTarget, siblings: group, sortBefore })
+          .map(u => ({ _id: u.target.id, sort: u.update.sort }))
+      : [];
+    let src = updates.find(u => u._id === source.id);
+    if (!src) { src = { _id: source.id, sort: source.sort ?? 0 }; updates.push(src); }
+    src["system.parentId"] = parentId;
+    await this.document.updateEmbeddedDocuments("Item", updates);
+    return true;
+  }
+
+  /** Cria uma Quest vinda de FORA (mundo/compendium/outra party) como quest DESTA
+   *  party (Item embutido), no topo: zera o parentId (um id herdado apontaria pra uma
+   *  quest que não existe aqui) e dá um _id novo. Depois é só arrastar pra reordenar/
+   *  aninhar. Os links (system.links são uuids) seguem intactos. */
+  async #createQuestFromDrop(doc) {
+    const data = doc.toObject();
+    delete data._id;
+    data.system = foundry.utils.mergeObject(data.system ?? {}, { parentId: "" });
+    return this.document.createEmbeddedDocuments("Item", [data]);
   }
 
   /** Solta uma Folder no party. Na aba Codex cataloga em lote: Actors (exceto outros
@@ -1654,12 +1979,12 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (!this.isEditable) return false;
     const isCodex = this.#isCodexDrop(event);
 
-    // Folder de Items (Traits/Techniques): só catalogável no Codex, como o drop
-    // individual (#onDropItem aceita só trait/technique). Numa única escrita.
+    // Folder de Items (Traits/Techniques/Landmarks): só catalogável no Codex, como o
+    // drop individual (#onDropItem aceita trait/technique/landmark). Numa única escrita.
     if (folder?.type === "Item") {
       if (!isCodex) return false;
       return this.#addCodexEntries(folder.contents
-        .filter(x => x instanceof Item && ["trait", "technique"].includes(x.type))
+        .filter(x => x instanceof Item && ["trait", "technique", "landmark"].includes(x.type))
         .map(x => x.uuid));
     }
 
@@ -1718,20 +2043,46 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return true;
   }
 
+  /** Núcleo compartilhado: aponta o "lugar" atual do party para `place` (uma Location
+   *  actor OU, no caso de um landmark AVULSO, o próprio Item de landmark usado como
+   *  lugar), sempre catalogando-o no codex com o nome revelado, e fixa o landmark
+   *  atual (`""` = nenhum). Usado por uma Location solta no slot e pelos dois caminhos
+   *  de #setLandmark. */
+  async #applyLocation(place, landmarkId = "") {
+    const update = { "system.location": place.uuid, "system.landmark": landmarkId };
+    const codex = foundry.utils.deepClone(this.document.system.codex ?? []);
+    if (!codex.some(e => e.uuid === place.uuid)) {
+      codex.push(ShiftPartySheet.#newCodexEntry(place.uuid, ["name"]));
+      update["system.codex"] = codex;
+    }
+    await this.document.update(update);
+    return true;
+  }
+
   /** Define a Location do party (sempre catalogada no codex) + limpa o landmark. */
   async #setLocation(actor) {
     if (actor?.type !== "location") {
       ui.notifications.warn(game.i18n.localize("SHIFT.Party.NotLocation"));
       return false;
     }
-    const update = { "system.location": actor.uuid, "system.landmark": "" };
-    const codex = foundry.utils.deepClone(this.document.system.codex ?? []);
-    if (!codex.some(e => e.uuid === actor.uuid)) {
-      codex.push(ShiftPartySheet.#newCodexEntry(actor.uuid, ["name"]));
-      update["system.codex"] = codex;
+    return this.#applyLocation(actor, "");
+  }
+
+  /** Solta um Landmark no slot de Location. Dois casos:
+   *   • EMBUTIDO numa Location → fixa a Location-pai E aquele landmark de uma vez
+   *     ("a party está NESTE ponto da Location").
+   *   • AVULSO (Item de mundo, sem Location-pai) → o próprio landmark vira o lugar
+   *     atual do party (system.location aponta para o Item; #locationContext o trata
+   *     como um lugar sem sub-landmarks, carregando o próprio safe/unsafe). */
+  async #setLandmark(landmark) {
+    if (landmark?.type !== "landmark") {
+      ui.notifications.warn(game.i18n.localize("SHIFT.Party.NotLocation"));
+      return false;
     }
-    await this.document.update(update);
-    return true;
+    const loc = landmark.parent;
+    return (loc?.type === "location")
+      ? this.#applyLocation(loc, landmark.id)
+      : this.#applyLocation(landmark, "");
   }
 
   /** Define o Vehicle ativo (limpa a crew do vehicle anterior, sincroniza a do novo). */
@@ -1746,7 +2097,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
   /** Um conjunto de reveal com apenas os campos dados ligados (o resto oculto). */
   static #revealSet(on = []) {
-    const r = { name: false, concept: false, stats: false, defeat: false, traits: false, scale: false, note: false };
+    const r = { name: false, concept: false, stats: false, defeat: false, traits: false, scale: false, description: false };
     for (const k of on) r[k] = true;
     return r;
   }
@@ -1754,6 +2105,25 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   /** Uma entrada de codex nova com um formato consistente em todo caminho de adição. */
   static #newCodexEntry(uuid, revealOn = []) {
     return { uuid, reveal: ShiftPartySheet.#revealSet(revealOn), revealLandmarks: [] };
+  }
+
+  /** Monta o drag-data canônico de uma entrada do codex a partir do seu UUID, para
+   *  que arrastar um card do codex equivalha a arrastar o Actor/Item ligado (cai no
+   *  slot de Location/Vehicle, no canvas, em outra ficha). Documentos do mundo
+   *  resolvem síncrono e já trazem `toDragData()`; uma entrada de compendium (sem
+   *  instância carregada) recai em `{type, uuid}` derivado do tipo do documento. */
+  static #codexDragData(uuid) {
+    if (!uuid) return null;
+    try {
+      const doc = fromUuidSync(uuid);
+      if (doc?.toDragData) return doc.toDragData();
+    } catch (_) { /* compendium não carregado / uuid inválido */ }
+    try {
+      const p = foundry.utils.parseUuid(uuid);
+      const t = p?.collection?.documentName ?? p?.type ?? p?.documentType;
+      if (t === "Actor" || t === "Item") return { type: t, uuid };
+    } catch (_) { /* uuid malformado */ }
+    return null;
   }
 
   /** Adiciona um UUID de Actor/Item ao codex. Entradas novas começam OCULTAS (um
@@ -1770,6 +2140,14 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     let added = 0;
     for (const uuid of uuids) {
       if (!uuid || have.has(uuid)) continue;
+      // Um landmark embutido cuja Location-mãe já está catalogada já aparece como
+      // página própria (card virtual): não cria uma entrada solta duplicada para ele.
+      const cut = uuid.indexOf(".Item.");
+      if (cut > 0 && have.has(uuid.slice(0, cut))) {
+        let isLm = false;
+        try { isLm = fromUuidSync(uuid)?.type === "landmark"; } catch (_) { /* compendium não carregado */ }
+        if (isLm) continue;
+      }
       have.add(uuid);
       codex.push(ShiftPartySheet.#newCodexEntry(uuid));
       added++;
@@ -1909,6 +2287,34 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (icon) { icon.classList.toggle("fa-eye", on); icon.classList.toggle("fa-eye-slash", !on); }
     target.closest(".cd-landmark")?.classList.toggle("is-hidden", !on);
     await this.document.update({ "system.codex": codex }, { render: false });
+  }
+
+  /** Alterna a visibilidade de uma PÁGINA de landmark (card/detalhe próprios), só do
+   *  GM. Virtual (embutido numa Location) → mexe no revealLandmarks da Location, então
+   *  sincroniza com a lista aninhada. Solto (Item catalogado) → revela/oculta tudo de
+   *  uma vez (nome + descrição + nota), pois landmark é all-or-nothing. Re-render
+   *  direcionado do Codex para a grade refletir o card aparecendo/sumindo. */
+  static async #onToggleLandmarkVisible(event, target) {
+    if (!game.user.isGM) return;
+    const uuid = target.closest("[data-codex-uuid]")?.dataset.codexUuid;
+    if (!uuid) return;
+    const resolved = await this.#resolveCodexTarget(uuid);
+    if (!resolved) return;
+    const codex = foundry.utils.deepClone(this.document.system.codex ?? []);
+    if (resolved.virtual) {
+      const e = codex.find(x => x.uuid === resolved.entry.uuid);
+      if (!e) return;
+      e.revealLandmarks = e.revealLandmarks ?? [];
+      const i = e.revealLandmarks.indexOf(resolved.lmId);
+      if (i >= 0) e.revealLandmarks.splice(i, 1); else e.revealLandmarks.push(resolved.lmId);
+    } else {
+      const e = codex.find(x => x.uuid === uuid);
+      if (!e) return;
+      // Landmark = nome + descrição aos players; a GM Note segue privada (sem campo a vazar).
+      e.reveal = (e.reveal?.name) ? ShiftPartySheet.#revealSet([]) : ShiftPartySheet.#revealSet(["name", "concept"]);
+    }
+    await this.document.update({ "system.codex": codex }, { render: false });
+    this.render({ parts: ["codex"] });   // direcionado → sem flash da ficha inteira
   }
 
   /** Revela uma entrada do Codex aos Players. Disponível para o GM E o owner do
@@ -2213,6 +2619,242 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       opts.wealthDie = loc.wealthDie;   // auto-cap; o safeRest do membro pula seu prompt
     }
     for (const m of members) await m[method](opts);
+
+    // Numa Safe Rest, o Vehicle ATIVO restoca junto: o Cargo volta ao máximo,
+    // sujeito ao mesmo teto de Wealth da Location. Só o ativo — veículos avulsos
+    // descansam pela própria ficha.
+    if (method === "safeRest" && this.document.system.vehicle) {
+      const vehicle = await fromUuid(this.document.system.vehicle);
+      if (vehicle?.type === "vehicle" && vehicle.isOwner) await vehicle.safeRest(opts);
+    }
+  }
+
+  /* --- Travel ---------------------------------------------------- */
+
+  /** Abre o diálogo de partida e inicia a jornada. GM-only: avançar um Leg mexe nos
+   *  Traits de membros/veículos (docs que o player pode não possuir), então a
+   *  viagem é conduzida pelo GM, como o Rest na prática. Os players veem a faixa de
+   *  progresso na ficha. Player-initiated por relay fica para uma fase futura. */
+  static async #onTravelStart() {
+    if (!game.user.isGM) return;
+    const actor = this.document;
+    if (actor.system.journey?.active) {
+      return void ui.notifications.warn(game.i18n.localize("SHIFT.Travel.AlreadyActive"));
+    }
+
+    const L = k => game.i18n.localize(k);
+    const esc = foundry.utils.escapeHTML;
+    const hasVehicle = !!actor.system.vehicle;
+
+    // Dois dropdowns: Location e, dependente dela, Landmark (primeira opção =
+    // "General location" = a Location inteira). O toggle "Custom location" troca o
+    // dropdown por um campo de nome livre. O destName é SEMPRE o local; o Flavor é
+    // um texto à parte. Mapa uuid->landmarks para repovoar o 2º dropdown ao vivo.
+    const locs = game.actors.filter(a => a.type === "location");
+    const lmByLoc = {};
+    for (const l of locs) {
+      lmByLoc[l.uuid] = l.items.filter(i => i.type === "landmark")
+        .map(i => ({ id: i.id, name: i.name, safe: !!i.system.safe }));
+    }
+    // Landmarks AVULSOS (Items de mundo, não embutidos numa Location) entram como
+    // destino próprio num optgroup à parte; na chegada viram destino NOMEADO (sem
+    // amarrar system.location, que espera um Actor).
+    const looseLandmarks = game.items.filter(i => i.type === "landmark");
+    const lmGroup = looseLandmarks.length
+      ? `<optgroup label="${esc(L("SHIFT.Travel.StandaloneLandmarks"))}">` +
+        looseLandmarks.map(i => `<option value="${i.uuid}">${esc(i.name)}${i.system.safe ? "" : " ⚠"}</option>`).join("") +
+        `</optgroup>`
+      : "";
+    const locOpts = `<option value="">${L("SHIFT.Travel.NoLocation")}</option>` +
+      locs.map(l => `<option value="${l.uuid}">${esc(l.name)}</option>`).join("") + lmGroup;
+    const modeOpts = `<option value="">${L("SHIFT.Travel.ModeInherit")}</option>` +
+      Object.entries(CONFIG.SHIFT.travelModes).map(([k, v]) => `<option value="${k}">${L(v)}</option>`).join("");
+    const generalLabel = L("SHIFT.Travel.GeneralLocation");
+
+    const content = `<div class="shift-travel-dialog">
+      <label class="std-toggle"><input type="checkbox" name="custom"/> <span>${L("SHIFT.Travel.Custom")}</span></label>
+      <div class="form-group" data-row="location"><label>${L("SHIFT.Travel.Location")}</label>
+        <select name="dest">${locOpts}</select></div>
+      <div class="form-group" data-row="landmark" hidden><label>${L("SHIFT.Travel.Landmark")}</label>
+        <select name="landmark"><option value="">${esc(generalLabel)}</option></select></div>
+      <div class="form-group" data-row="customName" hidden><label>${L("SHIFT.Travel.CustomName")}</label>
+        <input type="text" name="customName" placeholder="${L("SHIFT.Travel.CustomPlaceholder")}"/></div>
+      <div class="form-group"><label>${L("SHIFT.Travel.Flavor")}</label>
+        <input type="text" name="flavor" placeholder="${L("SHIFT.Travel.FlavorPlaceholder")}"/></div>
+      <div class="form-group" data-row="legs"><label>${L("SHIFT.Travel.LegsTotal")}</label>
+        <input type="number" name="legs" value="3" min="1" step="1"/></div>
+      <div class="form-group"><label>${L("SHIFT.Travel.Mode")}</label>
+        <select name="mode">${modeOpts}</select></div>
+      <div class="form-group"><label>${L("SHIFT.Travel.Transport")}</label>
+        <select name="transport"><option value="foot"${hasVehicle ? "" : " selected"}>${L("SHIFT.Travel.OnFoot")}</option><option value="vehicle"${hasVehicle ? " selected" : ""}>${L("SHIFT.Travel.ByVehicle")}</option></select></div>
+    </div>`;
+
+    const data = await foundry.applications.api.DialogV2.prompt({
+      window: { title: L("SHIFT.Travel.Title") },
+      content,
+      rejectClose: false,
+      render: (event, dialog) => {
+        const root = dialog?.element ?? dialog;
+        if (!root?.querySelector) return;
+        const q = sel => root.querySelector(sel);
+        const custom = q('[name="custom"]');
+        const locRow = q('[data-row="location"]');
+        const lmRow = q('[data-row="landmark"]');
+        const nameRow = q('[data-row="customName"]');
+        const legsRow = q('[data-row="legs"]');
+        const locSel = q('[name="dest"]');
+        const lmSel = q('[name="landmark"]');
+        const modeSel = q('[name="mode"]');
+        const fillLandmarks = () => {
+          const lms = lmByLoc[locSel.value] ?? [];
+          lmSel.innerHTML = `<option value="">${esc(generalLabel)}</option>` +
+            lms.map(l => `<option value="${l.id}">${esc(l.name)}${l.safe ? "" : " ⚠"}</option>`).join("");
+          lmRow.hidden = custom.checked || !lms.length;
+        };
+        const syncCustom = () => {
+          const on = custom.checked;
+          locRow.hidden = on;
+          nameRow.hidden = !on;
+          fillLandmarks();
+        };
+        const syncLegs = () => {
+          // Simple não tem Legs (a viagem conclui de uma vez).
+          const m = modeSel.value || game.settings.get("shift-vtt", "travelMode");
+          legsRow.hidden = m === "simple";
+        };
+        custom.addEventListener("change", syncCustom);
+        locSel.addEventListener("change", fillLandmarks);
+        modeSel.addEventListener("change", syncLegs);
+        syncCustom();
+        syncLegs();
+      },
+      ok: {
+        label: L("SHIFT.Travel.Embark"),
+        callback: (ev, btn) => {
+          const f = btn.form;
+          return {
+            custom: f.elements.custom?.checked ?? false,
+            dest: f.elements.dest?.value ?? "",
+            landmark: f.elements.landmark?.value ?? "",
+            customName: (f.elements.customName?.value ?? "").trim(),
+            flavor: (f.elements.flavor?.value ?? "").trim(),
+            legs: Number(f.elements.legs?.value) || 3,
+            mode: f.elements.mode?.value ?? "",
+            transport: f.elements.transport?.value ?? "foot"
+          };
+        }
+      }
+    });
+    if (!data) return;
+
+    // destName é sempre o LOCAL: custom → texto livre; senão "Landmark, em Location"
+    // ou o nome da Location. O Flavor é guardado à parte.
+    let destUuid = "", destLandmark = "", destName = "";
+    if (data.custom) {
+      destName = data.customName;
+    } else if (data.dest) {
+      const doc = await fromUuid(data.dest);
+      if (doc?.documentName === "Actor") {
+        // Location actor: amarra na chegada (system.location/landmark).
+        destUuid = data.dest;
+        if (data.landmark) {
+          destLandmark = data.landmark;
+          const lmName = doc.items.get(data.landmark)?.name ?? "";
+          destName = game.i18n.format("SHIFT.Travel.LandmarkAt", { landmark: lmName, location: doc.name });
+        } else {
+          destName = doc.name;
+        }
+      } else if (doc) {
+        // Landmark avulso (Item): destino só nomeado, sem binding de Location.
+        destName = doc.name;
+      }
+    }
+
+    await actor.startJourney({
+      destName, destUuid, destLandmark,
+      flavor: data.flavor,
+      legsTotal: data.legs,
+      mode: data.mode,
+      onFoot: data.transport !== "vehicle"
+    });
+    ui.notifications.info(game.i18n.localize("SHIFT.Travel.Started"));
+  }
+
+  /** Avança um Leg. No modo Challenging, pergunta ao GM se a Action Roll de viagem
+   *  (feita à parte pelo lead) teve sucesso; uma Failure custa um recurso extra. */
+  static async #onTravelAdvance() {
+    if (!game.user.isGM) return;
+    const actor = this.document;
+    if (!actor.system.journey?.active) return;
+    let extra = 1;
+    if (actor.travelMode === "challenging") {
+      const success = await foundry.applications.api.DialogV2.confirm({
+        window: { title: game.i18n.localize("SHIFT.Travel.ChallengeTitle") },
+        content: `<p>${game.i18n.localize("SHIFT.Travel.ChallengePrompt")}</p>`,
+        yes: { label: game.i18n.localize("SHIFT.Travel.ChallengeSuccess") },
+        no: { label: game.i18n.localize("SHIFT.Travel.ChallengeFailure") },
+        rejectClose: false
+      });
+      if (success === null) return;
+      extra = success ? 1 : 2;
+    }
+    await actor.advanceJourneyLeg({ extra });
+  }
+
+  /** Encerra a jornada (chegada); vincula a Location/Landmark de destino, se houver. */
+  static async #onTravelArrive() {
+    if (!game.user.isGM) return;
+    await this.document.arriveJourney();
+  }
+
+  /** Conclui uma viagem Simple de uma vez só (narrada), via prompt de confirmação. */
+  static async #onTravelFinish() {
+    if (!game.user.isGM) return;
+    const actor = this.document;
+    const j = actor.system.journey;
+    if (!j?.active) return;
+    const dest = j.destName || game.i18n.localize("SHIFT.Travel.Unknown");
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("SHIFT.Travel.Finish") },
+      content: `<p>${game.i18n.format("SHIFT.Travel.FinishConfirm", { dest: foundry.utils.escapeHTML(dest) })}</p>`,
+      rejectClose: false
+    });
+    if (!ok) return;
+    await actor.arriveJourney({ simple: true });
+  }
+
+  /** Cancela a jornada. Se algo já foi gasto, oferece devolver (shiftUp) os recursos
+   *  ou manter o gasto; sem nada gasto, só confirma. */
+  static async #onTravelAbort() {
+    if (!game.user.isGM) return;
+    const actor = this.document;
+    const hasSpent = (actor.system.journey?.spent?.length ?? 0) > 0;
+
+    if (!hasSpent) {
+      const ok = await foundry.applications.api.DialogV2.confirm({
+        window: { title: game.i18n.localize("SHIFT.Travel.Abort") },
+        content: `<p>${game.i18n.localize("SHIFT.Travel.AbortConfirm")}</p>`,
+        rejectClose: false
+      });
+      if (!ok) return;
+      return void actor.abortJourney();
+    }
+
+    let choice = null;
+    try {
+      choice = await foundry.applications.api.DialogV2.wait({
+        window: { title: game.i18n.localize("SHIFT.Travel.Abort") },
+        content: `<p>${game.i18n.localize("SHIFT.Travel.AbortPrompt")}</p>`,
+        rejectClose: false,
+        buttons: [
+          { action: "refund", label: game.i18n.localize("SHIFT.Travel.AbortRefund"), icon: "fa-solid fa-rotate-left", default: true },
+          { action: "keep", label: game.i18n.localize("SHIFT.Travel.AbortNoRefund"), icon: "fa-solid fa-ban" },
+          { action: "cancel", label: game.i18n.localize("SHIFT.Common.Cancel"), icon: "fa-solid fa-xmark" }
+        ]
+      });
+    } catch (err) { choice = null; }
+    if (!choice || choice === "cancel") return;
+    await actor.abortJourney({ refund: choice === "refund" });
   }
 
   /* --- Location / active Vehicle -------------------------------- */
@@ -2223,12 +2865,31 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   }
 
   static async #onOpenLocation() {
-    const loc = this.document.system.location ? await fromUuid(this.document.system.location) : null;
-    loc?.sheet?.render(true);
+    await this.#openInCodex(this.document.system.location);
   }
 
   static async #onClearVehicle() {
     if (!this.isEditable) return;
     await this.document.setActiveVehicle("");   // também limpa a crew do ex-vehicle
+  }
+
+  static async #onOpenVehicle() {
+    await this.#openInCodex(this.document.system.vehicle);
+  }
+
+  /** Abre uma Location/Vehicle ativa na aba Codex (em vez da ficha): pula para a aba
+   *  Codex e expande a entrada catalogada. A Location é sempre catalogada; um Vehicle
+   *  ativo pode nunca ter sido catalogado — nesse caso, cai de volta na ficha. */
+  async #openInCodex(uuid) {
+    if (!uuid) return;
+    const cataloged = (this.document.system.codex ?? []).some(e => e.uuid === uuid);
+    if (cataloged) {
+      this._codexOpen = uuid;
+      this.tabGroups.primary = "codex";   // o clique pode vir de outra aba (header é compartilhado)
+      this.render();
+      return;
+    }
+    const doc = await fromUuid(uuid).catch(() => null);
+    doc?.sheet?.render(true);
   }
 }

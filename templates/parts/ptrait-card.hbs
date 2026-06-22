@@ -41,6 +41,13 @@
         {{/if}}{{/if}}
         <a class="ta-btn up{{#unless canUp}} disabled{{/unless}}" data-action="shiftUp" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftUp'}}"><i class="fa-solid fa-circle-arrow-up"></i></a>
         <a class="ta-btn down{{#unless canDown}} disabled{{/unless}}" data-action="shiftDown" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftDown'}}"><i class="fa-solid fa-circle-arrow-down"></i></a>
+        {{!-- Desfecho da Quest (só quando expandida): no cabeçalho, não num rodapé —
+              assim o rodapé fica só para os links e o card não cresce sem necessidade. --}}
+        {{#if quest}}{{#if expanded}}
+          {{#if canResolve}}<a class="ta-btn resolve" data-action="questResolve" data-tooltip="{{localize 'SHIFT.Party.Quests.Complete'}}"><i class="fa-solid fa-check"></i></a>{{/if}}
+          {{#if canFail}}<a class="ta-btn fail" data-action="questFail" data-tooltip="{{localize 'SHIFT.Party.Quests.Fail'}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
+          {{#if canReopen}}<a class="ta-btn reopen" data-action="questReopen" data-tooltip="{{localize 'SHIFT.Party.Quests.Reopen'}}"><i class="fa-solid fa-rotate-left"></i></a>{{/if}}
+        {{/if}}{{/if}}
         {{#if @root.editMode}}
           <a class="ta-btn edit" data-action="editItem"><i class="fa-solid fa-pen-to-square"></i></a>
           <a class="ta-btn danger" data-action="deleteItem"><i class="fa-solid fa-trash"></i></a>
@@ -52,52 +59,41 @@
   {{!-- Descrição: nos Traits sempre; nas Quests só quando expandida (compacta esconde). --}}
   {{#if desc}}{{#if (shiftOr expanded (shiftNeq quest true))}}<div class="ptrait-desc">{{{desc}}}</div>{{/if}}{{/if}}
 
-  {{#if (shiftOr usesKeywords usesDrawbacks)}}
+  {{#if (shiftOr (shiftOr keywords.length @root.editMode) (shiftOr drawbacks.length @root.editMode))}}
     <div class="ptrait-pills">
-      {{#if usesKeywords}}
+      {{#if (shiftOr keywords.length @root.editMode)}}
         {{> "shift.pill-list" items=keywords kind="keyword"
             label=(localize "SHIFT.Keywords.Title")
             addAction="addKeyword" removeAction="removeKeyword"
             canEdit=@root.editMode addTooltip=(localize "SHIFT.Keywords.Add")}}
       {{/if}}
-      {{#if usesDrawbacks}}
-        {{#if (shiftOr drawbacks.length @root.editMode)}}
-          {{> "shift.pill-list" items=drawbacks kind="drawback"
-              label=(localize "SHIFT.Drawbacks.Title")
-              addAction="addDrawback" removeAction="removeDrawback"
-              canEdit=@root.editMode addTooltip=(localize "SHIFT.Drawbacks.Add")}}
-        {{/if}}
+      {{#if (shiftOr drawbacks.length @root.editMode)}}
+        {{> "shift.pill-list" items=drawbacks kind="drawback"
+            label=(localize "SHIFT.Drawbacks.Title")
+            addAction="addDrawback" removeAction="removeDrawback"
+            canEdit=@root.editMode addTooltip=(localize "SHIFT.Drawbacks.Add")}}
       {{/if}}
     </div>
   {{/if}}
 
-  {{!-- Quest footer: links à esquerda + desfecho Resolve/Fail/Reopen à direita. O
-        rodapé aparece quando há links OU para quem edita. Drop de Actor/Item sobre o
+  {{!-- Rodapé SÓ de links (Etapa C): a divisória/banda aparece apenas quando há links
+        a mostrar e a quest está expandida — sem links, o card termina na descrição.
+        O desfecho (Resolve/Fail/Reopen) mora no cabeçalho. Drop de Actor/Item sobre o
         card cria o link (#questDropTarget casa com .party-quests .ptrait[data-item-id]). --}}
-  {{#if quest}}{{#if showFoot}}
+  {{#if quest}}{{#if (shiftAnd expanded links.length)}}
     <div class="pt-foot">
-      {{!-- Links só quando EXPANDIDA (compacta esconde). Sem links, a seção some. --}}
-      {{#if (shiftAnd expanded links.length)}}
-        <div class="pt-links">
-          <span class="label">{{localize "SHIFT.Party.Quests.Field.Links"}}</span>
-          {{#each links}}
-            <a class="pt-link" style="--lc: {{this.color}};" data-link-uuid="{{this.uuid}}" data-action="openQuestLink" data-tooltip="{{this.name}}">
-              <i class="fa-solid {{this.icon}}"></i>
-              {{#if @root.editMode}}<i class="pt-link-x fa-solid fa-xmark" data-action="removeQuestLink" data-tooltip="{{localize 'SHIFT.Party.Quests.RemoveLink'}}"></i>{{/if}}
-            </a>
-          {{/each}}
-          {{#if @root.editMode}}
-            <span class="pt-link-hint" data-tooltip="{{localize 'SHIFT.Party.Quests.LinkHint'}}"><i class="fa-solid fa-plus"></i></span>
-          {{/if}}
-        </div>
-      {{/if}}
-      {{#if @root.editable}}
-        <div class="pt-outcome">
-          {{#if canResolve}}<a class="resolve" data-action="questResolve" data-tooltip="{{localize 'SHIFT.Party.Quests.Complete'}}"><i class="fa-solid fa-check"></i></a>{{/if}}
-          {{#if canFail}}<a class="fail" data-action="questFail" data-tooltip="{{localize 'SHIFT.Party.Quests.Fail'}}"><i class="fa-solid fa-xmark"></i></a>{{/if}}
-          {{#if canReopen}}<a class="reopen" data-action="questReopen" data-tooltip="{{localize 'SHIFT.Party.Quests.Reopen'}}"><i class="fa-solid fa-rotate-left"></i></a>{{/if}}
-        </div>
-      {{/if}}
+      <div class="pt-links">
+        <span class="label">{{localize "SHIFT.Party.Quests.Field.Links"}}</span>
+        {{#each links}}
+          <a class="pt-link" style="--lc: {{this.color}};" data-link-uuid="{{this.uuid}}" data-action="openQuestLink" data-tooltip="{{this.name}}">
+            <i class="fa-solid {{this.icon}}"></i>
+            {{#if @root.editMode}}<i class="pt-link-x fa-solid fa-xmark" data-action="removeQuestLink" data-tooltip="{{localize 'SHIFT.Party.Quests.RemoveLink'}}"></i>{{/if}}
+          </a>
+        {{/each}}
+        {{#if @root.editMode}}
+          <span class="pt-link-hint" data-tooltip="{{localize 'SHIFT.Party.Quests.LinkHint'}}"><i class="fa-solid fa-plus"></i></span>
+        {{/if}}
+      </div>
     </div>
   {{/if}}{{/if}}
 </div>

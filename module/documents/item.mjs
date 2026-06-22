@@ -8,9 +8,9 @@ import { computeShift } from "../dice/resolution.mjs";
 
 export class ShiftItem extends Item {
 
-  /** Padrões por categoria para Keywords/Drawbacks (ajustáveis na sheet):
-   *  Focus K+D; Core só D; Pack/Cargo nenhum; Attitude só K;
-   *  Focus/Adversary Traits pertencentes a um Adversary só D. */
+  /** Defaults na criação: ícone padrão por tipo (só se genérico); Quest nova numa Party
+   *  entra no topo do seu grupo; Trait solto nasce Focus; Party Trait nasce sem
+   *  autoShiftOnRoll; Attitude nasce com Transform habilitado. */
   async _preCreate(data, options, user) {
     const allowed = await super._preCreate(data, options, user);
     if (allowed === false) return false;
@@ -20,6 +20,21 @@ export class ShiftItem extends Item {
     const icon = CONFIG.SHIFT.defaultIcons?.[this.type];
     const generic = !data.img || data.img === "icons/svg/item-bag.svg";
     if (icon && generic) this.updateSource({ img: icon });
+
+    // Quest nova numa Party entra no TOPO do seu grupo: sort ABAIXO do menor sort entre
+    // as quests irmãs (mesmo parentId efetivo). Cobre os dois caminhos de criação (botão
+    // "Add quest" e arraste do mundo — ambos nascem no topo, parentId ""); reordenar/
+    // aninhar usa update e não passa por aqui. No _preCreate de um embedded, this.parent
+    // já é a Party.
+    if (this.type === "quest" && this.parent?.type === "party") {
+      const quests = this.parent.items.filter(i => i.type === "quest");
+      const ids = new Set(quests.map(q => q.id));
+      const eff = q => (q.system.parentId && ids.has(q.system.parentId)) ? q.system.parentId : "";
+      const myParent = eff(this);
+      const group = quests.filter(q => eff(q) === myParent);
+      const min = group.length ? Math.min(...group.map(q => q.sort ?? 0)) : 0;
+      this.updateSource({ sort: min - CONST.SORT_INTEGER_DENSITY });
+    }
 
     if (this.type !== "trait") return;
 
@@ -49,25 +64,6 @@ export class ShiftItem extends Item {
         "system.transform.resetDie": this.system.maxDie || "d4"
       });
     }
-
-    if (foundry.utils.hasProperty(data, "system.features")) return;
-    const category = this.system.category;
-    const onAdversary = ["adversary", "location"].includes(this.parent?.type);
-    const map = {
-      core: { usesKeywords: false, usesDrawbacks: true },
-      focus: onAdversary
-        ? { usesKeywords: false, usesDrawbacks: true }
-        : { usesKeywords: true, usesDrawbacks: true },
-      adversary: { usesKeywords: false, usesDrawbacks: true },
-      attitude: { usesKeywords: false, usesDrawbacks: false },
-      pack: { usesKeywords: false, usesDrawbacks: false },
-      cargo: { usesKeywords: false, usesDrawbacks: false },
-      special: { usesKeywords: false, usesDrawbacks: false },
-      party: { usesKeywords: true, usesDrawbacks: true },
-      quest: { usesKeywords: false, usesDrawbacks: false }
-    };
-    const features = map[category];
-    if (features) this.updateSource({ "system.features": features });
   }
 
   /** Mantém os gatilhos de recarga da Technique consistentes a caminho do banco
@@ -372,7 +368,7 @@ export class ShiftItem extends Item {
    * @param {boolean} [opts.force=false] Pula o gate de irmãos "deve ser Exhausted primeiro" (o shift já comprometido pelo roll engine resolveu o alvo).
    * @returns {Promise<{changed:boolean, from:string, to:string, becameExhausted:boolean}>}
    */
-  async shiftDown({ steps = 1, promptDeath = true, force = false } = {}) {
+  async shiftDown({ steps = 1, promptDeath = true, force = false, transform = true } = {}) {
     if (!this.hasClock) return { changed: false };
     const from = this.statusKey;
     if (this.system.exhausted) return { changed: false, from, to: from, becameExhausted: false };
@@ -399,12 +395,12 @@ export class ShiftItem extends Item {
     await this.update(update);
 
     const to = this.statusKey;
-    if (exhausted) await this.#onBecameExhausted({ promptDeath });
+    if (exhausted) await this.#onBecameExhausted({ promptDeath, transform });
     return { changed: from !== to, from, to, becameExhausted: exhausted };
   }
 
   /** Desfecho comum de um Trait que atinge Exhausted. */
-  async #onBecameExhausted({ promptDeath = true } = {}) {
+  async #onBecameExhausted({ promptDeath = true, transform = true } = {}) {
     Hooks.callAll("shiftRpg.traitExhausted", this.actor, this);
 
     // Quests não têm temporary, Morte de Core, nem Overcome — só Traits seguem abaixo.
@@ -418,7 +414,7 @@ export class ShiftItem extends Item {
     // relay de ataque do player é o GM). Aberto (Attitude): prompt de novo nome (cancelar
     // = fica exausto). Fila + Auto: avança a sequência. Fila SEM Auto: prompt com as
     // formas + não-transformar. Se transformou, não há overcome/morte.
-    if (this.system.transform?.enabled && game.user.isGM) {
+    if (transform && this.system.transform?.enabled && game.user.isGM) {
       const hasForms = (this.system.transform.forms?.length ?? 0) > 0;
       let did = false;
       if (!hasForms) did = await this.promptOpenReset();
