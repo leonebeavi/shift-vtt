@@ -114,6 +114,30 @@ export function registerParty() {
     }
   });
 
+  // Aninhamento de Locations: quando uma Location muda estruturalmente (safe,
+  // children, scale, nome, img), repinta as fichas que a EXIBEM por referência — a(s)
+  // Location(s)-mãe (aba Landmarks) e qualquer Party que a tenha no codex/location. A
+  // própria ficha dela o Foundry já repinta. Pula quem digita numa nota do codex.
+  Hooks.on("updateActor", (actor, changed) => {
+    if (actor.type !== "location") return;
+    const sys = changed?.system ?? {};
+    const structural = ("safe" in sys) || ("children" in sys) || ("scale" in sys)
+      || ("name" in (changed ?? {})) || ("img" in (changed ?? {}));
+    if (!structural) return;
+    for (const a of game.actors) {
+      if (a.type === "location" && (a.system.children ?? []).includes(actor.uuid)) {
+        for (const app of Object.values(a.apps ?? {})) app.render?.(false);
+      } else if (a.type === "party"
+          && ((a.system.codex ?? []).some(e => e.uuid === actor.uuid) || a.system.location === actor.uuid)) {
+        for (const app of Object.values(a.apps ?? {})) {
+          const editing = app.element?.querySelector?.(
+            ".codex-fieldnotes [contenteditable='true'], textarea.cd-gmnote-edit:focus");
+          if (!editing) app.render?.({ parts: ["codex", "header"] });
+        }
+      }
+    }
+  });
+
   // Remove Actors deletados do Roster de cada party. O hook dispara em TODO
   // client, então restringe a escrita ao único GM ativo (espelha o idioma de
   // escritor-único em session.mjs / socket.mjs) para evitar updates concorrentes
@@ -125,6 +149,10 @@ export function registerParty() {
     for (const party of game.actors) {
       if (party.type === "party" && (party.system.members ?? []).includes(actor.uuid)) {
         party.removePartyMembers(actor.uuid);
+      }
+      // Location-filha deletada: tira o uuid órfão dos children da(s) mãe(s).
+      if (party.type === "location" && (party.system.children ?? []).includes(actor.uuid)) {
+        party.update({ "system.children": (party.system.children ?? []).filter(u => u !== actor.uuid) });
       }
     }
   });

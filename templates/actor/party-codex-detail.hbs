@@ -1,0 +1,139 @@
+{{!-- SHIFT VTT — Codex: painel de DETALHE de uma entrada. Extraído como partial
+      para o party sheet poder re-renderizar SÓ o detalhe ao navegar entre entradas
+      (drill-in/breadcrumb), sem repintar a grade inteira (mata o flash). Contexto:
+      { codexDetail, isGM, isOwner }. --}}
+<div class="codex-detail open cd-kind-{{codexDetail.kind}}" data-role="{{codexDetail.role}}" data-codex-uuid="{{codexDetail.uuid}}"
+     style="--role:{{codexDetail.roleColor}}; --role-c:{{codexDetail.roleColor}}">
+  <div class="cd-bar" style="--role:{{codexDetail.roleColor}}">
+    <button type="button" class="cd-back" data-action="codexBack"><i class="fa-solid fa-arrow-left"></i> {{localize "SHIFT.Tabs.Codex"}}</button>
+    {{#if codexDetail.hasBreadcrumb}}<span class="cd-crumbs">{{#each codexDetail.breadcrumb}}<a data-action="openCodexEntry" data-codex-uuid="{{uuid}}">{{name}}</a><i class="fa-solid fa-chevron-right"></i>{{/each}}</span>{{/if}}
+    <span class="cd-title">{{codexDetail.name}}</span>
+    {{#if codexDetail.canOpenSheet}}<button type="button" class="cd-open" data-action="openMember"><i class="fa-solid fa-up-right-from-square"></i> {{localize "SHIFT.Party.Codex.OpenSheet"}}</button>{{/if}}
+  </div>
+  <div class="cd-body">
+    <div class="cd-hero">
+      <div class="cd-portrait" style="--role:{{codexDetail.roleColor}}">{{#if codexDetail.img}}<img src="{{codexDetail.img}}" alt="{{codexDetail.name}}"/>{{else}}<i class="fa-solid {{codexDetail.icon}}"></i>{{/if}}</div>
+      <div class="cd-meta">
+        <div class="cd-name">{{codexDetail.name}}</div>
+        <div class="cd-rolelabel">{{codexDetail.roleLabel}}</div>
+        {{#if codexDetail.locationName}}<span class="cc-stat cc-loc cd-loc" data-tooltip="{{codexDetail.locationName}}"><i class="fa-solid fa-location-dot"></i><span class="cc-loc-name">{{codexDetail.locationName}}</span></span>{{/if}}
+        {{#if codexDetail.concept}}<div class="cd-concept">{{codexDetail.concept}}</div>{{/if}}
+        <div class="cd-statrow">
+          {{#if (shiftEq codexDetail.kind 'actor')}}
+            {{#if codexDetail.showStats}}
+              {{#if codexDetail.power}}<span class="cc-stat power" data-tooltip="{{localize 'SHIFT.Adversary.Power'}}"><i class="fa-solid fa-fire"></i> {{localize 'SHIFT.Adversary.Power'}} {{codexDetail.power}}</span>{{/if}}
+              {{#if codexDetail.actions}}<span class="cc-stat actions" data-tooltip="{{localize 'SHIFT.Adversary.Actions'}}"><i class="fa-solid fa-bolt"></i> {{codexDetail.actions}}</span>{{/if}}
+            {{/if}}
+            {{#if codexDetail.showDefeat}}<span class="cc-stat def" data-tooltip="{{localize 'SHIFT.Party.Codex.OvercomeHint'}}"><i class="fa-solid fa-skull"></i> {{localize 'SHIFT.Adversary.Defeat'}} {{codexDetail.defeat.max}}</span>{{/if}}
+            {{#if codexDetail.showScale}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize 'SHIFT.Trait.Scale'}} {{codexDetail.scale}}</span>{{/if}}
+          {{/if}}
+          {{#if (shiftEq codexDetail.kind 'trait')}}
+            {{#if codexDetail.showDie}}<span class="cc-stat cc-die-pill status-{{codexDetail.statusKey}}" data-tooltip="{{codexDetail.statusLabel}}"><i class="fa-solid fa-dice-d20"></i> {{codexDetail.statusLabel}} &middot; {{localize 'SHIFT.Trait.Max'}} {{codexDetail.maxLabel}}</span>{{/if}}
+            {{#if codexDetail.showScale}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize 'SHIFT.Trait.Scale'}} {{codexDetail.scale}}</span>{{/if}}
+          {{/if}}
+          {{#if (shiftEq codexDetail.kind 'technique')}}
+            {{#if codexDetail.showTech}}
+              <span class="cc-stat tech" data-tooltip="{{localize 'SHIFT.SheetLabels.Technique'}}"><i class="fa-solid fa-bolt"></i> {{codexDetail.techType}}</span>
+              {{#if codexDetail.techAtWill}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Recharge.AtWillHint'}}"><i class="fa-solid fa-infinity"></i></span>
+              {{else if codexDetail.techUses}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Technique.Uses'}}"><i class="fa-solid fa-bolt-lightning"></i> {{codexDetail.techUses.value}}/{{codexDetail.techUses.max}}</span>{{/if}}
+            {{/if}}
+          {{/if}}
+          {{#if (shiftEq codexDetail.kind 'vehicle')}}
+            {{#if codexDetail.showScale}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize 'SHIFT.Trait.Scale'}} {{codexDetail.scale}}</span>{{/if}}
+            {{#if codexDetail.hasCrew}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Party.Codex.Crew'}}"><i class="fa-solid fa-users"></i> {{codexDetail.crew.length}}</span>{{/if}}
+          {{/if}}
+          {{#if (shiftEq codexDetail.kind 'location')}}
+            {{#if codexDetail.showScale}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize 'SHIFT.Trait.Scale'}} {{codexDetail.scale}}</span>{{/if}}
+          {{/if}}
+          {{#if (shiftEq codexDetail.kind 'landmark')}}
+            <span class="cc-stat lm-{{#if codexDetail.safe}}safe{{else}}unsafe{{/if}}" data-tooltip="{{#if codexDetail.safe}}{{localize 'SHIFT.Party.Codex.Safe'}}{{else}}{{localize 'SHIFT.Party.Codex.Unsafe'}}{{/if}}"><i class="fa-solid {{#if codexDetail.safe}}fa-shield-heart{{else}}fa-triangle-exclamation{{/if}}"></i> {{#if codexDetail.safe}}{{localize 'SHIFT.Location.Safe'}}{{else}}{{localize 'SHIFT.Location.Unsafe'}}{{/if}}</span>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+
+    {{#if (shiftEq codexDetail.kind 'location')}}
+      {{#if codexDetail.hasLandmarks}}
+        <div class="cd-section-label">{{localize "SHIFT.Location.Landmarks"}}</div>
+        <div class="cd-landmarks">
+          {{#each codexDetail.landmarks}}
+            <div class="cd-landmark{{#unless safe}} unsafe{{/unless}}{{#unless revealed}} is-hidden{{/unless}}" data-codex-uuid="{{uuid}}" data-action="openCodexEntry">
+              <div class="cd-lm-portrait">{{#if img}}<img src="{{img}}" alt="{{name}}"/>{{else}}<i class="fa-solid {{#if safe}}fa-shield-heart{{else}}fa-triangle-exclamation{{/if}}"></i>{{/if}}</div>
+              <div class="cd-lm-body">
+                <div class="cd-lm-name">{{name}}</div>
+                {{#if childCount}}<div class="cd-lm-desc"><i class="fa-solid fa-link"></i> {{childCount}} {{localize "SHIFT.Location.Landmarks"}}</div>{{/if}}
+              </div>
+              <span class="cd-lm-flag {{#if safe}}safe{{else}}unsafe{{/if}}" data-tooltip="{{#if safe}}{{localize 'SHIFT.Party.Codex.Safe'}}{{else}}{{localize 'SHIFT.Party.Codex.Unsafe'}}{{/if}}">
+                <i class="fa-solid {{#if safe}}fa-shield-heart{{else}}fa-triangle-exclamation{{/if}}"></i> {{#if safe}}{{localize "SHIFT.Location.Safe"}}{{else}}{{localize "SHIFT.Location.Unsafe"}}{{/if}}
+              </span>
+              {{#if @root.codexDetail.canEditReveal}}
+                <a class="cd-lm-reveal{{#if revealed}} on{{/if}}" data-action="toggleCodexLandmark" data-child-uuid="{{uuid}}"
+                   data-tooltip="{{localize 'SHIFT.Party.Codex.RevealLandmark'}}">
+                  <i class="fa-solid {{#if revealed}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
+                </a>
+              {{/if}}
+            </div>
+          {{/each}}
+        </div>
+      {{/if}}
+    {{/if}}
+
+    {{#if (shiftEq codexDetail.kind 'vehicle')}}
+      {{#if codexDetail.hasCrew}}
+        <div class="cd-section-label">{{localize "SHIFT.Party.Codex.Crew"}}</div>
+        <div class="cd-crew">
+          {{#each codexDetail.crew}}
+            <span class="cd-crew-member" data-tooltip="{{name}}">{{#if img}}<img src="{{img}}" alt="{{name}}"/>{{else}}<i class="fa-solid fa-user"></i>{{/if}}<span class="cd-crew-name">{{name}}</span></span>
+          {{/each}}
+        </div>
+      {{/if}}
+    {{/if}}
+
+    {{#if codexDetail.hasTraits}}
+      <div class="cd-section-label">{{localize "SHIFT.Party.Codex.KnownTraits"}}</div>
+      <div class="cd-traits">
+        {{> "shift.party-traits" traits=codexDetail.traits ownerUuid=codexDetail.uuid}}
+      </div>
+    {{/if}}
+
+    {{#if codexDetail.showDesc}}
+      <div class="cd-section-label"><i class="fa-solid fa-book-open"></i> {{localize "SHIFT.Bio.Description"}}</div>
+      <div class="cd-desc">{{{codexDetail.desc}}}</div>
+    {{/if}}
+
+    {{#if codexDetail.fieldNotes.available}}
+      <div class="cd-section-label"><i class="fa-solid fa-feather"></i> {{localize "SHIFT.Party.Codex.FieldNotes"}}</div>
+      {{#if codexDetail.fieldNotes.canEdit}}
+        <prose-mirror class="codex-fieldnotes" data-codex-uuid="{{codexDetail.uuid}}"
+                      data-page-uuid="{{codexDetail.fieldNotes.pageUuid}}"
+                      data-document-uuid="{{codexDetail.fieldNotes.pageUuid}}"
+                      value="{{codexDetail.fieldNotes.source}}" toggled>{{{codexDetail.fieldNotes.content}}}</prose-mirror>
+      {{else}}
+        <div class="codex-fieldnotes-display">{{#if codexDetail.fieldNotes.content}}{{{codexDetail.fieldNotes.content}}}{{else}}<span class="empty">{{localize "SHIFT.Common.Empty"}}</span>{{/if}}</div>
+      {{/if}}
+    {{/if}}
+
+    {{#if codexDetail.showGmNote}}
+      <div class="cd-section-label gm"><i class="fa-solid fa-user-secret"></i> {{localize "SHIFT.Party.Codex.Notes"}}</div>
+      <textarea class="cd-gmnote-edit" data-document-uuid="{{codexDetail.uuid}}"
+                placeholder="{{localize 'SHIFT.Bio.GMNotePlaceholder'}}">{{codexDetail.gmNoteSource}}</textarea>
+    {{/if}}
+
+    {{#if codexDetail.canEditReveal}}
+      <div class="cd-section-label gm">{{localize "SHIFT.Party.Codex.RevealTitle"}}</div>
+      <div class="cd-reveal">
+        {{#if (shiftEq codexDetail.kind 'landmark')}}
+          <a class="cd-reveal-toggle{{#if codexDetail.landmarkVisible}} on{{/if}}" data-action="toggleLandmarkVisible">
+            <i class="fa-solid {{#if codexDetail.landmarkVisible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i> {{localize "SHIFT.Party.Codex.RevealLandmark"}}
+          </a>
+        {{else}}
+          {{#each codexDetail.revealFields}}
+            <a class="cd-reveal-toggle{{#if on}} on{{/if}}" data-action="toggleCodexReveal" data-field="{{f}}">
+              <i class="fa-solid {{#if on}}fa-eye{{else}}fa-eye-slash{{/if}}"></i> {{localize label}}
+            </a>
+          {{/each}}
+        {{/if}}
+      </div>
+    {{/if}}
+  </div>
+</div>

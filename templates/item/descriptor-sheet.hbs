@@ -8,7 +8,7 @@
       <input type="text" name="name" value="{{item.name}}" {{#unless editMode}}disabled{{/unless}}/>
       <div class="item-subtitle">
         {{#if editable}}
-          <a class="item-lock{{#if editMode}} active{{/if}}" data-action="toggleEdit" data-tooltip="{{localize 'SHIFT.Tooltips.EditToggle'}}">
+          <a class="item-lock{{#if editMode}} active{{/if}}" data-action="toggleEdit">
             <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
           </a>
         {{/if}}

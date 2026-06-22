@@ -17,6 +17,12 @@
 
     <div class="header-main">
       <div class="identity">
+        {{#if breadcrumb.length}}
+          <div class="loc-breadcrumb">
+            <i class="fa-solid fa-location-dot loc-bc-pin"></i>
+            {{#each breadcrumb}}<a data-child-uuid="{{uuid}}" data-action="openChild">{{name}}</a>{{#unless @last}} <i class="fa-solid fa-chevron-right"></i> {{/unless}}{{/each}}
+          </div>
+        {{/if}}
         <input class="char-name" type="text" name="name" value="{{actor.name}}"
                placeholder="{{localize 'SHIFT.Sheet.Name'}}" {{#unless editMode}}disabled{{/unless}}/>
         {{#if editMode}}
@@ -30,6 +36,16 @@
 
     <div class="header-side">
       <span class="type-badge"><i class="fa-solid fa-location-dot"></i> {{typeLabel}}</span>
+      {{#if editMode}}
+        <a class="type-badge loc-safe {{#if safe}}safe{{else}}unsafe{{/if}}" data-action="toggleSelfSafe"
+           data-tooltip="{{#if safe}}{{localize 'SHIFT.Location.SafeToggle'}}{{else}}{{localize 'SHIFT.Location.UnsafeToggle'}}{{/if}}">
+          <i class="fa-solid {{#if safe}}fa-shield-heart{{else}}fa-triangle-exclamation{{/if}}"></i> {{#if safe}}{{localize "SHIFT.Location.Safe"}}{{else}}{{localize "SHIFT.Location.Unsafe"}}{{/if}}
+        </a>
+      {{else}}
+        <span class="type-badge loc-safe {{#if safe}}safe{{else}}unsafe{{/if}}">
+          <i class="fa-solid {{#if safe}}fa-shield-heart{{else}}fa-triangle-exclamation{{/if}}"></i> {{#if safe}}{{localize "SHIFT.Location.Safe"}}{{else}}{{localize "SHIFT.Location.Unsafe"}}{{/if}}
+        </span>
+      {{/if}}
       {{#if editable}}
         <div class="header-actions">
           <button type="button" class="shift-btn primary" data-action="actionRoll">
@@ -37,13 +53,13 @@
           </button>
         </div>
       {{/if}}
-      {{#if (shiftOr landmarks.length npcs.length)}}
+      {{#if (shiftOr children.length npcs.length)}}
         <div class="header-stats">
-          {{#if landmarks.length}}
-            <span class="adv-stat" data-tooltip="{{localize 'SHIFT.Location.LandmarksHint'}}"><i class="fa-solid fa-map-location-dot"></i> <span class="pl">{{localize "SHIFT.Location.Landmarks"}}</span> <b class="pv">{{landmarks.length}}</b></span>
+          {{#if children.length}}
+            <span class="adv-stat"><i class="fa-solid fa-map-location-dot"></i> <span class="pl">{{localize "SHIFT.Location.Landmarks"}}</span> <b class="pv">{{children.length}}</b></span>
           {{/if}}
           {{#if npcs.length}}
-            <span class="adv-stat" data-tooltip="{{localize 'SHIFT.Location.NPCsHint'}}"><i class="fa-solid fa-users"></i> <span class="pl">{{localize "SHIFT.Location.NPCs"}}</span> <b class="pv">{{npcs.length}}</b></span>
+            <span class="adv-stat"><i class="fa-solid fa-users"></i> <span class="pl">{{localize "SHIFT.Location.NPCs"}}</span> <b class="pv">{{npcs.length}}</b></span>
           {{/if}}
         </div>
       {{/if}}
@@ -64,7 +80,7 @@
             <i class="fa-solid fa-arrows-rotate"></i>
           </a>
         {{/if}}
-        <a class="tab-tool{{#if editMode}} active{{/if}}" data-action="toggleEdit" data-tooltip="{{localize 'SHIFT.Tooltips.EditToggle'}}">
+        <a class="tab-tool{{#if editMode}} active{{/if}}" data-action="toggleEdit">
           <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
         </a>
       </span>

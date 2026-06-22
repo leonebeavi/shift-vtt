@@ -148,6 +148,66 @@ export class ShiftActor extends Actor {
   }
 
   /* ---------------------------------------------------------------- */
+  /* Aninhamento de Locations (filhas = "Landmarks")                  */
+  /* ---------------------------------------------------------------- */
+
+  /** Locations-filhas DIRETAS desta Location (resolvidas de system.children).
+   *  Pula refs mortas, não-Location e auto-referência. Espelha partyMembers. */
+  get childLocations() {
+    if (this.type !== "location") return [];
+    const out = [];
+    for (const uuid of this.system.children ?? []) {
+      const a = fromUuidSync(uuid);
+      if (a instanceof Actor && a.type === "location" && a.uuid !== this.uuid) out.push(a);
+    }
+    return out;
+  }
+
+  /** A Location-mãe desta (lookup reverso; single-parent por design). null no topo.
+   *  Espelha crewedVehicles. */
+  get parentLocation() {
+    if (this.type !== "location") return null;
+    return game.actors.find(a => a.type === "location" && (a.system.children ?? []).includes(this.uuid)) ?? null;
+  }
+
+  /** Cadeia de ancestrais (mãe, avó, ...) do mais próximo ao mais distante, com cap
+   *  de profundidade contra ciclos. Base do breadcrumb e da guarda de ciclo. */
+  get locationAncestors() {
+    const chain = [];
+    let cur = this.parentLocation;
+    let guard = 0;
+    while (cur && guard++ < 50 && !chain.some(a => a.uuid === cur.uuid)) { chain.push(cur); cur = cur.parentLocation; }
+    return chain;
+  }
+
+  /** Aninha uma Location-filha aqui: single-parent (tira da mãe anterior), sem
+   *  ciclo (a filha não pode ser ancestral desta), sem duplicar. */
+  async addChildLocation(uuid) {
+    if (this.type !== "location" || !uuid || uuid === this.uuid) return;
+    const child = await fromUuid(uuid);
+    if (child?.type !== "location") return;
+    if (this.locationAncestors.some(a => a.uuid === uuid)) {
+      return void ui.notifications.warn(game.i18n.localize("SHIFT.Location.CycleBlock"));
+    }
+    const prev = child.parentLocation;
+    if (prev && prev.uuid !== this.uuid) {
+      // Single-parent: PRECISA desvincular da mãe anterior antes de aninhar aqui. Se
+      // não dá pra editar a mãe anterior (sem permissão), aborta o movimento INTEIRO —
+      // senão a filha ficaria listada sob duas mães (breadcrumb/parent/reveal inconsistentes).
+      if (!prev.isOwner) return void ui.notifications.warn(game.i18n.localize("SHIFT.Location.ReparentNoPerm"));
+      await prev.update({ "system.children": (prev.system.children ?? []).filter(u => u !== uuid) });
+    }
+    const cur = this.system.children ?? [];
+    if (!cur.includes(uuid)) await this.update({ "system.children": [...cur, uuid] });
+  }
+
+  /** Remove uma Location-filha desta (não deleta o Actor). */
+  async removeChildLocation(uuid) {
+    if (this.type !== "location") return;
+    await this.update({ "system.children": (this.system.children ?? []).filter(u => u !== uuid) });
+  }
+
+  /* ---------------------------------------------------------------- */
   /* Membros da party (group Actor)                                    */
   /* ---------------------------------------------------------------- */
 
@@ -692,13 +752,13 @@ export class ShiftActor extends Actor {
 
   /**
    * Inicia uma jornada nesta Party. Legs é uma contagem abstrata escolhida pelo
-   * GM (sem milhas/tempo). O destino é opcional: uma Location (+Landmark) ou só um
-   * rótulo de texto.
+   * GM (sem milhas/tempo). O destino é opcional: uma Location (inclusive uma filha
+   * aninhada) ou só um rótulo de texto.
    */
-  async startJourney({ destName = "", destUuid = "", destLandmark = "", flavor = "", legsTotal = 3, mode = "", onFoot = true } = {}) {
+  async startJourney({ destName = "", destUuid = "", flavor = "", legsTotal = 3, mode = "", onFoot = true } = {}) {
     if (this.type !== "party") return;
     await this.update({ "system.journey": {
-      active: true, destName, destUuid, destLandmark, flavor,
+      active: true, destName, destUuid, flavor,
       legsTotal: Math.max(1, Math.floor(Number(legsTotal)) || 1),
       legsDone: 0, mode, onFoot: !!onFoot, spent: []
     } });
@@ -777,8 +837,8 @@ export class ShiftActor extends Actor {
 
   /**
    * Encerra a jornada (chegada). Se havia um destino vinculado, passa a Location
-   * (e Landmark) atual da Party para ele — daí o Safe Rest na ficha já fica
-   * ciente de Wealth/segurança do lugar, como sempre.
+   * atual da Party para ele — daí o Safe Rest na ficha já lê o system.safe do
+   * lugar, como sempre.
    */
   async arriveJourney({ simple = false } = {}) {
     if (this.type !== "party") return;
@@ -787,8 +847,9 @@ export class ShiftActor extends Actor {
     const updates = { "system.journey.active": false };
     let dest = j.destName;
     if (j.destUuid) {
+      // Destino é uma Location (possivelmente aninhada): a party passa a ESTAR nela;
+      // o Safe Rest lê o system.safe da própria Location (não há mais landmark Item).
       updates["system.location"] = j.destUuid;
-      updates["system.landmark"] = j.destLandmark || "";
       if (!dest) dest = (await fromUuid(j.destUuid))?.name ?? "";
     }
     await this.update(updates);

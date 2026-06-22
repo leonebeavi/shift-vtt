@@ -4,19 +4,29 @@
       Params: traits (tile-context array), ownerUuid (toggle key + drawer scope). --}}
 <div class="pm-traits" data-member-uuid="{{ownerUuid}}">
   {{#each traits}}
-    <button type="button"
-            class="trait-tile status-{{statusKey}}{{#if hasDetail}} has-detail{{/if}}{{#if open}} is-open{{/if}}{{#if exhausted}} is-exhausted{{/if}}"
-            data-tile-id="{{id}}"{{#if hasDetail}} data-action="toggleTile"{{/if}}
-            data-tooltip="{{name}} &middot; {{statusLabel}} &middot; {{localize 'SHIFT.Trait.Max'}} {{maxLabel}}">
-      <span class="tt-die">{{#if dieImg}}<img src="{{dieImg}}" alt="{{statusLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}</span>
-      <span class="tt-info"><span class="tt-name">{{name}}</span><span class="tt-status">{{statusLabel}}</span></span>
-      {{#if hasDetail}}
+    {{#if hasDetail}}
+      {{!-- Tem detalhe a expandir: <button> de verdade (acessível por teclado: Enter/Espaço). --}}
+      <button type="button"
+              class="trait-tile has-detail status-{{statusKey}}{{#if open}} is-open{{/if}}{{#if exhausted}} is-exhausted{{/if}}"
+              data-tile-id="{{id}}" data-action="toggleTile"
+              data-tooltip="{{name}} &middot; {{statusLabel}} &middot; {{localize 'SHIFT.Trait.Max'}} {{maxLabel}}">
+        <span class="tt-die">{{#if dieImg}}<img src="{{dieImg}}" alt="{{statusLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}</span>
+        <span class="tt-info"><span class="tt-name">{{name}}</span><span class="tt-status">{{statusLabel}}</span></span>
         <span class="tt-pips">
           {{#if kw}}<span class="pip kw" data-tooltip="{{kw}} {{localize 'SHIFT.Keywords.Title'}}"><i class="fa-solid fa-star"></i>{{kw}}</span>{{/if}}
           {{#if db}}<span class="pip db" data-tooltip="{{db}} {{localize 'SHIFT.Drawbacks.Title'}}"><i class="fa-solid fa-bolt"></i>{{db}}</span>{{/if}}
         </span>
-      {{/if}}
-    </button>
+      </button>
+    {{else}}
+      {{!-- Nada a expandir: elemento INERTE (não focável), pra não prender o anel de foco
+            (rosa, no tema de UI) ao ser clicado. Mesma classe = visual idêntico ao <button>. --}}
+      <div class="trait-tile status-{{statusKey}}{{#if exhausted}} is-exhausted{{/if}}"
+           data-tile-id="{{id}}"
+           data-tooltip="{{name}} &middot; {{statusLabel}} &middot; {{localize 'SHIFT.Trait.Max'}} {{maxLabel}}">
+        <span class="tt-die">{{#if dieImg}}<img src="{{dieImg}}" alt="{{statusLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}</span>
+        <span class="tt-info"><span class="tt-name">{{name}}</span><span class="tt-status">{{statusLabel}}</span></span>
+      </div>
+    {{/if}}
   {{/each}}
 </div>
 {{!-- All drawers are rendered (hidden unless open) so expanding/collapsing is a

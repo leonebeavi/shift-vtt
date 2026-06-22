@@ -285,8 +285,7 @@ function menuGroup(kind, icon, label, buttons) {
   return `
     <span class="hud-menu" data-menu="${kind}">
       <button type="button" class="hud-btn menu-toggle" data-kind="menu"
-              aria-haspopup="true" aria-expanded="false" aria-label="${esc}"
-              data-tooltip="${esc}">
+              aria-haspopup="true" aria-expanded="false" aria-label="${esc}">
         <i class="fa-solid ${icon}"></i>
         <span class="hud-label">${esc}</span>
         <i class="fa-solid fa-chevron-up caret"></i>

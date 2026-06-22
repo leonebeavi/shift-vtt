@@ -30,6 +30,26 @@ export async function enrich(html, options = {}) {
 }
 
 /**
+ * Tira o foco do controle alternado quando a interação veio do MOUSE, para que o
+ * anel de foco (que o tema de UI repinta de rosa via `--color-border-highlight`)
+ * não fique preso no card/tile depois de expandir/recolher um detalhe. Sem isto o
+ * contorno só sumia ao clicar em outro lugar.
+ *
+ * Chamar ANTES de um `render()` em handlers que re-renderizam: assim, quando o
+ * ApplicationV2 captura/restaura o foco no ciclo de render, não há mais o que
+ * restaurar e o anel não volta.
+ *
+ * Ativação por TECLADO (Enter/Espaço sobre um botão → `event.detail === 0`)
+ * preserva o foco de propósito, mantendo a navegação por Tab acessível — só
+ * cliques de ponteiro (`detail > 0`) é que soltam o foco.
+ *
+ * @param {Event} event  O evento recebido pelo handler de ação.
+ */
+export function dropStickyFocus(event) {
+  if (event?.detail > 0) document.activeElement?.blur?.();
+}
+
+/**
  * Liga os botões "Revelar/Esconder" do Foundry às seções secretas exibidas em
  * modo de LEITURA (`.bio-display`), que ficam FORA de um `<prose-mirror>`.
  *
@@ -109,7 +129,8 @@ export async function preloadTemplates() {
     "shift.party-traits": "systems/shift-vtt/templates/parts/party-trait-tiles.hbs",
     "shift.ptrait-card": "systems/shift-vtt/templates/parts/ptrait-card.hbs",
     "shift.item-source": "systems/shift-vtt/templates/parts/item-source.hbs",
-    "shift.item-gmnote": "systems/shift-vtt/templates/parts/item-gmnote.hbs"
+    "shift.item-gmnote": "systems/shift-vtt/templates/parts/item-gmnote.hbs",
+    "shift.party-codex-detail": "systems/shift-vtt/templates/actor/party-codex-detail.hbs"
   });
 }
 

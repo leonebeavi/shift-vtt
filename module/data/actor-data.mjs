@@ -99,6 +99,14 @@ export class ShiftLocationData extends ShiftActorBase {
     schema.gmNote = gmNoteField();
     /** UUIDs de Actor dos NPCs ligados a esta Location, mostrados como cards. */
     schema.npcs = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
+    /** Safe/Unsafe: TODA Location agora carrega o flag (antes só os Landmark Items).
+     *  Gateia o Safe Rest quando a party está neste lugar. */
+    schema.safe = new fields.BooleanField({ initial: true });
+    /** Locations-FILHAS aninhadas (UUIDs de Actor "location"). Aparecem como os
+     *  "Landmarks" desta Location na ficha e no Codex. Profundidade arbitrária; cada
+     *  filha tem um único pai (single-parent + guarda de ciclo em addChildLocation).
+     *  Espelha o padrão de `npcs`/crew/members (array de UUID resolvido no runtime). */
+    schema.children = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
     return schema;
   }
 }
@@ -196,18 +204,17 @@ export class ShiftPartyData extends foundry.abstract.TypeDataModel {
       /** Jornada de Travel em andamento (subsistema OPCIONAL; ver setting
        *  enableTravel/travelMode). Estado leve e efêmero: Legs são uma CONTAGEM
        *  abstrata (sem milhas/velocidade/tempo), o atrito por Leg gasta Pack/Cargo
-       *  (e Core no fallback), e o destino é uma Location/Landmark opcional ou só
-       *  um rótulo de texto. `active` falso = sem viagem (o controle some). */
+       *  (e Core no fallback), e o destino é uma Location opcional (inclusive uma
+       *  filha aninhada) ou só um rótulo de texto. `active` falso = sem viagem. */
       journey: new fields.SchemaField({
         active: new fields.BooleanField({ initial: false }),
         // Rótulo livre do destino (nome mostrado na faixa/card); preenchido a partir
-        // da Location/Landmark quando uma é escolhida, ou digitado à mão.
+        // da Location quando uma é escolhida, ou digitado à mão.
         destName: new fields.StringField({ required: false, blank: true, initial: "" }),
-        // Destino opcional: uuid de um Actor "location" e, dentro dele, o id de um
-        // `landmark` Item. Vazio = destino só de texto. Setados em system.location/
-        // landmark na chegada (gateiam Safe Rest + Wealth como sempre).
+        // Destino opcional: uuid de um Actor "location" (qualquer uma, inclusive
+        // aninhada). Vazio = destino só de texto. Na chegada vira system.location,
+        // e o Safe Rest lê o system.safe da própria Location.
         destUuid: new fields.StringField({ required: false, blank: true, initial: "" }),
-        destLandmark: new fields.StringField({ required: false, blank: true, initial: "" }),
         // Flavor LIVRE da jornada (não é o nome do destino: destName é sempre o
         // local escolhido). Aparece como subtítulo na faixa e nos cards.
         flavor: new fields.StringField({ required: false, blank: true, initial: "" }),

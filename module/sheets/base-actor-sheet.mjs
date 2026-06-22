@@ -1,7 +1,7 @@
 /**
  * SHIFT VTT, comportamento compartilhado da ficha de Actor (ApplicationV2).
  */
-import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker, bindDescriptionSecrets, shiftSpeaker } from "../helpers/utils.mjs";
+import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker, bindDescriptionSecrets, shiftSpeaker, dropStickyFocus } from "../helpers/utils.mjs";
 import { bindDragFeedback } from "../helpers/drag-feedback.mjs";
 import { ShiftBrowser } from "../apps/browser.mjs";
 import { scaleEnabled } from "../settings.mjs";
@@ -615,6 +615,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     if (!id) return;
     if (this.#expanded.has(id)) this.#expanded.delete(id);
     else this.#expanded.add(id);
+    dropStickyFocus(event);   // sem anel de foco rosa preso no card após recolher
     this.render();
   }
 

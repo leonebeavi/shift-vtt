@@ -64,6 +64,9 @@
   border-color: var(--shift-accent);
   box-shadow: 0 0 4px var(--shift-accent-soft);
 }
+.shift-vtt :focus:not(:focus-visible) {
+  outline: none;
+}
 .shift-vtt input:disabled, .shift-vtt select:disabled {
   opacity: 0.85;
   border-color: transparent;
@@ -762,7 +765,7 @@
   white-space: nowrap;
 }
 .shift-vtt .trait-name:hover {
-  color: var(--shift-pink);
+  color: var(--ac, var(--shift-pink));
 }
 .shift-vtt .trait-sub {
   display: flex;
@@ -1048,6 +1051,7 @@
   border-radius: 6px;
   border: none;
   object-fit: cover;
+  transition: transform 0.16s ease;
 }
 .shift-vtt .tech-main {
   display: flex;
@@ -1060,7 +1064,7 @@
   cursor: pointer;
 }
 .shift-vtt .tech-name:hover {
-  color: var(--shift-pink);
+  color: var(--ac, var(--shift-pink));
 }
 .shift-vtt .tech-meta {
   display: flex;
@@ -4415,6 +4419,7 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
   border: none;
   object-fit: cover;
   flex: 0 0 32px;
+  transition: transform 0.16s ease;
 }
 .shift-vtt .landmark-main {
   flex: 1;
@@ -4428,7 +4433,7 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
   cursor: pointer;
 }
 .shift-vtt .landmark-name:hover {
-  color: var(--shift-pink);
+  color: var(--ac, var(--shift-pink));
 }
 .shift-vtt .landmark-source {
   font-size: 0.72em;
@@ -4483,6 +4488,7 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
   border: 1px solid var(--shift-border);
   border-radius: 10px;
   padding: 6px 8px;
+  cursor: pointer;
   transition: box-shadow 0.15s;
 }
 .shift-vtt .npc-card:hover {
@@ -4495,6 +4501,7 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
   object-fit: cover;
   border: 1px solid var(--shift-border);
   cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease;
 }
 .shift-vtt .npc-main {
   flex: 1;
@@ -4511,7 +4518,7 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
   white-space: nowrap;
 }
 .shift-vtt .npc-name:hover {
-  color: var(--shift-pink);
+  color: var(--ac, var(--shift-pink));
 }
 .shift-vtt .npc-type {
   font-size: 0.7em;
@@ -4526,6 +4533,15 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
 }
 .shift-vtt .npc-empty {
   grid-column: 1 / -1;
+}
+.shift-vtt .npc-card {
+  --ac: var(--role, var(--shift-accent));
+}
+.shift-vtt .npc-card .npc-type {
+  color: var(--role, var(--shift-text-muted));
+}
+.shift-vtt .npc-card .npc-img {
+  border-color: color-mix(in oklab, var(--role, var(--shift-border)) 45%, transparent);
 }
 .shift-vtt .shift-btn, .shift-vtt .card-action, .card-action, .shift-vtt .shift-list button.shift-pending, .shift-vtt .pill, .shift-vtt .tag, .shift-vtt .meta-chip, .shift-vtt .adv-chip, .shift-vtt .adv-stat, .shift-vtt .stat-pill, .shift-vtt .ft-btn, .shift-vtt .recharge-pill span, .shift-vtt .recharge-chip, .shift-vtt .tech-type, .shift-vtt .roll-tag, .shift-vtt .crit-buttons button, .shift-vtt .roll-type-option span, .shift-vtt .group-add, .shift-vtt .category-pill, .shift-dialog button, .shift-dialog .seg-opt span, .shift-dialog .trait-opt .opt-die, #shift-action-hud .hud-btn {
   font-variant-caps: small-caps;
@@ -7817,6 +7833,9 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px;
   scrollbar-width: thin;
   scrollbar-color: var(--shift-border) transparent;
@@ -7875,6 +7894,7 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   height: 42px;
   flex: 0 0 auto;
   filter: drop-shadow(0 2px 5px rgba(0,0,0,0.45));
+  transition: transform 0.16s ease, filter 0.16s ease;
 }
 .ptrait-die img {
   width: 100%;
@@ -8530,54 +8550,169 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
 }
 .cd-landmark {
   display: flex;
-  align-items: flex-start;
-  gap: 9px;
+  align-items: center;
+  gap: 10px;
   padding: 7px 10px;
-  border-radius: 9px;
+  border-radius: 10px;
   border: 1px solid var(--shift-border);
-  background: rgba(0,0,0,0.2);
-  border-left: 3px solid var(--shift-safe);
-}
-.cd-landmark.unsafe {
-  border-left-color: var(--shift-unsafe);
+  background: var(--shift-bg-card);
+  cursor: pointer;
+  transition: box-shadow 0.15s;
 }
 .cd-landmark.is-hidden {
   opacity: 0.55;
-  border-style: dashed;
 }
-.cd-landmark .cd-lm-icon {
-  flex: 0 0 auto;
-  color: var(--shift-safe);
-  margin-top: 1px;
+.cd-landmark .cd-lm-portrait {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--ac, var(--shift-safe)) 22%, transparent);
+  color: var(--ac, var(--shift-safe));
+  font-size: 1.15rem;
+  transition: transform 0.16s ease;
 }
-.cd-landmark.unsafe .cd-lm-icon {
-  color: var(--shift-unsafe);
+.cd-landmark .cd-lm-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .cd-landmark .cd-lm-body {
   flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .cd-landmark .cd-lm-name {
   font-weight: 700;
   color: var(--shift-text);
 }
 .cd-landmark .cd-lm-desc {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   color: var(--shift-text-muted);
-  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.cd-landmark .cd-lm-flag {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-variant-caps: small-caps;
+  padding: 3px 9px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--ac, var(--shift-safe)) 50%, transparent);
+  background: color-mix(in oklab, var(--ac, var(--shift-safe)) 14%, transparent);
+  color: var(--ac, var(--shift-safe));
 }
 .cd-landmark .cd-lm-reveal {
   flex: 0 0 auto;
+  align-self: center;
   color: var(--shift-text-muted);
   cursor: pointer;
-  padding: 3px 5px;
+  padding: 5px 7px;
   border-radius: 6px;
+  font-size: 1rem;
 }
 .cd-landmark .cd-lm-reveal.on {
   color: var(--party-accent);
 }
 .cd-landmark .cd-lm-reveal:hover {
   background: rgba(255,255,255,0.08);
+}
+@keyframes cd-enter {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.party-codex .codex-detail.open {
+  animation: cd-enter 0.2s ease-out;
+}
+.cd-crumbs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  color: var(--shift-text-muted);
+  flex-wrap: wrap;
+}
+.cd-crumbs a {
+  color: var(--shift-text-muted);
+  cursor: pointer;
+}
+.cd-crumbs a:hover {
+  color: var(--party-accent);
+}
+.cd-crumbs i {
+  font-size: 0.58rem;
+  opacity: 0.6;
+}
+.party-location .pl-breadcrumb {
+  font-size: 0.66rem;
+  color: var(--shift-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.party-location .pl-breadcrumb i {
+  font-size: 0.5rem;
+  opacity: 0.6;
+}
+.shift-vtt .loc-breadcrumb {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: 100%;
+  margin-bottom: 1px;
+  padding: 3px 11px;
+  border-radius: 10px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  color: #fff;
+  background: linear-gradient(165deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.1) 100%);
+  border: 1px solid rgba(255,255,255,0.32);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 6px rgba(0,0,0,0.12);
+  -webkit-backdrop-filter: blur(6px) saturate(1.05);
+  backdrop-filter: blur(6px) saturate(1.05);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.28);
+}
+.shift-vtt .loc-breadcrumb a {
+  color: #fff;
+  cursor: pointer;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.12s;
+}
+.shift-vtt .loc-breadcrumb a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+.shift-vtt .loc-breadcrumb i {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.75);
+  opacity: 1;
+}
+.shift-vtt .loc-breadcrumb i.loc-bc-pin {
+  font-size: 0.62rem;
+  color: rgba(255,255,255,0.95);
+  margin-right: 1px;
 }
 .cd-crew {
   display: flex;
@@ -9210,8 +9345,8 @@ a.ptrait-die:hover {
   background: color-mix(in oklab, var(--outcome-crit-success) 14%, transparent);
   border-color: color-mix(in oklab, var(--outcome-crit-success) 40%, transparent);
 }
-body:not(.shift-theme-light) .trait-card, body:not(.shift-theme-light) .ptrait, body:not(.shift-theme-light) .trait-tile, body:not(.shift-theme-light) .detail-card, body:not(.shift-theme-light) .die-hero, body:not(.shift-theme-light) .technique-row {
-  --ac: var(--die-color, var(--tile, var(--shift-accent)));
+body:not(.shift-theme-light) .trait-card, body:not(.shift-theme-light) .ptrait, body:not(.shift-theme-light) .trait-tile, body:not(.shift-theme-light) .detail-card, body:not(.shift-theme-light) .die-hero, body:not(.shift-theme-light) .technique-row, body:not(.shift-theme-light) .landmark-row, body:not(.shift-theme-light) .cd-landmark, body:not(.shift-theme-light) .npc-card {
+  --ac: var(--die-color, var(--tile, var(--role, var(--shift-accent))));
   border: 1px solid color-mix(in oklab, var(--ac) 26%, rgba(255,255,255,0.10)) !important;
   background: linear-gradient(155deg,
       color-mix(in oklab, var(--ac) 12%, rgba(255,255,255,0.05)),
@@ -9219,6 +9354,7 @@ body:not(.shift-theme-light) .trait-card, body:not(.shift-theme-light) .ptrait, 
   backdrop-filter: blur(10px) saturate(1.3);
   -webkit-backdrop-filter: blur(10px) saturate(1.3);
   box-shadow: 0 10px 26px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.10);
+  transition: transform 0.16s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 body:not(.shift-theme-light) .technique-row.tech-narrative {
   --ac: var(--shift-yellow);
@@ -9228,6 +9364,12 @@ body:not(.shift-theme-light) .technique-row.tech-mechanical {
 }
 body:not(.shift-theme-light) .technique-row.tech-scaledUp {
   --ac: var(--shift-pink);
+}
+body:not(.shift-theme-light) .landmark-row.is-safe, body:not(.shift-theme-light) .cd-landmark:not(.unsafe) {
+  --ac: var(--shift-safe);
+}
+body:not(.shift-theme-light) .landmark-row.is-unsafe, body:not(.shift-theme-light) .cd-landmark.unsafe {
+  --ac: var(--shift-unsafe);
 }
 body:not(.shift-theme-light) #shift-clocks-panel {
   background: transparent;
@@ -9266,8 +9408,18 @@ body:not(.shift-theme-light) #shift-clocks-panel .clock {
                 inset 0 1px 0 rgba(255,255,255,0.14),
                 inset 0 0 20px color-mix(in oklab, var(--ac) 16%, transparent);
 }
-body:not(.shift-theme-light) .trait-card:hover, body:not(.shift-theme-light) .ptrait:hover, body:not(.shift-theme-light) .die-hero:hover, body:not(.shift-theme-light) .technique-row:hover {
-  box-shadow: 0 14px 32px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.12);
+body:not(.shift-theme-light) .trait-card:hover, body:not(.shift-theme-light) .ptrait:hover, body:not(.shift-theme-light) .die-hero:hover, body:not(.shift-theme-light) .technique-row:hover, body:not(.shift-theme-light) .landmark-row:hover, body:not(.shift-theme-light) .cd-landmark:hover, body:not(.shift-theme-light) .npc-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in oklab, var(--ac) 55%, rgba(255,255,255,0.14)) !important;
+  box-shadow: 0 14px 32px rgba(0,0,0,0.42),
+                0 0 0 1px color-mix(in oklab, var(--ac) 32%, transparent),
+                inset 0 1px 0 rgba(255,255,255,0.12);
+}
+body:not(.shift-theme-light) .technique-row:hover .tech-img, body:not(.shift-theme-light) .landmark-row:hover .landmark-img, body:not(.shift-theme-light) .cd-landmark:hover .cd-lm-portrait, body:not(.shift-theme-light) .npc-card:hover .npc-img {
+  transform: scale(1.08) rotate(-4deg);
+}
+body:not(.shift-theme-light) .trait-card:hover .die-badge.img, body:not(.shift-theme-light) .die-hero:hover .die-badge.img, body:not(.shift-theme-light) .ptrait:hover .ptrait-die {
+  transform: scale(1.12) rotate(-6deg);
 }
 .shift-vtt [data-draggable="true"] {
   cursor: grab;

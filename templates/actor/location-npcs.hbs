@@ -6,12 +6,16 @@
 
     <div class="npc-grid">
       {{#each npcs}}
-        <div class="npc-card" data-npc-uuid="{{uuid}}">
-          <img class="npc-img" src="{{img}}" alt="{{name}}" data-action="openNpc"
-               data-tooltip="{{localize 'SHIFT.Location.OpenNpc'}}"/>
+        {{!-- O card inteiro abre o NPC (não só o nome/avatar). O handler #onOpenNpc
+              resolve o uuid pelo closest("[data-npc-uuid]"), então a ação pode morar
+              na raiz do card; o botão de remover, com a própria data-action, ganha do
+              card por ser o elemento mais próximo no clique. --}}
+        <div class="npc-card" data-npc-uuid="{{uuid}}" data-role="{{role}}" style="--role: {{accent}};"
+             data-action="openNpc">
+          <img class="npc-img" src="{{img}}" alt="{{name}}"/>
           <div class="npc-main">
-            <a class="npc-name" data-action="openNpc">{{name}}</a>
-            <span class="npc-type">{{typeLabel}}</span>
+            <span class="npc-name">{{name}}</span>
+            <span class="npc-type">{{roleLabel}}</span>
           </div>
           {{#if @root.editMode}}
             <a class="ta-btn danger npc-remove" data-action="removeNpc"><i class="fa-solid fa-xmark"></i></a>

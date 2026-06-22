@@ -29,13 +29,11 @@
 
     {{#if editable}}
       <div class="party-actions stacked">
-        <button type="button" class="party-btn pa-xp" data-action="grantPartyXp"
-                data-tooltip="{{localize 'SHIFT.Party.GrantXpHint'}}">
+        <button type="button" class="party-btn pa-xp" data-action="grantPartyXp">
           <i class="fa-solid fa-arrow-trend-up"></i> {{localize "SHIFT.Party.GrantXp"}}
         </button>
         {{#if isGM}}
-          <button type="button" class="party-btn pa-roll" data-action="requestPartyRoll"
-                  data-tooltip="{{localize 'SHIFT.Party.RequestRoll.Hint'}}">
+          <button type="button" class="party-btn pa-roll" data-action="requestPartyRoll">
             <i class="fa-solid fa-dice"></i> {{localize "SHIFT.Party.RequestRoll.Button"}}
           </button>
         {{/if}}
@@ -43,13 +41,11 @@
                 data-tooltip="{{localize 'SHIFT.Party.SafeRestHint'}}">
           <i class="fa-solid fa-campground"></i> {{localize "SHIFT.Rest.Safe"}}
         </button>
-        <button type="button" class="party-btn pa-unsafe" data-action="partyUnsafeRest"
-                data-tooltip="{{localize 'SHIFT.Party.UnsafeRestHint'}}">
+        <button type="button" class="party-btn pa-unsafe" data-action="partyUnsafeRest">
           <i class="fa-solid fa-fire"></i> {{localize "SHIFT.Rest.Unsafe"}}
         </button>
         {{#if isGM}}{{#if travelEnabled}}{{#unless journey}}
-          <button type="button" class="party-btn pa-travel" data-action="travelStart"
-                  data-tooltip="{{localize 'SHIFT.Travel.Hint'}}">
+          <button type="button" class="party-btn pa-travel" data-action="travelStart">
             <i class="fa-solid fa-compass"></i> {{localize "SHIFT.Travel.Button"}}
           </button>
         {{/unless}}{{/if}}{{/if}}
@@ -69,19 +65,10 @@
           {{#if locationInfo.img}}<img class="pl-img" src="{{locationInfo.img}}" alt="{{locationInfo.name}}"
                data-action="openLocation" data-tooltip="{{localize 'SHIFT.Party.OpenLocation'}}"/>{{/if}}
           <div class="pl-body">
-            <a class="pl-name" data-action="openLocation" data-tooltip="{{localize 'SHIFT.Party.OpenLocation'}}">{{locationInfo.name}}</a>
-            {{#if locationInfo.hasLandmarks}}
-              {{#if editMode}}
-                <select class="pl-landmark" data-landmark-select>
-                  <option value=""{{#unless locationInfo.landmarkId}} selected{{/unless}}>{{localize "SHIFT.Party.NoLandmark"}}</option>
-                  {{#each locationInfo.landmarks}}
-                    <option value="{{id}}"{{#if (shiftEq id @root.locationInfo.landmarkId)}} selected{{/if}}>{{name}}{{#unless safe}} &#9888;{{/unless}}</option>
-                  {{/each}}
-                </select>
-              {{else if locationInfo.landmarkName}}
-                <span class="pl-landmark-label">{{locationInfo.landmarkName}}</span>
-              {{/if}}
+            {{#if locationInfo.hasBreadcrumb}}
+              <div class="pl-breadcrumb">{{#each locationInfo.breadcrumb}}<span>{{name}}</span>{{#unless @last}} <i class="fa-solid fa-chevron-right"></i> {{/unless}}{{/each}}</div>
             {{/if}}
+            <a class="pl-name" data-action="openLocation" data-tooltip="{{localize 'SHIFT.Party.OpenLocation'}}">{{locationInfo.name}}</a>
           </div>
           {{#if (shiftNeq locationInfo.landmarkSafe null)}}
             <span class="pl-safe{{#unless locationInfo.landmarkSafe}} unsafe{{/unless}}"
@@ -179,7 +166,7 @@
             <i class="fa-solid fa-arrows-rotate"></i>
           </a>
         {{/if}}
-        <a class="party-tab-tool{{#if editMode}} active{{/if}}" data-action="toggleEdit" data-tooltip="{{localize 'SHIFT.Tooltips.EditToggle'}}">
+        <a class="party-tab-tool{{#if editMode}} active{{/if}}" data-action="toggleEdit">
           <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
         </a>
       </span>

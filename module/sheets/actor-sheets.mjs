@@ -3,7 +3,7 @@
  */
 import { BaseShiftActorSheet } from "./base-actor-sheet.mjs";
 import { getAdvancements } from "../apps/advancement-config.mjs";
-import { enrich, dieLabel, dieStatusLabel, fvtt } from "../helpers/utils.mjs";
+import { enrich, dieLabel, dieStatusLabel, fvtt, dropStickyFocus } from "../helpers/utils.mjs";
 import { requestPlayerRoll, emitOrRun } from "../helpers/socket.mjs";
 import { travelEnabled } from "../settings.mjs";
 
@@ -281,7 +281,11 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
     classes: ["location"],
     position: { width: 680, height: 720 },
     actions: {
-      toggleLandmarkSafe: ShiftLocationSheet.#onToggleLandmarkSafe,
+      toggleChildSafe: ShiftLocationSheet.#onToggleChildSafe,
+      toggleSelfSafe: ShiftLocationSheet.#onToggleSelfSafe,
+      openChild: ShiftLocationSheet.#onOpenChild,
+      removeChild: ShiftLocationSheet.#onRemoveChild,
+      createChild: ShiftLocationSheet.#onCreateChild,
       openNpc: ShiftLocationSheet.#onOpenNpc,
       removeNpc: ShiftLocationSheet.#onRemoveNpc
     }
@@ -311,8 +315,11 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.typeLabel = game.i18n.localize("TYPES.Actor.location");
-    context.landmarks = await this.#prepareLandmarks();
+    context.children = await this.#prepareChildren();
     context.npcs = await this.#prepareNpcs();
+    context.safe = !!this.document.system.safe;
+    // Breadcrumb das Locations-mãe (do topo até a mãe direta).
+    context.breadcrumb = this.document.locationAncestors.slice().reverse().map(a => ({ uuid: a.uuid, name: a.name }));
     context.tabs = this._visibleTabs([
       { id: "traits", label: "SHIFT.Tabs.Traits", icon: "fa-dice-d20" },
       { id: "landmarks", label: "SHIFT.Location.Landmarks", icon: "fa-map-location-dot" },
@@ -322,24 +329,16 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
     return context;
   }
 
-  /** Landmark Items, apresentados como a lista de Techniques (cards expansíveis). */
-  async #prepareLandmarks() {
+  /** Locations-filhas ("Landmarks") desta Location, como cards navegáveis. */
+  async #prepareChildren() {
     const out = [];
-    const landmarks = this.document.items
-      .filter(i => i.type === "landmark")
-      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
-    for (const l of landmarks) {
-      const expanded = this._isExpanded(l.id);
+    for (const child of this.document.childLocations) {
       out.push({
-        id: l.id,
-        name: l.name,
-        img: l.img,
-        safe: l.system.safe,
-        source: l.system.source,
-        expanded,
-        enrichedDescription: (expanded && this.canViewNotes)
-          ? await enrich(l.system.description, { rollData: this.document.getRollData?.() ?? {}, relativeTo: l })
-          : null
+        uuid: child.uuid,
+        name: child.name,
+        img: child.img,
+        safe: !!child.system.safe,
+        childCount: (child.system.children ?? []).length
       });
     }
     return out;
@@ -350,22 +349,42 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
     const out = [];
     for (const uuid of this.document.system.npcs ?? []) {
       const a = await fromUuid(uuid);
-      if (a) out.push({ uuid, name: a.name, img: a.img, typeLabel: game.i18n.localize(`TYPES.Actor.${a.type}`) });
+      if (!a) continue;
+      // Mesmas role/cor/legenda do Codex (deriveCodexRole/codexRoleLabel/codexAccent).
+      const role = deriveCodexRole(a);
+      const kind = codexKind(a);
+      out.push({
+        uuid, name: a.name, img: a.img, role,
+        roleLabel: codexRoleLabel(a, role, kind),
+        accent: codexAccent(a, role, kind)
+      });
     }
     return out;
   }
 
-  static async #onToggleLandmarkSafe(event, target) {
+  static async #onToggleChildSafe(event, target) {
     if (!this.isEditable) return;
-    const item = this.getItem(target);
-    if (item?.type === "landmark") await item.update({ "system.safe": !item.system.safe });
+    const uuid = target.closest("[data-child-uuid]")?.dataset.childUuid;
+    const child = uuid ? await fromUuid(uuid) : null;
+    if (child?.type === "location" && child.isOwner) await child.update({ "system.safe": !child.system.safe });
   }
 
-  /** Solta um Actor sobre a Location para fixá-lo como um NPC. */
+  /** Alterna o Safe/Unsafe DESTA própria Location (toda Location carrega o flag). */
+  static async #onToggleSelfSafe() {
+    if (!this.isEditable) return;
+    await this.document.update({ "system.safe": !this.document.system.safe });
+  }
+
+  /** Solta um Actor na Location: uma Location vira FILHA ("Landmark") aninhada;
+   *  qualquer outro Actor vira NPC. */
   async _onDropActor(event, actor) {
     if (!this.isEditable) return false;
     if (!(actor instanceof Actor)) actor = await Actor.implementation.fromDropData(actor);
     if (!actor || actor.uuid === this.document.uuid) return false;
+    if (actor.type === "location") {
+      await this.document.addChildLocation(actor.uuid);
+      return true;
+    }
     const npcs = [...(this.document.system.npcs ?? [])];
     if (npcs.includes(actor.uuid)) return false;
     npcs.push(actor.uuid);
@@ -389,6 +408,30 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
     if (!uuid) return;
     const npcs = (this.document.system.npcs ?? []).filter(u => u !== uuid);
     await this.document.update({ "system.npcs": npcs });
+  }
+
+  static async #onOpenChild(event, target) {
+    const uuid = target.closest("[data-child-uuid]")?.dataset.childUuid;
+    const child = uuid ? await fromUuid(uuid) : null;
+    child?.sheet?.render(true);
+  }
+
+  static async #onRemoveChild(event, target) {
+    if (!this.isEditable) return;
+    const uuid = target.closest("[data-child-uuid]")?.dataset.childUuid;
+    if (uuid) await this.document.removeChildLocation(uuid);
+  }
+
+  /** Cria uma nova Location e a aninha aqui como filha ("Landmark"). */
+  static async #onCreateChild() {
+    if (!this.isEditable) return;
+    const created = await Actor.implementation.create({
+      name: game.i18n.localize("SHIFT.Location.NewChild"),
+      type: "location"
+    });
+    if (!created) return;
+    await this.document.addChildLocation(created.uuid);
+    created.sheet?.render(true);
   }
 }
 
@@ -1116,14 +1159,6 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     // Resolve todos os docs referenciados em paralelo (evita N awaits seriais de fromUuid).
     const docs = await Promise.all(entries.map(e => fromUuid(e.uuid).catch(() => null)));
 
-    // Landmarks de uma Location catalogada são exibidos como cards próprios (grupo
-    // Places), sincronizados com o revealLandmarks da Location. Junta os UUIDs deles
-    // para deduplicar uma eventual entrada SOLTA do mesmo landmark embutido.
-    const embeddedLm = new Set();
-    for (const doc of docs)
-      if (doc?.type === "location")
-        for (const lm of doc.items?.filter?.(i => i.type === "landmark") ?? []) embeddedLm.add(lm.uuid);
-
     const all = [];
     const counts = {};
     // Conta categorias com conteúdo para que botões de filtro vazios se ocultem.
@@ -1134,16 +1169,11 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       counts[card.group] = (counts[card.group] ?? 0) + 1;
       all.push(card);
     };
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i], doc = docs[i];
-      // Um landmark embutido já é exibido pela sua Location: não o duplica como entrada solta.
-      if (doc instanceof Item && doc.type === "landmark" && embeddedLm.has(entry.uuid)) continue;
-      push(this.#codexCard(entry, doc, isGM));
-      // Location → expande cada landmark embutido num card de Place próprio.
-      if (doc?.type === "location")
-        for (const lm of doc.items?.filter?.(i => i.type === "landmark") ?? [])
-          push(this.#landmarkCard(entry, lm, isGM));
-    }
+    // Cada Location (mãe, filha, neta...) é uma ENTRADA própria → um card próprio. A
+    // relação mãe↔filha aparece como linhas de "Landmark" no detalhe da mãe (e como
+    // chip de caminho no card da filha), governada pelo revealLandmarks da mãe (que
+    // agora guarda UUIDs de Location-filha).
+    for (let i = 0; i < entries.length; i++) push(this.#codexCard(entries[i], docs[i], isGM));
 
     // Codex sempre exibido em ordem alfabética (a ordem de inserção não importa).
     // Ordena pelo nome EXIBIDO, nunca pelo verdadeiro de uma entrada oculta (senão
@@ -1178,12 +1208,22 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
   /** Tudo revelado? (sem o selo "partly hidden" do GM.) Para uma Location, também
    *  exige que todo landmark embutido esteja revelado. */
+  /** A entrada do codex de um uuid (ou undefined). */
+  #codexEntry(uuid) {
+    return (this.document.system.codex ?? []).find(e => e.uuid === uuid);
+  }
+
+  /** A relação mãe→filha está revelada aos players? (revealLandmarks da mãe.) */
+  #relationRevealed(parentActor, childUuid) {
+    return !!parentActor && !!this.#codexEntry(parentActor.uuid)?.revealLandmarks?.includes(childUuid);
+  }
+
   #fullyRevealed(entry, doc) {
     const r = entry.reveal ?? {};
     if (!REVEAL_FIELDS.every(k => r[k])) return false;
     if (doc?.type === "location") {
-      const lms = doc.items?.filter?.(i => i.type === "landmark") ?? [];
-      if (lms.some(l => !entry.revealLandmarks?.includes(l.id))) return false;
+      const kids = doc.childLocations ?? [];
+      if (kids.some(c => !entry.revealLandmarks?.includes(c.uuid))) return false;
     }
     return true;
   }
@@ -1302,12 +1342,15 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       return Object.assign(base, { tags, tagsLower: tags.map(t => lower(t.label)).join(" ") });
     }
     if (kind === "location") {
-      const lms = doc.items?.filter?.(i => i.type === "landmark") ?? [];
-      const shown = lms.filter(l => isGM || entry.revealLandmarks?.includes(l.id));
+      const kids = doc.childLocations ?? [];
+      const shown = kids.filter(c => isGM || entry.revealLandmarks?.includes(c.uuid));
+      const parent = doc.parentLocation;
+      const pathShown = !conceal && (isGM || this.#relationRevealed(parent, doc.uuid));
       const tags = see("traits") ? this.#codexTags(doc) : [];
       return Object.assign(base, {
         showStats: see("stats"),
         landmarkCount: shown.length,
+        locationName: pathShown ? (parent?.name ?? "") : "",
         tags, tagsLower: tags.map(t => lower(t.label)).join(" ")
       });
     }
@@ -1452,16 +1495,27 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (kind === "location") {
       const traits = see("traits")
         ? await Promise.all(doc.items.filter(i => i.type === "trait").sort(byTraitOrder).map(t => this.#traitTile(t, doc, canViewDesc, doc.uuid))) : [];
-      const landmarks = (doc.items?.filter?.(i => i.type === "landmark") ?? [])
-        .filter(l => isGM || entry.revealLandmarks?.includes(l.id))
-        .map(l => ({
-          id: l.id, name: l.name, safe: !!l.system.safe,
-          revealed: !!entry.revealLandmarks?.includes(l.id),
-          desc: canViewDesc ? this.#plain(l.system.description).slice(0, 240) : ""
+      // "Landmarks" = Locations-filhas; cada linha dá drill-in na entrada própria.
+      const landmarks = (doc.childLocations ?? [])
+        .filter(c => isGM || entry.revealLandmarks?.includes(c.uuid))
+        .map(c => ({
+          uuid: c.uuid, name: c.name, img: c.img, safe: !!c.system.safe,
+          revealed: !!entry.revealLandmarks?.includes(c.uuid),
+          childCount: (c.system.children ?? []).length
         }));
+      // Breadcrumb navegável (volta pra mãe): sobe enquanto a relação de cada degrau
+      // estiver revelada (ou GM). Cada link dá drill-in na entrada do ancestral.
+      const breadcrumb = [];
+      let kid = doc, par = doc.parentLocation, guard = 0;
+      while (par && guard++ < 50 && (isGM || this.#relationRevealed(par, kid.uuid))) {
+        breadcrumb.unshift({ uuid: par.uuid, name: par.name });
+        kid = par; par = par.parentLocation;
+      }
       return Object.assign(base, {
         concept: see("concept") ? (doc.system.concept ?? "") : "",
         showScale: see("scale"), scale: doc.system.scale ?? 1,
+        locationName: "",
+        breadcrumb, hasBreadcrumb: breadcrumb.length > 0,
         traits, hasTraits: traits.length > 0,
         landmarks, hasLandmarks: landmarks.length > 0
       });
@@ -1600,29 +1654,26 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (!uuid) return null;
     const loc = await fromUuid(uuid);
     if (!loc) return null;
-    // O "lugar" pode ser um landmark AVULSO (Item de mundo) solto direto no slot:
-    // não tem sub-landmarks nem Wealth die, e carrega o próprio safe/unsafe — que
-    // alimenta o bloqueio de Safe Rest num ponto Unsafe, como um landmark normal.
-    if (loc instanceof Item && loc.type === "landmark") {
+    // Legado: um landmark Item solto direto no slot (mundos pré-migração). Carrega o
+    // próprio safe, sem Wealth/breadcrumb.
+    if (loc instanceof Item) {
       const safe = !!loc.system.safe;
       return {
         uuid, name: loc.name, img: loc.img, wealthDie: null,
-        landmarks: [], hasLandmarks: false,
-        landmarkId: "", landmarkName: loc.name, landmarkSafe: safe,
-        loose: true, canEdit: this.isEditable
+        landmarks: [], hasLandmarks: false, landmarkId: "", landmarkName: loc.name,
+        landmarkSafe: safe, breadcrumb: [], hasBreadcrumb: false, canEdit: this.isEditable
       };
     }
-    const landmarks = (loc.items?.filter?.(i => i.type === "landmark") ?? [])
-      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name))
-      .map(l => ({ id: l.id, name: l.name, safe: !!l.system.safe }));
-    const current = landmarks.find(l => l.id === this.document.system.landmark) ?? null;
+    // Toda Location agora carrega seu próprio safe (o "lugar" pode ser uma filha
+    // aninhada); o breadcrumb mostra as mães até o topo. `landmarkSafe` (= o safe da
+    // Location atual) segue alimentando o bloqueio de Safe Rest num ponto Unsafe.
+    const breadcrumb = (loc.locationAncestors ?? []).slice().reverse().map(a => ({ uuid: a.uuid, name: a.name }));
     return {
       uuid, name: loc.name, img: loc.img,
       wealthDie: this.#locationWealthDie(loc),
-      landmarks, hasLandmarks: landmarks.length > 0,
-      landmarkId: current?.id ?? "",
-      landmarkName: current?.name ?? "",
-      landmarkSafe: current ? current.safe : null,   // null = nenhum landmark específico escolhido
+      landmarks: [], hasLandmarks: false, landmarkId: "", landmarkName: "",
+      landmarkSafe: !!loc.system.safe,
+      breadcrumb, hasBreadcrumb: breadcrumb.length > 0,
       canEdit: this.isEditable
     };
   }
@@ -1704,40 +1755,11 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
         search.addEventListener("input", ev => this.#applyCodexSearch(ev.currentTarget.value));
         if (this._codexQuery) this.#applyCodexSearch(this._codexQuery);
       }
-      // Field Notes compartilhadas do codex; o editor inline salva na PÁGINA do
-      // Journal vinculado (que os Players POSSUEM), NÃO no actor do party, para que
-      // Players OBSERVER possam contribuir. O elemento não tem `name`, então o
-      // formulário do actor o ignora.
-      // (_toggleDisabled reabilita estes para visualizadores sem permissão de edição.)
-      for (const el of this.element.querySelectorAll("prose-mirror.codex-fieldnotes")) {
-        el.addEventListener("change", async ev => {
-          ev.stopPropagation();
-          const codexUuid = el.dataset.codexUuid;
-          let page = el.dataset.pageUuid ? await fromUuid(el.dataset.pageUuid) : null;
-          if (!page) page = await this.#ensureFieldNotePage(codexUuid);
-          if (!page) return void ui.notifications.warn(game.i18n.localize("SHIFT.Party.Codex.NotesUnavailable"));
-          try { await page.update({ "text.content": el.value ?? "" }); el.dataset.pageUuid = page.uuid; }
-          catch (err) { ui.notifications.error(game.i18n.localize("SHIFT.Party.Codex.NotesFailed")); }
-        });
-      }
-
-      // GM Note do codex → o MESMO system.gmNote do documento referenciado (Actor OU
-      // Item: adversary/vehicle/location e trait/technique/landmark), sincronizando com
-      // a ficha dele. Nota simples: <textarea> sem `name` (o form do party o ignora);
-      // salva no change (= blur), igual à nota de codex original. Só GM.
-      if (game.user.isGM) {
-        for (const el of this.element.querySelectorAll("textarea.cd-gmnote-edit")) {
-          el.addEventListener("change", async ev => {
-            ev.stopPropagation();
-            const doc = el.dataset.documentUuid ? await fromUuid(el.dataset.documentUuid) : null;
-            if (!doc) return;
-            // Salva no próprio documento: a ficha dele (se aberta) reflete na hora; o
-            // Codex aberto é repintado pelos hooks updateActor/updateItem (que pulam quem digita).
-            try { await doc.update({ "system.gmNote": el.value ?? "" }); }
-            catch (err) { ui.notifications.error(game.i18n.localize("SHIFT.Party.Codex.NotesFailed")); }
-          });
-        }
-      }
+      // Field Notes + GM Note do detalhe do Codex. O binding é compartilhado com o
+      // re-render só-do-detalhe (#renderCodexDetail) via #bindCodexDetail; aqui o
+      // escopo é a ficha inteira. (_toggleDisabled reabilita estes para visualizadores
+      // sem permissão de edição.)
+      this.#bindCodexDetail(this.element);
 
       // GM: cada card do codex vira origem de arraste, exatamente como arrastar o
       // Actor/Item ligado — pode ser solto no slot de Location/Vehicle (vide
@@ -2188,6 +2210,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const key = `${owner}::${tid}`;
     const opening = this._openTile !== key;
     this._openTile = opening ? key : null;
+    dropStickyFocus(event);   // o tile é um <button>: solta o foco pra não deixar o anel rosa preso
 
     // Toggle puro de DOM (um único drawer aberto por vez na ficha inteira), sem
     // re-render, de modo que o detalhe do codex nunca pisca e um editor de
@@ -2220,14 +2243,67 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     this.render({ parts: ["codex"] });   // direcionado → sem flash da ficha inteira
   }
 
-  static #onOpenCodexEntry(event, target) {
-    this._codexOpen = target.closest("[data-codex-uuid]")?.dataset.codexUuid ?? null;
-    this.render({ parts: ["codex"] });
+  static async #onOpenCodexEntry(event, target) {
+    const uuid = target.closest("[data-codex-uuid]")?.dataset.codexUuid ?? null;
+    // Uma linha de filha que o GM vê mas AINDA não revelou não tem entrada própria no
+    // codex: abrir colapsaria o painel de detalhe. Ignora o clique (a engrenagem de
+    // revelar na própria linha continua funcionando à parte).
+    if (uuid && !(await this.#resolveCodexTarget(uuid))) return;
+    this._codexOpen = uuid;
+    await this.#renderCodexDetail();
   }
 
-  static #onCodexBack() {
+  static async #onCodexBack() {
     this._codexOpen = null;
-    this.render({ parts: ["codex"] });
+    await this.#renderCodexDetail();
+  }
+
+  /** Re-renderiza SÓ o painel de detalhe do Codex (drill-in/breadcrumb), trocando o
+   *  nó .codex-detail sem repintar a grade — mata o flash de navegação. */
+  async #renderCodexDetail() {
+    const root = this.element;
+    if (!root) return;
+    const detail = await this.#codexDetailContext();
+    const old = root.querySelector(".codex-detail");
+    if (!detail) return void old?.remove();
+    const html = await fvtt.renderTemplate(`${T}/actor/party-codex-detail.hbs`, {
+      codexDetail: detail, isGM: game.user.isGM, isOwner: this.document.isOwner
+    });
+    const tpl = document.createElement("template");
+    tpl.innerHTML = html.trim();
+    const node = tpl.content.firstElementChild;
+    if (!node) return void old?.remove();
+    if (old) old.replaceWith(node);
+    else root.querySelector(".party-codex")?.appendChild(node);
+    this.#bindCodexDetail(node);
+  }
+
+  /** (Re)liga os listeners do detalhe do Codex (Field Notes + GM Note) num escopo —
+   *  usado pelo _onRender (ficha inteira) e pelo re-render só-do-detalhe (nó trocado). */
+  #bindCodexDetail(scope) {
+    if (!scope) return;
+    for (const el of scope.querySelectorAll("prose-mirror.codex-fieldnotes")) {
+      el.addEventListener("change", async ev => {
+        ev.stopPropagation();
+        const codexUuid = el.dataset.codexUuid;
+        let page = el.dataset.pageUuid ? await fromUuid(el.dataset.pageUuid) : null;
+        if (!page) page = await this.#ensureFieldNotePage(codexUuid);
+        if (!page) return void ui.notifications.warn(game.i18n.localize("SHIFT.Party.Codex.NotesUnavailable"));
+        try { await page.update({ "text.content": el.value ?? "" }); el.dataset.pageUuid = page.uuid; }
+        catch (err) { ui.notifications.error(game.i18n.localize("SHIFT.Party.Codex.NotesFailed")); }
+      });
+    }
+    if (game.user.isGM) {
+      for (const el of scope.querySelectorAll("textarea.cd-gmnote-edit")) {
+        el.addEventListener("change", async ev => {
+          ev.stopPropagation();
+          const doc = el.dataset.documentUuid ? await fromUuid(el.dataset.documentUuid) : null;
+          if (!doc) return;
+          try { await doc.update({ "system.gmNote": el.value ?? "" }); }
+          catch (err) { ui.notifications.error(game.i18n.localize("SHIFT.Party.Codex.NotesFailed")); }
+        });
+      }
+    }
   }
 
   static async #onRemoveCodexEntry(event, target) {
@@ -2268,25 +2344,30 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     await this.document.update({ "system.codex": codex }, { render: false });
   }
 
-  /** Alterna se os Players podem ver um landmark de uma entrada de Location (só do GM). */
+  /** Revela/oculta a RELAÇÃO mãe↔filha (a filha como "Landmark" sob a mãe). Revelar
+   *  também faz a filha surgir com card próprio (garante a entrada dela + nome). O
+   *  parent é o detalhe aberto; o child vem do data-child-uuid da linha. */
   static async #onToggleCodexLandmark(event, target) {
     if (!game.user.isGM) return;
-    const uuid = target.closest("[data-codex-uuid]")?.dataset.codexUuid;
-    const lmId = target.dataset.landmarkId;
-    if (!uuid || !lmId) return;
+    const parentUuid = target.closest(".codex-detail")?.dataset.codexUuid;
+    const childUuid = target.dataset.childUuid;
+    if (!parentUuid || !childUuid) return;
     const codex = foundry.utils.deepClone(this.document.system.codex ?? []);
-    const e = codex.find(x => x.uuid === uuid);
+    const e = codex.find(x => x.uuid === parentUuid);
     if (!e) return;
     e.revealLandmarks = e.revealLandmarks ?? [];
-    const i = e.revealLandmarks.indexOf(lmId);
-    if (i >= 0) e.revealLandmarks.splice(i, 1); else e.revealLandmarks.push(lmId);
-    // Cirúrgico (sem render): alterna o olho + o estado hidden da linha do landmark.
-    const on = i < 0;
-    target.classList.toggle("on", on);
-    const icon = target.querySelector("i");
-    if (icon) { icon.classList.toggle("fa-eye", on); icon.classList.toggle("fa-eye-slash", !on); }
-    target.closest(".cd-landmark")?.classList.toggle("is-hidden", !on);
-    await this.document.update({ "system.codex": codex }, { render: false });
+    const i = e.revealLandmarks.indexOf(childUuid);
+    if (i >= 0) {
+      e.revealLandmarks.splice(i, 1);                 // oculta a relação (o card próprio permanece)
+    } else {
+      e.revealLandmarks.push(childUuid);
+      // Surge o card próprio da filha: garante a entrada dela com o nome revelado.
+      const ce = codex.find(x => x.uuid === childUuid);
+      if (!ce) codex.push({ uuid: childUuid, reveal: ShiftPartySheet.#revealSet(["name"]), revealLandmarks: [] });
+      else { ce.reveal = ce.reveal ?? {}; ce.reveal.name = true; }
+    }
+    await this.document.update({ "system.codex": codex });
+    this.render({ parts: ["codex"] });
   }
 
   /** Alterna a visibilidade de uma PÁGINA de landmark (card/detalhe próprios), só do
@@ -2364,9 +2445,16 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (!e) return false;
     e.reveal = ShiftPartySheet.#revealSet(fields);
     const doc = await fromUuid(uuid);
-    const lmIds = (doc?.items?.filter?.(i => i.type === "landmark") ?? []).map(l => l.id);
-    if (allLandmarks) e.revealLandmarks = lmIds;
-    else if (landmarks) e.revealLandmarks = lmIds.filter(id => landmarks.includes(id));
+    // revealLandmarks guarda UUIDs de Location-FILHA (não mais ids de landmark Item).
+    const childUuids = (doc?.childLocations ?? []).map(c => c.uuid);
+    if (allLandmarks) e.revealLandmarks = [...childUuids];
+    else if (landmarks) e.revealLandmarks = childUuids.filter(u => landmarks.includes(u));
+    // Cada relação revelada faz a filha surgir com card próprio (entrada + nome), como o toggle.
+    for (const childUuid of (e.revealLandmarks ?? [])) {
+      const ce = codex.find(x => x.uuid === childUuid);
+      if (!ce) codex.push({ uuid: childUuid, reveal: ShiftPartySheet.#revealSet(["name"]), revealLandmarks: [] });
+      else { ce.reveal = ce.reveal ?? {}; ce.reveal.name = true; }
+    }
     await this.document.update({ "system.codex": codex }, { render: false });
     this.render({ parts: ["codex"] });   // direcionado → sem flash da ficha inteira
     ui.notifications.info(game.i18n.format("SHIFT.Party.Codex.Revealed",
@@ -2384,7 +2472,18 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     for (let i = 0; i < codex.length; i++) {
       codex[i].reveal = ShiftPartySheet.#revealSet(fields);
       codex[i].revealLandmarks = allLandmarks
-        ? (docs[i]?.items?.filter?.(d => d.type === "landmark") ?? []).map(l => l.id) : [];
+        ? (docs[i]?.childLocations ?? []).map(c => c.uuid) : [];
+    }
+    // allLandmarks: garante card próprio (entrada) para cada filha de 1º nível revelada.
+    if (allLandmarks) {
+      const seen = new Set(codex.map(e => e.uuid));
+      for (const e of [...codex]) {
+        for (const childUuid of (e.revealLandmarks ?? [])) {
+          if (seen.has(childUuid)) continue;
+          seen.add(childUuid);
+          codex.push({ uuid: childUuid, reveal: ShiftPartySheet.#revealSet(fields), revealLandmarks: [] });
+        }
+      }
     }
     await this.document.update({ "system.codex": codex }, { render: false });
     this.render({ parts: ["codex"] });
@@ -2432,9 +2531,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const row = ShiftPartySheet.#revealRow;
     const fieldRows = REVEAL_FIELDS.map(f =>
       row(f, game.i18n.localize(`SHIFT.Party.Codex.Field.${cap(f)}`), !!r[f])).join("");
-    const lms = doc?.items?.filter?.(i => i.type === "landmark") ?? [];
-    const lmRows = lms.map(l =>
-      row(`lm:${l.id}`, l.name, !!entry.revealLandmarks?.includes(l.id),
+    const lms = doc?.childLocations ?? [];
+    const lmRows = lms.map(c =>
+      row(`lm:${c.uuid}`, c.name, !!entry.revealLandmarks?.includes(c.uuid),
         `<i class="fa-solid fa-map-pin"></i> `)).join("");
     const content =
       `<div class="shift-dialog-body codex-reveal-pick">` +
@@ -2448,7 +2547,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const picked = await this.#revealPrompt("SHIFT.Party.Codex.RevealSectionsTitle", content);
     if (!picked) return false;
     const fields = REVEAL_FIELDS.filter(f => picked[f]);
-    const landmarks = lms.map(l => l.id).filter(id => picked[`lm:${id}`]);
+    const landmarks = lms.map(c => c.uuid).filter(u => picked[`lm:${u}`]);
     return this.#applyCodexReveal(uuid, fields, { landmarks });
   }
 
@@ -2543,6 +2642,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const id = target.closest("[data-item-id]")?.dataset.itemId;
     if (!id) return;
     this.#questFlipped.has(id) ? this.#questFlipped.delete(id) : this.#questFlipped.add(id);
+    dropStickyFocus(event);   // sem anel de foco rosa preso no card após recolher
     this.render({ parts: ["quests"] });   // direcionado → não re-roda _onRender da ficha inteira
   }
 
@@ -2646,37 +2746,24 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const esc = foundry.utils.escapeHTML;
     const hasVehicle = !!actor.system.vehicle;
 
-    // Dois dropdowns: Location e, dependente dela, Landmark (primeira opção =
-    // "General location" = a Location inteira). O toggle "Custom location" troca o
-    // dropdown por um campo de nome livre. O destName é SEMPRE o local; o Flavor é
-    // um texto à parte. Mapa uuid->landmarks para repovoar o 2º dropdown ao vivo.
-    const locs = game.actors.filter(a => a.type === "location");
-    const lmByLoc = {};
-    for (const l of locs) {
-      lmByLoc[l.uuid] = l.items.filter(i => i.type === "landmark")
-        .map(i => ({ id: i.id, name: i.name, safe: !!i.system.safe }));
-    }
-    // Landmarks AVULSOS (Items de mundo, não embutidos numa Location) entram como
-    // destino próprio num optgroup à parte; na chegada viram destino NOMEADO (sem
-    // amarrar system.location, que espera um Actor).
-    const looseLandmarks = game.items.filter(i => i.type === "landmark");
-    const lmGroup = looseLandmarks.length
-      ? `<optgroup label="${esc(L("SHIFT.Travel.StandaloneLandmarks"))}">` +
-        looseLandmarks.map(i => `<option value="${i.uuid}">${esc(i.name)}${i.system.safe ? "" : " ⚠"}</option>`).join("") +
-        `</optgroup>`
-      : "";
+    // UM dropdown único de Locations — incluindo as filhas aninhadas, rotuladas pelo
+    // caminho da mãe (breadcrumb "Mãe › Filha › Neta"). O toggle "Custom location"
+    // troca o dropdown por um campo de nome livre. O destName é SEMPRE o local; o
+    // Flavor é um texto à parte.
+    const locItems = game.actors.filter(a => a.type === "location").map(l => {
+      const path = [...l.locationAncestors].reverse().map(a => a.name);
+      path.push(l.name);
+      return { uuid: l.uuid, label: path.join(" › "), safe: !!l.system.safe };
+    }).sort((a, b) => a.label.localeCompare(b.label));
     const locOpts = `<option value="">${L("SHIFT.Travel.NoLocation")}</option>` +
-      locs.map(l => `<option value="${l.uuid}">${esc(l.name)}</option>`).join("") + lmGroup;
+      locItems.map(o => `<option value="${o.uuid}">${esc(o.label)}${o.safe ? "" : " ⚠"}</option>`).join("");
     const modeOpts = `<option value="">${L("SHIFT.Travel.ModeInherit")}</option>` +
       Object.entries(CONFIG.SHIFT.travelModes).map(([k, v]) => `<option value="${k}">${L(v)}</option>`).join("");
-    const generalLabel = L("SHIFT.Travel.GeneralLocation");
 
     const content = `<div class="shift-travel-dialog">
       <label class="std-toggle"><input type="checkbox" name="custom"/> <span>${L("SHIFT.Travel.Custom")}</span></label>
       <div class="form-group" data-row="location"><label>${L("SHIFT.Travel.Location")}</label>
         <select name="dest">${locOpts}</select></div>
-      <div class="form-group" data-row="landmark" hidden><label>${L("SHIFT.Travel.Landmark")}</label>
-        <select name="landmark"><option value="">${esc(generalLabel)}</option></select></div>
       <div class="form-group" data-row="customName" hidden><label>${L("SHIFT.Travel.CustomName")}</label>
         <input type="text" name="customName" placeholder="${L("SHIFT.Travel.CustomPlaceholder")}"/></div>
       <div class="form-group"><label>${L("SHIFT.Travel.Flavor")}</label>
@@ -2699,23 +2786,13 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
         const q = sel => root.querySelector(sel);
         const custom = q('[name="custom"]');
         const locRow = q('[data-row="location"]');
-        const lmRow = q('[data-row="landmark"]');
         const nameRow = q('[data-row="customName"]');
         const legsRow = q('[data-row="legs"]');
-        const locSel = q('[name="dest"]');
-        const lmSel = q('[name="landmark"]');
         const modeSel = q('[name="mode"]');
-        const fillLandmarks = () => {
-          const lms = lmByLoc[locSel.value] ?? [];
-          lmSel.innerHTML = `<option value="">${esc(generalLabel)}</option>` +
-            lms.map(l => `<option value="${l.id}">${esc(l.name)}${l.safe ? "" : " ⚠"}</option>`).join("");
-          lmRow.hidden = custom.checked || !lms.length;
-        };
         const syncCustom = () => {
           const on = custom.checked;
           locRow.hidden = on;
           nameRow.hidden = !on;
-          fillLandmarks();
         };
         const syncLegs = () => {
           // Simple não tem Legs (a viagem conclui de uma vez).
@@ -2723,7 +2800,6 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
           legsRow.hidden = m === "simple";
         };
         custom.addEventListener("change", syncCustom);
-        locSel.addEventListener("change", fillLandmarks);
         modeSel.addEventListener("change", syncLegs);
         syncCustom();
         syncLegs();
@@ -2735,7 +2811,6 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
           return {
             custom: f.elements.custom?.checked ?? false,
             dest: f.elements.dest?.value ?? "",
-            landmark: f.elements.landmark?.value ?? "",
             customName: (f.elements.customName?.value ?? "").trim(),
             flavor: (f.elements.flavor?.value ?? "").trim(),
             legs: Number(f.elements.legs?.value) || 3,
@@ -2747,31 +2822,22 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     });
     if (!data) return;
 
-    // destName é sempre o LOCAL: custom → texto livre; senão "Landmark, em Location"
-    // ou o nome da Location. O Flavor é guardado à parte.
-    let destUuid = "", destLandmark = "", destName = "";
+    // destName é SEMPRE o local: custom → texto livre; senão "Filha (em Mãe)" para
+    // uma Location aninhada, ou o nome da própria Location.
+    let destUuid = "", destName = "";
     if (data.custom) {
       destName = data.customName;
     } else if (data.dest) {
-      const doc = await fromUuid(data.dest);
-      if (doc?.documentName === "Actor") {
-        // Location actor: amarra na chegada (system.location/landmark).
-        destUuid = data.dest;
-        if (data.landmark) {
-          destLandmark = data.landmark;
-          const lmName = doc.items.get(data.landmark)?.name ?? "";
-          destName = game.i18n.format("SHIFT.Travel.LandmarkAt", { landmark: lmName, location: doc.name });
-        } else {
-          destName = doc.name;
-        }
-      } else if (doc) {
-        // Landmark avulso (Item): destino só nomeado, sem binding de Location.
-        destName = doc.name;
-      }
+      destUuid = data.dest;
+      const loc = await fromUuid(destUuid);
+      const parent = loc?.parentLocation;
+      destName = (loc && parent)
+        ? game.i18n.format("SHIFT.Travel.NestedAt", { child: loc.name, parent: parent.name })
+        : (loc?.name ?? "");
     }
 
     await actor.startJourney({
-      destName, destUuid, destLandmark,
+      destName, destUuid,
       flavor: data.flavor,
       legsTotal: data.legs,
       mode: data.mode,
@@ -2801,7 +2867,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     await actor.advanceJourneyLeg({ extra });
   }
 
-  /** Encerra a jornada (chegada); vincula a Location/Landmark de destino, se houver. */
+  /** Encerra a jornada (chegada); vincula a Location de destino, se houver. */
   static async #onTravelArrive() {
     if (!game.user.isGM) return;
     await this.document.arriveJourney();
