@@ -204,6 +204,11 @@ export class ShiftTechniqueData extends ShiftItemBase {
       initial: "narrative",
       choices: ["narrative", "mechanical", "scaledUp"]
     });
+    // Tag de SUBDIVISÃO na aba Techniques (a `key` do grupo onde a Technique foi posta,
+    // criada ou arrastada). Espelha system.group do Trait: em branco = sem tag, cai na
+    // subdivisão pelo techniqueType (fallback legado, sem migração). Ver
+    // BaseShiftActorSheet#layoutFor("technique").
+    schema.group = new fields.StringField({ required: false, blank: true, initial: "" });
     /** Vínculo do "Scaled Up": o Focus Trait que esta Technique eleva e a Scale
      *  em que ele é tratado. `traitId` é o id embutido estável no actor dono;
      *  `traitName` é o fallback durável entre importações. */

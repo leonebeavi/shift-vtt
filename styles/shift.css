@@ -552,8 +552,25 @@
 .shift-vtt .trait-cards .trait-card.cat-special {
   grid-column: 1 / -1;
 }
+.shift-vtt .grid-2 .technique-list, .shift-vtt .grid-2 .landmark-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.shift-vtt .grid-3 .technique-list, .shift-vtt .grid-3 .landmark-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.shift-vtt .grid-1 .npc-grid {
+  grid-template-columns: 1fr;
+}
+.shift-vtt .grid-2 .npc-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.shift-vtt .grid-3 .npc-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 @media (max-width: 560px) {
-  .shift-vtt .grid-2 .trait-cards, .shift-vtt .grid-3 .trait-cards {
+  .shift-vtt .grid-2 .trait-cards, .shift-vtt .grid-3 .trait-cards, .shift-vtt .grid-2 .technique-list, .shift-vtt .grid-3 .technique-list, .shift-vtt .grid-2 .landmark-list, .shift-vtt .grid-3 .landmark-list, .shift-vtt .grid-2 .npc-grid, .shift-vtt .grid-3 .npc-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -1700,6 +1717,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.shift-vtt .target-chip.clickable {
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, transform 0.12s;
+}
+.shift-vtt .target-chip.clickable:hover {
+  border-color: var(--shift-accent);
+  background: color-mix(in oklab, var(--shift-accent) 18%, var(--shift-bg-soft));
+  transform: translateY(-1px);
 }
 .shift-vtt .target-chip .t-scale {
   position: absolute;
@@ -3147,9 +3173,44 @@ body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
   margin-left: 4px;
   color: #b5a4b3;
   cursor: pointer;
+  transition: color 0.15s ease, filter 0.15s ease;
 }
 .combat-tracker .shift-spotlight:hover, #combat .shift-spotlight:hover {
-  color: #ffc511;
+  color: #ff5fa2;
+  filter: drop-shadow(0 0 5px rgba(255, 95, 162, 0.55));
+}
+.combat-tracker .token-initiative button.shift-init-roll, #combat .token-initiative button.shift-init-roll {
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0 auto;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  outline: none;
+  filter: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #b5a4b3;
+  font-size: 1.05em;
+  cursor: pointer;
+  transition: color 0.15s ease, filter 0.15s ease;
+}
+.combat-tracker .token-initiative button.shift-init-roll:focus, .combat-tracker .token-initiative button.shift-init-roll.active, #combat .token-initiative button.shift-init-roll:focus, #combat .token-initiative button.shift-init-roll.active {
+  outline: none;
+  box-shadow: none;
+}
+.combat-tracker .token-initiative button.shift-init-roll:hover, .combat-tracker .token-initiative button.shift-init-roll:focus-visible, #combat .token-initiative button.shift-init-roll:hover, #combat .token-initiative button.shift-init-roll:focus-visible {
+  background: none;
+  outline: none;
+  color: #ff5fa2;
+  filter: drop-shadow(0 0 5px rgba(255, 95, 162, 0.55));
+}
+.themed.theme-light .combat-tracker .token-initiative button.shift-init-roll:not(:hover), .themed.theme-light #combat .token-initiative button.shift-init-roll:not(:hover) {
+  filter: none;
 }
 .shift-vtt .crew-strip {
   display: flex;
@@ -4177,6 +4238,13 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
 .shift-vtt.rest-travel-config .rt-bar .form-footer button {
   flex: 0 0 auto;
   margin: 0;
+}
+.adv-config-body > .form-footer, .status-config-body > .form-footer, .ranges-config-body > .form-footer, .settings-config-body > .form-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.adv-config-body > .form-footer > button, .status-config-body > .form-footer > button, .ranges-config-body > .form-footer > button, .settings-config-body > .form-footer > button {
+  flex: 0 0 auto;
 }
 .ranges-config-body .range-rows-head, .ranges-config-body .range-row {
   display: grid;
@@ -9807,7 +9875,7 @@ body.shift-ui-theme #players button:hover {
 body.shift-ui-theme #players #players-expand:hover {
   color: #ff5fa2;
 }
-body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button), body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button) {
+body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll), body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll) {
   --button-background-color: rgba(57, 47, 58, 0.78);
   --button-border-color: #4d4050;
   --button-text-color: #f4eef3;
@@ -9820,14 +9888,14 @@ body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.cont
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: background .18s, color .18s, box-shadow .18s;
 }
-body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):hover, body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):hover {
+body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):hover, body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):hover {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 2px 8px rgba(226, 61, 134, 0.18);
 }
-body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):focus-visible, body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):focus-visible {
+body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):focus-visible, body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 95, 162, 0.40);
 }
-body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):is(.active, [aria-pressed="true"]), body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):is(.active, [aria-pressed="true"]) {
+body.shift-ui-theme .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):is(.active, [aria-pressed="true"]), body.shift-ui-theme #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):is(.active, [aria-pressed="true"]) {
   background: rgba(255, 95, 162, 0.24);
   border-color: #4d4050;
   color: #ffffff;
@@ -9850,7 +9918,7 @@ body.shift-ui-theme :is(.dialog .dialog-buttons button.default, button.bright, a
   --button-hover-text-color: #ffffff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 10px rgba(226, 61, 134, 0.40);
 }
-body.shift-ui-theme :is(.shift-dialog, .shift-vtt:not(.sheet):not(.browser)) :is(.dialog-buttons, .form-footer) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button) {
+body.shift-ui-theme :is(.shift-dialog, .shift-vtt:not(.sheet):not(.browser)) :is(.dialog-buttons, .form-footer) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll) {
   --button-background-color: rgba(57, 47, 58, 0.78);
   --button-border-color: #4d4050;
   --button-text-color: #f4eef3;
@@ -9863,7 +9931,7 @@ body.shift-ui-theme :is(.shift-dialog, .shift-vtt:not(.sheet):not(.browser)) :is
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: background .18s, color .18s, box-shadow .18s;
 }
-body.shift-ui-theme :is(.shift-dialog, .shift-vtt:not(.sheet):not(.browser)) :is(.dialog-buttons, .form-footer) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):hover {
+body.shift-ui-theme :is(.shift-dialog, .shift-vtt:not(.sheet):not(.browser)) :is(.dialog-buttons, .form-footer) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):hover {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 2px 8px rgba(226, 61, 134, 0.20);
 }
 body.shift-ui-theme .shift-dialog .dialog-buttons button.default {
@@ -10121,7 +10189,7 @@ body.shift-ui-theme.shift-theme-light #players .player.self {
   background: rgba(207, 58, 128, 0.10);
   box-shadow: inset 0 0 0 1px rgba(207, 58, 128, 0.30);
 }
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button), body.shift-ui-theme.shift-theme-light #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button) {
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll), body.shift-ui-theme.shift-theme-light #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll) {
   --button-background-color: #fff;
   --button-border-color: #dcccd9;
   --button-text-color: #241f27;
@@ -10131,7 +10199,7 @@ body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(button, a
   --button-focus-outline-color: #cf3a80;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):is(.active, [aria-pressed="true"]), body.shift-ui-theme.shift-theme-light #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):is(.active, [aria-pressed="true"]) {
+body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):is(.active, [aria-pressed="true"]), body.shift-ui-theme.shift-theme-light #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):is(.active, [aria-pressed="true"]) {
   background: rgba(207, 58, 128, 0.16);
   border-color: #dcccd9;
   color: #241f27;

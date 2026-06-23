@@ -1,61 +1,69 @@
 <section class="tab techniques{{#if (shiftEq activeTab 'techniques')}} active{{/if}}" data-tab="techniques" data-group="primary">
-  <div class="trait-group">
-    <header class="group-header">
-      <h2>{{localize "SHIFT.Tabs.Techniques"}}</h2>
-      {{#if editMode}}
-        <a class="group-add" data-action="createItem" data-type="technique"
-           data-tooltip="{{localize 'SHIFT.Tooltips.NewTechnique'}}">
-          <i class="fa-solid fa-plus"></i>
+  {{#each techniqueGroups as |group|}}
+    <div class="trait-group grid-{{group.columns}}{{#if group.collapsed}} collapsed{{/if}}" data-group-key="{{group.key}}"
+         {{#if group.color}}style="--group-color: {{group.color}};"{{/if}}>
+      <header class="group-header">
+        <a class="group-toggle" data-action="toggleGroup">
+          <i class="fa-solid {{#if group.collapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}"></i>
         </a>
-      {{/if}}
-    </header>
+        <h2>{{group.label}}</h2>
+        {{#if @root.editMode}}
+          <a class="group-add" data-action="createItem" data-type="technique"
+             {{#if group.createCategory}}data-category="{{group.createCategory}}"{{/if}}
+             data-group-key="{{group.key}}"
+             data-tooltip="{{localize 'SHIFT.Tooltips.NewTechnique'}}">
+            <i class="fa-solid fa-plus"></i>
+          </a>
+        {{/if}}
+      </header>
 
-    <ul class="technique-list">
-      {{#each techniques}}
-        <li class="technique-row tech-{{typeKey}}{{#if spent}} spent{{/if}}" data-item-id="{{id}}" data-draggable="true" data-action="toggleExpand">
-          <img class="tech-img" src="{{img}}" alt="{{name}}"/>
-          <div class="tech-main">
-            <a class="tech-name" data-action="toggleExpand">{{name}}</a>
-            <div class="tech-meta">
-              <span class="tech-type {{typeKey}}">{{typeLabel}}</span>
-              {{#each rechargeBadges}}
-                <span class="recharge-chip"><i class="fa-solid {{icon}}"></i> {{label}}</span>
-              {{/each}}
+      <ul class="technique-list">
+        {{#each group.techniques}}
+          <li class="technique-row tech-{{typeKey}}{{#if spent}} spent{{/if}}" data-item-id="{{id}}" data-draggable="true" data-action="toggleExpand">
+            <img class="tech-img" src="{{img}}" alt="{{name}}"/>
+            <div class="tech-main">
+              <a class="tech-name" data-action="toggleExpand">{{name}}</a>
+              <div class="tech-meta">
+                <span class="tech-type {{typeKey}}">{{typeLabel}}</span>
+                {{#each rechargeBadges}}
+                  <span class="recharge-chip"><i class="fa-solid {{icon}}"></i> {{label}}</span>
+                {{/each}}
+              </div>
             </div>
-          </div>
-          <div class="tech-uses">
-            {{#if atWill}}
-              <span class="uses-count infinite" data-tooltip="{{localize 'SHIFT.Recharge.AtWillHint'}}"><i class="fa-solid fa-infinity"></i></span>
-            {{else}}
-              <span class="uses-count">{{uses.value}}/{{uses.max}}</span>
-            {{/if}}
-          </div>
-          {{#if @root.editable}}
-            <div class="tech-actions">
-              {{#unless isScaledUp}}
-                <a class="ta-btn{{#unless canUse}} disabled{{/unless}}" data-action="useTechnique"
-                   data-tooltip="{{localize 'SHIFT.Tooltips.UseTechnique'}}"><i class="fa-solid fa-play"></i></a>
-              {{/unless}}
-              {{!-- At Will Techniques have no counter, so there is nothing to reset. --}}
-              {{#unless atWill}}
-                <a class="ta-btn" data-action="resetTechnique"
-                   data-tooltip="{{localize 'SHIFT.Tooltips.ResetTechnique'}}"><i class="fa-solid fa-rotate-left"></i></a>
-              {{/unless}}
-              <a class="ta-btn expand" data-action="toggleExpand"><i class="fa-solid {{#if expanded}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i></a>
-              {{#if @root.editMode}}
-                <a class="ta-btn" data-action="editItem"><i class="fa-solid fa-pen-to-square"></i></a>
-                <a class="ta-btn danger" data-action="deleteItem"><i class="fa-solid fa-trash"></i></a>
+            <div class="tech-uses">
+              {{#if atWill}}
+                <span class="uses-count infinite" data-tooltip="{{localize 'SHIFT.Recharge.AtWillHint'}}"><i class="fa-solid fa-infinity"></i></span>
+              {{else}}
+                <span class="uses-count">{{uses.value}}/{{uses.max}}</span>
               {{/if}}
             </div>
-          {{/if}}
-          {{#if (shiftAnd expanded @root.canViewNotes)}}
-            <div class="tech-description">{{{enrichedDescription}}}</div>
-          {{/if}}
-        </li>
-      {{/each}}
-      {{#unless techniques.length}}
-        <li class="empty">{{localize "SHIFT.Common.Empty"}}</li>
-      {{/unless}}
-    </ul>
-  </div>
+            {{#if @root.editable}}
+              <div class="tech-actions">
+                {{#unless isScaledUp}}
+                  <a class="ta-btn{{#unless canUse}} disabled{{/unless}}" data-action="useTechnique"
+                     data-tooltip="{{localize 'SHIFT.Tooltips.UseTechnique'}}"><i class="fa-solid fa-play"></i></a>
+                {{/unless}}
+                {{!-- At Will Techniques have no counter, so there is nothing to reset. --}}
+                {{#unless atWill}}
+                  <a class="ta-btn" data-action="resetTechnique"
+                     data-tooltip="{{localize 'SHIFT.Tooltips.ResetTechnique'}}"><i class="fa-solid fa-rotate-left"></i></a>
+                {{/unless}}
+                <a class="ta-btn expand" data-action="toggleExpand"><i class="fa-solid {{#if expanded}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i></a>
+                {{#if @root.editMode}}
+                  <a class="ta-btn" data-action="editItem"><i class="fa-solid fa-pen-to-square"></i></a>
+                  <a class="ta-btn danger" data-action="deleteItem"><i class="fa-solid fa-trash"></i></a>
+                {{/if}}
+              </div>
+            {{/if}}
+            {{#if (shiftAnd expanded @root.canViewNotes)}}
+              <div class="tech-description">{{{enrichedDescription}}}</div>
+            {{/if}}
+          </li>
+        {{/each}}
+        {{#unless group.techniques.length}}
+          <li class="empty">{{localize "SHIFT.Common.Empty"}}</li>
+        {{/unless}}
+      </ul>
+    </div>
+  {{/each}}
 </section>

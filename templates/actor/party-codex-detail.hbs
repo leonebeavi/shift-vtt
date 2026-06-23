@@ -9,6 +9,7 @@
     {{#if codexDetail.hasBreadcrumb}}<span class="cd-crumbs">{{#each codexDetail.breadcrumb}}<a data-action="openCodexEntry" data-codex-uuid="{{uuid}}">{{name}}</a><i class="fa-solid fa-chevron-right"></i>{{/each}}</span>{{/if}}
     <span class="cd-title">{{codexDetail.name}}</span>
     <div class="cd-actions">
+      {{#if isGM}}<button type="button" class="cd-open cd-link" data-action="codexCreateMacro" data-codex-uuid="{{codexDetail.uuid}}" data-tooltip="{{localize 'SHIFT.Party.Codex.CreateMacro'}}"><i class="fa-solid fa-wand-magic-sparkles"></i></button>{{/if}}
       {{#if isGM}}<button type="button" class="cd-open cd-link" data-action="codexLinkChat" data-codex-uuid="{{codexDetail.uuid}}" data-tooltip="{{localize 'SHIFT.Party.Codex.LinkChat'}}"><i class="fa-solid fa-comment"></i></button>{{/if}}
       {{#if codexDetail.canOpenSheet}}<button type="button" class="cd-open" data-action="openMember"><i class="fa-solid fa-up-right-from-square"></i> {{localize "SHIFT.Party.Codex.OpenSheet"}}</button>{{/if}}
     </div>

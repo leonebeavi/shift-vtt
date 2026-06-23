@@ -139,8 +139,14 @@
     },
     "TraitLayout": {
       "Title": "Edit Trait Sections",
+      "TitleTechnique": "Edit Technique Sections",
+      "TitleLandmark": "Edit Landmark Sections",
+      "TitleNpc": "Edit NPC Sections",
       "Edit": "Edit sections",
       "Hint": "Rename, reorder, set the number of columns (1-3), the default Trait type for the + button, and the accent color of each Trait section on this sheet. You can also add new sections of your own. A Trait lands in a section when it is created or dragged there; an untagged Trait falls in by its category.",
+      "HintTechnique": "Rename, reorder, set the number of columns (1-3), the default Technique type for the + button, and the accent color of each Technique section on this sheet. You can also add new sections of your own. A Technique lands in a section when it is created or dragged there; an untagged one falls in by its type.",
+      "HintLandmark": "Rename, reorder, set the number of columns (1-3), and the accent color of each Landmark section on this sheet. You can also add new sections of your own. Drag a Landmark card into a section to move it there.",
+      "HintNpc": "Rename, reorder, set the number of columns (1-3), and the accent color of each NPC section on this sheet. You can also add new sections of your own. Drag an NPC card into a section to move it there.",
       "Label": "Section name",
       "Columns": "Columns",
       "DefaultType": "Default Trait type",
@@ -246,6 +252,9 @@
       "UnsafeRestConfirm": "Run an Unsafe Rest for all {count} member(s)?",
       "Codex": {
         "LinkChat": "Link in chat",
+        "CreateMacro": "Create a macro that opens this entry",
+        "MacroName": "{name} — Codex",
+        "MacroCreated": "Macro created to open “{name}” in the Codex.",
         "OpenChip": "Open in the Codex",
         "NoParty": "No party has this Codex entry.",
         "NoEntry": "Couldn't resolve that document.",
@@ -729,6 +738,10 @@
         "Name": "Core Trait Exhaustion Prompt",
         "Hint": "On a Core Trait Exhausting, offer Drawback / Heroic Death."
       },
+      "RandomTargetShift": {
+        "Name": "Invert Random Target Shift Down",
+        "Hint": "Shift down on a target normally opens the Trait picker, and Shift+Click picks a random Trait. Turn this on to invert: a normal click picks at random, Shift+Click opens the picker."
+      },
       "EnableScale": {
         "Name": "Enable the Scale System",
         "Hint": "Optional rule. Off hides every Scale control and badge."
@@ -828,6 +841,7 @@
       "AlreadyApplied": "This roll's effect has already landed on a target.",
       "Retarget": "Retarget",
       "RetargetHint": "Pick a different target.",
+      "OpenSheet": "Open sheet",
       "None": "No target"
     },
     "Vehicle": {
@@ -854,6 +868,8 @@
       "NameLabel": "Trait name",
       "Visible": "Visible to players",
       "PlayersRoll": "Players can roll it",
+      "RollTitle": "Roll {name}",
+      "QuickRollTip": "Shift+Click: Quick Roll",
       "ShiftsDown": "Shift down on a max roll",
       "ShiftOnTip": "A max roll shifts this Trait down · click to disable",
       "ShiftOffTip": "A max roll won't shift this Trait down · click to enable",

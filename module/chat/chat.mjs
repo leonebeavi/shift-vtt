@@ -41,6 +41,13 @@ export function registerChatHooks() {
     root.querySelectorAll("[data-shift-apply]").forEach(btn => {
       btn.addEventListener("click", ev => onApplyToTarget(ev, message));
     });
+    // Shift já aplicado neste card (ex.: re-render disparado pelo próprio setFlag
+    // "applied", ou reload depois de aplicar): mostra o botão travado de imediato.
+    // Sem isto, o disabled síncrono do onApplyToTarget se perde no re-render e o
+    // botão só fica cinza no SEGUNDO clique (quando o guard de flags.applied bate).
+    if (message.flags?.["shift-vtt"]?.applied) {
+      root.querySelectorAll("[data-shift-apply]").forEach(btn => { btn.disabled = true; });
+    }
     root.querySelectorAll("[data-shift-pending]").forEach(btn => {
       btn.addEventListener("click", ev => onApplyPendingShift(ev, message));
     });
@@ -69,8 +76,12 @@ export function registerChatHooks() {
       });
     });
     // Preenche os chips de alvo a partir dos uuids persistidos (um único builder,
-    // usado no primeiro render, no re-render do retarget e no reload).
-    root.querySelectorAll(".target-panel").forEach(populateTargetPanel);
+    // usado no primeiro render, no re-render do retarget e no reload) e liga o clique
+    // pra abrir a ficha do alvo (delegado no painel, robusto ao re-render do retarget).
+    root.querySelectorAll(".target-panel").forEach(panel => {
+      populateTargetPanel(panel);
+      panel.addEventListener("click", onTargetChipClick);
+    });
   };
   Hooks.on("renderChatMessageHTML", bind);
 
@@ -207,6 +218,7 @@ function populateTargetPanel(panel) {
   const uuids = (panel.dataset.targets || "").split(",").map(s => s.trim()).filter(Boolean);
   const esc = foundry.utils.escapeHTML;
   const scaleWord = game.i18n.localize("SHIFT.Trait.Scale");
+  const openWord = game.i18n.localize("SHIFT.Target.OpenSheet");
   const html = uuids.map(u => {
     let a = null;
     try { a = fromUuidSync(u); } catch (err) { a = null; }
@@ -216,13 +228,33 @@ function populateTargetPanel(panel) {
     const pip = scale > 1
       ? `<span class="t-scale" data-scale="${scale}" data-tooltip="${esc(scaleWord)} ${scale}">${scale}</span>`
       : "";
-    return `<span class="target-chip" data-scale="${scale}">`
+    // Chip clicável (abre a ficha) só pra quem pode ao menos ver o alvo: a permissão é
+    // por-cliente, então um Adversary fica clicável pro GM e inerte pro player sem dono.
+    const canView = typeof a.testUserPermission === "function"
+      ? a.testUserPermission(game.user, "LIMITED")
+      : !!a.isOwner;
+    const cls = canView ? "target-chip clickable" : "target-chip";
+    const link = canView ? ` data-target-uuid="${esc(u)}" data-tooltip="${esc(openWord)}"` : "";
+    return `<span class="${cls}" data-scale="${scale}"${link}>`
       + `<img src="${a.img}" alt=""/>`
       + `<span class="t-name">${esc(a.name)}</span>`
       + pip
       + `</span>`;
   }).join("");
   chips.innerHTML = html || `<span class="target-chip empty">${esc(game.i18n.localize("SHIFT.Target.None"))}</span>`;
+}
+
+/** Clique num chip de alvo: abre a ficha do actor mirado. Só os chips visíveis ao
+ *  usuário ganham `data-target-uuid` (gate de permissão em populateTargetPanel), então
+ *  aqui basta resolver o uuid e renderizar; cliques no botão Retarget não casam o seletor
+ *  e são ignorados. Delegado no painel, então sobrevive ao re-render do retarget. */
+function onTargetChipClick(event) {
+  const chip = event.target.closest(".target-chip[data-target-uuid]");
+  if (!chip) return;
+  event.preventDefault();
+  let actor = null;
+  try { actor = fromUuidSync(chip.dataset.targetUuid); } catch (err) { actor = null; }
+  actor?.sheet?.render(true);
 }
 
 /** Re-seleciona o(s) alvo(s) de um cartão de roll e persiste a escolha, para que o
@@ -546,6 +578,30 @@ async function resolveTargetActor(sourceActor, { candidates = null, title } = {}
   return pickActor(targets, { title: title ?? game.i18n.localize("SHIFT.Target.Pick"), showScale: true });
 }
 
+/** Decide se um clique no "Shift down target's Traits" (ou no bônus de Critical
+ *  "Shift down the target again") deve SORTEAR um Trait do alvo, em vez de abrir o
+ *  picker. Por padrão, Shift+clique sorteia; a setting randomTargetShiftDown inverte
+ *  (clique normal sorteia, Shift+clique abre o picker). XOR entre o Shift e o inverso. */
+function wantsRandomTargetShift(event) {
+  const inverted = game.settings.get("shift-vtt", "randomTargetShiftDown") === true;
+  return !!event?.shiftKey !== inverted;
+}
+
+/** Escolhe um Trait elegível do alvo ao acaso (modo "shift down aleatório" do GM).
+ *  Aplica o mesmo filtro do picker manual e, quando a Scale está em jogo, prefere os
+ *  Traits que de fato sofrem efeito — nunca desperdiça o sorteio num Trait que a Scale
+ *  anularia —, caindo para o conjunto elegível inteiro só se nenhum for afetável. */
+function pickRandomTrait(target, { filter, rollerScale = null, isCrit = false } = {}) {
+  const eligible = (target.items?.filter(i => i.type === "trait" && (filter ? filter(i) : true)) ?? []);
+  if (!eligible.length) return null;
+  let pool = eligible;
+  if (rollerScale !== null) {
+    const affectable = eligible.filter(t => scaleEffect(rollerScale - (t.effectiveScale ?? 1), { isCrit }) !== "none");
+    if (affectable.length) pool = affectable;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 /**
  * Faz ShiftDown de um Trait de um alvo inimigo. O player escolhe o Trait do alvo
  * por conta própria; se não tiver permissão de escrita, a mudança de dado em si é
@@ -561,9 +617,10 @@ async function resolveTargetActor(sourceActor, { candidates = null, title } = {}
  * @param {boolean} [opts.exhaust] força um Exhaust completo
  * @param {number|null} [opts.rollerScale] Scale efetiva do Action Roll
  * @param {boolean} [opts.isCrit] o roll foi um Critical Success
+ * @param {boolean} [opts.random] sorteia o Trait do alvo em vez de abrir o picker
  * @returns {Promise<{landed:boolean}>}
  */
-async function applyShiftDownToTarget(sourceActor, { steps = 1, candidates = null, exhaust = false, rollerScale = null, isCrit = false } = {}) {
+async function applyShiftDownToTarget(sourceActor, { steps = 1, candidates = null, exhaust = false, rollerScale = null, isCrit = false, random = false } = {}) {
   const target = await resolveTargetActor(sourceActor, { candidates });
   if (!target) return { landed: false };
 
@@ -590,12 +647,24 @@ async function applyShiftDownToTarget(sourceActor, { steps = 1, candidates = nul
     }
   }
 
-  const trait = await pickTrait(target, {
-    title: game.i18n.format("SHIFT.Target.ApplyTitle", { target: target.name }),
-    hint: blockers.length ? game.i18n.localize("SHIFT.Warnings.MustExhaustFirst") : undefined,
-    scale: target.system?.scale ?? 1,
-    filter
-  });
+  // Sorteia o Trait (Shift+clique / setting invertida) ou abre o picker manual. O
+  // sorteio respeita o mesmo filtro e a pré-checagem de afetabilidade já garantiu, no
+  // caminho com Scale, que existe ao menos um Trait afetável para cair.
+  let trait;
+  if (random) {
+    trait = pickRandomTrait(target, { filter, rollerScale, isCrit });
+    if (!trait) {
+      ui.notifications.info(game.i18n.localize("SHIFT.Warnings.NoEligibleTraits"));
+      return { landed: false };
+    }
+  } else {
+    trait = await pickTrait(target, {
+      title: game.i18n.format("SHIFT.Target.ApplyTitle", { target: target.name }),
+      hint: blockers.length ? game.i18n.localize("SHIFT.Warnings.MustExhaustFirst") : undefined,
+      scale: target.system?.scale ?? 1,
+      filter
+    });
+  }
   if (!trait) return { landed: false };
 
   // Interação de Scale (pelas regras), medida contra a Scale efetiva do Trait ESCOLHIDO.
@@ -633,8 +702,8 @@ async function applyShiftDownToTarget(sourceActor, { steps = 1, candidates = nul
   }
 
   const res = exhaust
-    ? await trait.exhaust({ promptDeath: false })
-    : await trait.shiftDown({ steps, promptDeath: false });
+    ? await trait.exhaust({})
+    : await trait.shiftDown({ steps });
   if (res.blocked) return { landed: false };
   await followUp(sourceActor, game.i18n.format("SHIFT.Target.ApplyChat", {
     actor: foundry.utils.escapeHTML(sourceActor.name),
@@ -655,6 +724,9 @@ async function onApplyToTarget(event, message) {
   // Captura o botão AGORA: event.currentTarget é zerado assim que o handler cede
   // no primeiro await, então não pode mais ser lido depois.
   const btn = event.currentTarget;
+  // Shift+clique (ou o inverso, conforme a setting) sorteia um Trait do alvo em vez de
+  // abrir o picker. Lido AGORA, junto do botão, antes de qualquer await zerar o event.
+  const random = wantsRandomTargetShift(event);
   // Trava o botão de forma SÍNCRONA, antes de qualquer await: senão um duplo-clique
   // rápido passa pelo check de "applied" duas vezes e um único Success recai duas vezes.
   // Os caminhos sem-efeito/cancelado reabilitam abaixo; um shift que recai o mantém travado.
@@ -681,7 +753,8 @@ async function onApplyToTarget(event, message) {
     steps,
     candidates,
     rollerScale: effectiveRollerScale(message),
-    isCrit: flags.outcome === "criticalSuccess"
+    isCrit: flags.outcome === "criticalSuccess",
+    random
   });
 
   // Trava o botão só quando um shift de fato RECAI: um sem-efeito por Scale o reabilita,
@@ -742,7 +815,7 @@ async function onApplyPendingShift(event, message) {
     return;
   }
   try {
-    await item.shiftDown({ steps: 1, force: true, promptDeath: false });
+    await item.shiftDown({ steps: 1, force: true });
   } catch (err) {
     console.warn("shift-vtt | pending shift apply failed", err);
     if (btn) btn.disabled = false;
@@ -762,6 +835,9 @@ function disableCritButtons(message) {
 async function onCritBonus(event, message) {
   event.preventDefault();
   const bonus = event.currentTarget.dataset.shiftCrit;
+  // Mesmo gesto do "Apply to Target": Shift+clique (ou o inverso, conforme a setting)
+  // sorteia o Trait do alvo no bônus "Shift down the target again". Lido antes do await.
+  const random = wantsRandomTargetShift(event);
   const actor = await getMessageActor(message);
   if (!actor) return;
   if (!actor.isOwner && !game.user.isGM) {
@@ -806,7 +882,8 @@ async function onCritBonus(event, message) {
             ? (await Promise.all(flags.targetUuids.map(u => fromUuid(u).catch(() => null)))).filter(Boolean)
             : null,
           rollerScale: effectiveRollerScale(message),
-          isCrit: true
+          isCrit: true,
+          random
         });
         applied = !!res?.landed;
         break;
@@ -927,6 +1004,9 @@ async function onJoinGroup(event, message) {
   }
   if (!ally.isOwner) {
     return void ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NotOwner"));
+  }
+  if (!trait.system.rollable) {
+    return void ui.notifications.warn(game.i18n.format("SHIFT.Warnings.TraitNotRollable", { trait: trait.name }));
   }
   if (trait.system.exhausted) {
     return void ui.notifications.warn(game.i18n.format("SHIFT.Warnings.TraitExhaustedNamed", { trait: trait.name }));

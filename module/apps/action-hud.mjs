@@ -493,6 +493,10 @@ async function onHudClick(event) {
       // automático), um move de personagem, igual à sheet; exert() roda sua
       // própria checagem de exhausted, confirmação e fluxo de XP.
       if ((event.ctrlKey || event.metaKey) && actor.type === "character") return actor.exert(item);
+      // Um Trait não-rolável (🚫) não está exausto: avisa o motivo certo.
+      if (!item.system.rollable) {
+        return void ui.notifications.warn(game.i18n.format("SHIFT.Warnings.TraitNotRollable", { trait: item.name }));
+      }
       if (item.system.exhausted) {
         return void ui.notifications.warn(game.i18n.format("SHIFT.Warnings.TraitExhaustedNamed", { trait: item.name }));
       }

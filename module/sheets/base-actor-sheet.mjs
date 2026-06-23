@@ -16,12 +16,13 @@ const { ActorSheetV2 } = foundry.applications.sheets;
  *  subclasses que estreitam os grupos (a Party) preservem este abrigo. */
 export const CATCH_ALL_KEY = "__ungrouped";
 
-/** Normaliza uma subdivisão da layout de Traits (basal por tipo OU custom do flag
- *  `traitLayout`) para a forma canônica consumida pela ficha. `columns` é 1/2/3;
- *  `color` é hex da paleta ou "" (= cor padrão pela key, via LESS); `categories`
- *  null reivindica TODAS as categorias, array reivindica uma lista, e [] significa
- *  "só por tag" (subdivisões novas não capturam Traits antigos por engano). */
-function normalizeTraitGroup(g) {
+/** Normaliza uma subdivisão de layout (basal por tipo OU custom do flag `*Layout`)
+ *  para a forma canônica consumida pela ficha. Usada por TODAS as listas agrupáveis
+ *  (Traits, Techniques, Landmarks, NPCs). `columns` é 1/2/3; `color` é hex da paleta
+ *  ou "" (= cor padrão pela key, via LESS); `categories` null reivindica TODAS as
+ *  categorias, array reivindica uma lista, e [] significa "só por tag" (subdivisões
+ *  novas não capturam itens antigos por engano). */
+function normalizeLayoutGroup(g) {
   const cols = Number(g.columns);
   return {
     key: g.key ?? foundry.utils.randomID(),
@@ -98,14 +99,49 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     return [{ key: "all", label: "SHIFT.TraitCategory.custom", categories: null, columns: 2, color: "", create: "custom" }];
   }
 
-  /** A layout EFETIVA das subdivisões de Trait desta ficha: o flag por-Actor
-   *  `traitLayout` quando existe, senão o basal por tipo ({@link traitGroupSpec}).
+  /** Basal das subdivisões de Technique (só a ficha de Character mostra Techniques).
+   *  Um único grupo que reivindica tudo: o default é a lista plana de antes; quem
+   *  quiser separa em seções no editor. `create` = o techniqueType padrão do "+". */
+  get techniqueGroupSpec() {
+    return [{ key: "techniques", label: "SHIFT.Tabs.Techniques", categories: null, columns: 1, color: "", create: "narrative" }];
+  }
+
+  /** Basal das subdivisões de Landmark (Location). Um único grupo claiming-all (a
+   *  lista de antes). Landmarks são Locations-filhas (UUID), então a tag de grupo
+   *  vive num flag-map no pai, não num campo do item. */
+  get landmarkGroupSpec() {
+    return [{ key: "landmarks", label: "SHIFT.Location.Landmarks", categories: null, columns: 1, color: "" }];
+  }
+
+  /** Basal das subdivisões de NPC (Location). Um único grupo claiming-all em grade. */
+  get npcGroupSpec() {
+    return [{ key: "npcs", label: "SHIFT.Location.NPCs", categories: null, columns: 2, color: "" }];
+  }
+
+  /** O basal (de fábrica) das subdivisões de um dado `kind` ("trait"/"technique"/
+   *  "landmark"/"npc"). Centraliza o switch para o getter genérico e o editor. */
+  groupSpecFor(kind) {
+    switch (kind) {
+      case "technique": return this.techniqueGroupSpec;
+      case "landmark": return this.landmarkGroupSpec;
+      case "npc": return this.npcGroupSpec;
+      default: return this.traitGroupSpec;
+    }
+  }
+
+  /** A layout EFETIVA das subdivisões de um `kind` desta ficha: o flag por-Actor
+   *  `${kind}Layout` quando existe, senão o basal por tipo ({@link groupSpecFor}).
    *  Sempre normalizada. O editor {@link TraitLayoutConfig} grava o flag; o Reset
    *  dele o remove (voltando ao basal). */
+  layoutFor(kind) {
+    const custom = this.document.getFlag?.("shift-vtt", `${kind}Layout`);
+    const source = (Array.isArray(custom) && custom.length) ? custom : this.groupSpecFor(kind);
+    return source.map(normalizeLayoutGroup);
+  }
+
+  /** Atalho histórico: a layout efetiva das subdivisões de Trait. */
   get traitLayout() {
-    const custom = this.document.getFlag?.("shift-vtt", "traitLayout");
-    const source = (Array.isArray(custom) && custom.length) ? custom : this.traitGroupSpec;
-    return source.map(normalizeTraitGroup);
+    return this.layoutFor("trait");
   }
 
   /** Se o usuário atual pode LER o texto narrativo deste Actor: a aba de
@@ -166,56 +202,76 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     context.hasGmNote = "gmNote" in actor.system;
 
     context.traitGroups = await this.#prepareTraitGroups();
-    context.techniques = await this.#prepareTechniques();
+    context.techniqueGroups = await this.#prepareTechniqueGroups();
     return context;
+  }
+
+  /** Motor genérico de subdivisão, compartilhado por Traits/Techniques/Landmarks/NPCs.
+   *  Recebe a `layout` normalizada e uma lista de ENTRADAS já preparadas (contextos de
+   *  render), e bucketiza cada uma na seção que a exibe: a tag explícita (`tagOf`)
+   *  vence se o grupo ainda existe; senão cai pela `categoryOf` no primeiro grupo que
+   *  a reivindica (`categories` null = todas); o que não casa nada vira "órfão" → o
+   *  abrigo {@link CATCH_ALL_KEY} no fim (some quando vazio). `itemsKey` nomeia o array
+   *  de cada grupo (ex.: "traits", "techniques", "children", "npcs") para o template.
+   *  "Protegido" (underscore) para que subclasses (Location) o reusem em Landmarks/NPCs. */
+  _groupEntries(layout, entries, { tagOf, categoryOf = () => null, itemsKey, ungroupedLabel = "SHIFT.Groups.Ungrouped" }) {
+    const keyFor = e => {
+      const tag = tagOf(e);
+      if (tag && layout.some(s => s.key === tag)) return tag;
+      const cat = categoryOf(e);
+      const found = layout.find(s => s.categories === null
+        || (Array.isArray(s.categories) && cat != null && s.categories.includes(cat)));
+      return found?.key ?? CATCH_ALL_KEY;
+    };
+    const buckets = new Map(layout.map(g => [g.key, []]));
+    const orphans = [];
+    for (const e of entries) {
+      const k = keyFor(e);
+      if (buckets.has(k)) buckets.get(k).push(e);
+      else orphans.push(e);
+    }
+    const groups = layout.map(spec => ({
+      key: spec.key,
+      label: game.i18n.localize(spec.label),   // basal = chave de locale; custom = literal (localize deixa passar)
+      columns: spec.columns,
+      color: spec.color || "",
+      createCategory: spec.create ?? null,
+      special: spec.special,
+      hideEmpty: spec.hideEmpty,
+      collapsed: this.#collapsed.has(spec.key),
+      [itemsKey]: buckets.get(spec.key)
+    }));
+    if (orphans.length) {
+      groups.push({
+        key: CATCH_ALL_KEY,
+        label: game.i18n.localize(ungroupedLabel),
+        columns: layout[0]?.columns ?? 2, color: "", createCategory: null, special: false, hideEmpty: true,
+        collapsed: this.#collapsed.has(CATCH_ALL_KEY),
+        [itemsKey]: orphans
+      });
+    }
+    return groups.filter(g => g[itemsKey].length || (!g.hideEmpty && this.isEditable));
   }
 
   async #prepareTraitGroups() {
     const actor = this.document;
     const canSee = item => item.system.revealed || game.user.isGM || actor.isOwner;
-    const layout = this.traitLayout;
-
-    // Bucketiza cada Trait visível na subdivisão que o exibe: a tag explícita
-    // (system.group) vence se o grupo ainda existe; senão cai pela categoria. O que
-    // não casa nenhum grupo vira "órfão" → grupo de segurança Ungrouped no fim.
-    const buckets = new Map(layout.map(g => [g.key, []]));
-    const orphans = [];
     const visible = actor.traits.filter(canSee)
       .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
-    for (const t of visible) {
-      const key = this.#traitGroupKeyFor(t, layout);
-      if (buckets.has(key)) buckets.get(key).push(t);
-      else orphans.push(t);
-    }
+    const entries = [];
+    for (const t of visible) entries.push(await this.#traitContext(t));
+    return this._groupEntries(this.layoutFor("trait"), entries, {
+      tagOf: e => e.group, categoryOf: e => e.category, itemsKey: "traits"
+    });
+  }
 
-    const groups = [];
-    for (const spec of layout) {
-      const ctxs = [];
-      for (const t of buckets.get(spec.key)) ctxs.push(await this.#traitContext(t));
-      groups.push({
-        key: spec.key,
-        label: game.i18n.localize(spec.label),   // basal = chave de locale; custom = literal (localize deixa passar)
-        columns: spec.columns,
-        color: spec.color || "",
-        createCategory: spec.create ?? null,
-        special: spec.special,
-        hideEmpty: spec.hideEmpty,
-        collapsed: this.#collapsed.has(spec.key),
-        traits: ctxs
-      });
-    }
-    if (orphans.length) {
-      const ctxs = [];
-      for (const t of orphans) ctxs.push(await this.#traitContext(t));
-      groups.push({
-        key: CATCH_ALL_KEY,
-        label: game.i18n.localize("SHIFT.Groups.Ungrouped"),
-        columns: 2, color: "", createCategory: null, special: false, hideEmpty: true,
-        collapsed: this.#collapsed.has(CATCH_ALL_KEY),
-        traits: ctxs
-      });
-    }
-    return groups.filter(g => g.traits.length || (!g.hideEmpty && this.isEditable));
+  /** Subdivisões da aba Techniques (só Character a renderiza). Espelha os Traits:
+   *  tag em system.group, fallback pela categoria = techniqueType. */
+  async #prepareTechniqueGroups() {
+    const entries = await this.#prepareTechniques();
+    return this._groupEntries(this.layoutFor("technique"), entries, {
+      tagOf: e => e.group, categoryOf: e => e.typeKey, itemsKey: "techniques"
+    });
   }
 
   /** Resolve um Item de Keyword/Drawback que corresponda ao texto de uma pill (Actor primeiro, depois world). */
@@ -245,6 +301,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       id: item.id,
       name: item.name,
       img: item.img,
+      group: sys.group ?? "",
       category: sys.category,
       categoryLabel: game.i18n.localize(CONFIG.SHIFT.traitCategories[sys.category] ?? ""),
       statusKey: item.statusKey,
@@ -289,6 +346,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
         id: t.id,
         name: t.name,
         img: t.img,
+        group: t.system.group ?? "",
         typeKey: t.system.techniqueType,
         typeLabel: game.i18n.localize(CONFIG.SHIFT.techniqueTypes[t.system.techniqueType] ?? ""),
         rechargeBadges: [
@@ -402,8 +460,10 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     const row = event.target?.closest?.("[data-item-id]");
     const target = row ? this.document.items.get(row.dataset.itemId) : null;
 
-    // Techniques: lista plana única — ordena contra todos os irmãos do tipo.
-    if (item.type !== "trait") {
+    // Traits E Techniques são divididos em SUBDIVISÕES (system.group). Outros tipos de
+    // Item (sem grupos) caem na ordenação plana entre irmãos do mesmo tipo.
+    const kind = item.type === "trait" ? "trait" : item.type === "technique" ? "technique" : null;
+    if (!kind) {
       if (!target || target.id === item.id || target.type !== item.type) return false;
       const siblings = this.document.items.filter(i => i.id !== item.id && i.type === item.type);
       const updates = foundry.utils.performIntegerSort(item, { target, siblings })
@@ -411,26 +471,26 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       return this.document.updateEmbeddedDocuments("Item", updates);
     }
 
-    // Traits são divididos em SUBDIVISÕES na ficha. O destino é a subdivisão onde o
-    // card caiu, lido direto do DOM (data-group-key): soltar num grupo DIFERENTE
-    // RE-TAGUEIA o Trait (system.group) para ele grudar lá; soltar no mesmo grupo só
-    // reordena. Snapshot da layout uma vez (o getter reconstrói o array a cada acesso).
-    const layout = this.traitLayout;
+    // O destino é a subdivisão onde o card caiu, lido direto do DOM (data-group-key):
+    // soltar num grupo DIFERENTE RE-TAGUEIA o item (system.group) para ele grudar lá;
+    // soltar no mesmo grupo só reordena. Snapshot da layout uma vez (o getter
+    // reconstrói o array a cada acesso).
+    const layout = this.layoutFor(kind);
     const destKey = event.target?.closest?.("[data-group-key]")?.dataset.groupKey
-      ?? this.#traitGroupKeyFor(item, layout);
-    const curKey = this.#traitGroupKeyFor(item, layout);
+      ?? this.#itemGroupKeyFor(item, kind, layout);
+    const curKey = this.#itemGroupKeyFor(item, kind, layout);
 
     // Nova tag ao mudar de grupo: a key do destino; o grupo de segurança limpa a tag
     // (volta ao fallback por categoria). null = não mudou de grupo.
     const regroup = destKey === curKey ? null : (destKey === CATCH_ALL_KEY ? "" : destKey);
 
-    // Irmãos = os Traits hoje exibidos no grupo DESTINO (fora o arrastado).
-    const siblings = this.document.traits.filter(t =>
-      t.id !== item.id && this.#traitGroupKeyFor(t, layout) === destKey);
+    // Irmãos = os items do mesmo tipo exibidos no grupo DESTINO (fora o arrastado).
+    const siblings = this.document.items.filter(i =>
+      i.id !== item.id && i.type === item.type && this.#itemGroupKeyFor(i, kind, layout) === destKey);
 
     let updates = [];
-    if (target && target.id !== item.id && target.type === "trait"
-        && this.#traitGroupKeyFor(target, layout) === destKey) {
+    if (target && target.id !== item.id && target.type === item.type
+        && this.#itemGroupKeyFor(target, kind, layout) === destKey) {
       updates = foundry.utils.performIntegerSort(item, { target, siblings })
         .map(u => ({ _id: u.target.id, sort: u.update.sort }));
     }
@@ -450,17 +510,18 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     return this.document.updateEmbeddedDocuments("Item", updates);
   }
 
-  /** A key da subdivisão que exibe uma dada Trait, conforme a layout efetiva
-   *  ({@link traitLayout}): a tag explícita `system.group` vence se o grupo ainda
-   *  existe; senão cai pela `category` no primeiro grupo que a reivindica (categories
-   *  null = todas); senão o grupo de segurança {@link CATCH_ALL_KEY}. null para
-   *  items que não são Trait. Usada para agrupar e para manter o reorder por drag. */
-  #traitGroupKeyFor(item, layout = this.traitLayout) {
-    if (item.type !== "trait") return null;
+  /** A key da subdivisão que exibe um dado Item (Trait ou Technique), conforme a layout
+   *  efetiva do `kind`: a tag explícita `system.group` vence se o grupo ainda existe;
+   *  senão cai pela categoria (Trait = `category`; Technique = `techniqueType`) no
+   *  primeiro grupo que a reivindica (categories null = todas); senão o abrigo
+   *  {@link CATCH_ALL_KEY}. Usada para agrupar e para manter o reorder por drag. */
+  #itemGroupKeyFor(item, kind, layout = this.layoutFor(kind)) {
     const tag = item.system.group;
     if (tag && layout.some(s => s.key === tag)) return tag;
-    const cat = item.system.category;
-    const found = layout.find(s => s.categories === null || (Array.isArray(s.categories) && s.categories.includes(cat)));
+    const cat = kind === "trait" ? item.system.category
+      : kind === "technique" ? item.system.techniqueType : null;
+    const found = layout.find(s => s.categories === null
+      || (Array.isArray(s.categories) && cat != null && s.categories.includes(cat)));
     return found?.key ?? CATCH_ALL_KEY;
   }
 
@@ -509,7 +570,11 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     const item = this.getItem(target);
     if (!item) return;
     if (!item.canRoll) {
-      return void ui.notifications.warn(game.i18n.format("SHIFT.Warnings.TraitExhaustedNamed", { trait: item.name }));
+      // Distingue o motivo: um Trait com `rollable: false` (o ícone 🚫) NÃO está
+      // exausto — avisar "Exhausted" ali confunde. Só cai no aviso de exausto quando
+      // o motivo é mesmo esse.
+      const key = item.system.rollable ? "SHIFT.Warnings.TraitExhaustedNamed" : "SHIFT.Warnings.TraitNotRollable";
+      return void ui.notifications.warn(game.i18n.format(key, { trait: item.name }));
     }
     if (event.shiftKey) return item.roll();
     await game.shift.ShiftRoll.promptActionRoll(this.document, { preselect: item.id });
@@ -613,12 +678,19 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
           data.system.temporary = false;
           if (groupKey) data.system.group = groupKey;
         }
+        if (type === "technique" && groupKey) data.system.group = groupKey;
         await this.document.createEmbeddedDocuments("Item", [data]);
         return;
       }
     }
 
     const data = { type, name: game.i18n.localize(`SHIFT.New.${type}`) };
+    if (type === "technique") {
+      data.system = {};
+      if (groupKey) data.system.group = groupKey;
+      // O "tipo padrão" da subdivisão vira o techniqueType inicial do "+".
+      if (["narrative", "mechanical", "scaledUp"].includes(category)) data.system.techniqueType = category;
+    }
     if (type === "trait") {
       data.system = { category, maxDie: "d6", currentDie: "d6" };
       if (groupKey) data.system.group = groupKey;
@@ -739,16 +811,25 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     this.render();
   }
 
-  /** Abre o editor de subdivisões de Trait DESTA ficha (renomear, reordenar, colunas,
-   *  tipo padrão, criar novas, cor de destaque). É por-Actor: grava o flag traitLayout.
-   *  O botão é inline na aba (clique-duplo fácil), então reaproveita um editor já
-   *  aberto deste Actor em vez de criar uma janela órfã de mesmo id. */
+  /** A aba ativa → o `kind` de subdivisão que o editor deve abrir (null se a aba não
+   *  tem subdivisões customizáveis). */
+  #layoutKindForTab(tab) {
+    return { traits: "trait", techniques: "technique", landmarks: "landmark", npcs: "npc" }[tab] ?? null;
+  }
+
+  /** Abre o editor de subdivisões DESTA ficha para a aba ativa (Traits/Techniques/
+   *  Landmarks/NPCs): renomear, reordenar, colunas, tipo padrão, criar novas, cor de
+   *  destaque. É por-Actor e por-kind: grava o flag `${kind}Layout`. O botão é inline
+   *  na aba, então reaproveita um editor já aberto deste par Actor+kind em vez de criar
+   *  uma janela órfã de mesmo id. */
   static #onOpenTraitLayout() {
     if (!this.isEditable) return;
-    const id = `shift-trait-layout-${this.document.id}`;
+    const kind = this.#layoutKindForTab(this.tabGroups.primary);
+    if (!kind) return;
+    const id = `shift-${kind}-layout-${this.document.id}`;
     const existing = foundry.applications.instances.get(id);
     if (existing) return void existing.bringToFront?.();
-    new TraitLayoutConfig({ actor: this.document }).render(true);
+    new TraitLayoutConfig({ actor: this.document, kind }).render(true);
   }
 
   static async #onOpenDescriptor(event, target) {

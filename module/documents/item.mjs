@@ -5,6 +5,7 @@
  */
 import { DIE_PROGRESSION, dieIndex, dieLabel, fvtt, enrich, promptText, promptTraitChoice, promptChoice, shiftSpeaker } from "../helpers/utils.mjs";
 import { computeShift } from "../dice/resolution.mjs";
+import { requestCoreDeathPrompt } from "../helpers/socket.mjs";
 
 export class ShiftItem extends Item {
 
@@ -445,7 +446,7 @@ export class ShiftItem extends Item {
       && this.system.category === "core"
       && this.actor?.type === "character"
       && game.settings.get("shift-vtt", "promptCoreExhausted");
-    if (wantsPrompt) await this.promptCoreExhausted();
+    if (wantsPrompt) await this.#routeCoreExhaustedPrompt();
     await ShiftItem.#syncOvercome(this.actor);
   }
 
@@ -785,6 +786,27 @@ export class ShiftItem extends Item {
   /* ---------------------------------------------------------------- */
   /* Exaustão de Core Trait: Drawback ou Morte Heroica                 */
   /* ---------------------------------------------------------------- */
+
+  /** Decide em QUE cliente o prompt de Going Down aparece. Pelas regras a escolha
+   *  (Drawback / Morte Heroica) é do Player dono do character, mas o Core costuma ser
+   *  exaurido por outro cliente: o GM aplicando o ataque de um Adversary, ou o relay de
+   *  combate. Roteia para o dono NÃO-GM ativo (preferindo aquele cujo personagem
+   *  designado é este actor); sem Player online, recai em quem puder escrever o actor
+   *  (o GM ativo), para que a consequência nunca se perca em silêncio. */
+  async #routeCoreExhaustedPrompt() {
+    const actor = this.actor;
+    if (!actor) return;
+    const owners = game.users.filter(u => u.active && !u.isGM && actor.testUserPermission(u, "OWNER"));
+    const target = owners.find(u => u.character?.id === actor.id) ?? owners[0] ?? null;
+    if (target) {
+      if (target.id === game.user.id) return this.promptCoreExhausted();
+      return requestCoreDeathPrompt({ userId: target.id, traitUuid: this.uuid });
+    }
+    // Sem Player dono online: quem aplicou resolve se pode escrever; senão repassa ao GM ativo.
+    if (actor.canUserModify(game.user, "update")) return this.promptCoreExhausted();
+    const gm = game.users.activeGM;
+    if (gm) requestCoreDeathPrompt({ userId: gm.id, traitUuid: this.uuid });
+  }
 
   async promptCoreExhausted() {
     const actor = this.actor;

@@ -1,5 +1,5 @@
 <section class="tl-body">
-  <p class="hint">{{localize "SHIFT.TraitLayout.Hint"}}</p>
+  <p class="hint">{{localize hintKey}}</p>
 
   <ul class="tl-rows">
     {{#each rows}}
@@ -21,12 +21,14 @@
             </select>
           </label>
 
-          <label class="tl-field" data-tooltip="{{localize 'SHIFT.TraitLayout.DefaultType'}}">
-            <i class="fa-solid fa-dice-d20"></i>
-            <select name="create" aria-label="{{localize 'SHIFT.TraitLayout.DefaultType'}}">
-              {{#each categoryOptions}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>{{/each}}
-            </select>
-          </label>
+          {{#if @root.showCreate}}
+            <label class="tl-field" data-tooltip="{{localize 'SHIFT.TraitLayout.DefaultType'}}">
+              <i class="fa-solid fa-dice-d20"></i>
+              <select name="create" aria-label="{{localize 'SHIFT.TraitLayout.DefaultType'}}">
+                {{#each categoryOptions}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>{{/each}}
+              </select>
+            </label>
+          {{/if}}
 
           <input type="hidden" name="color" value="{{color}}"/>
           <div class="swatch-picker" aria-label="{{localize 'SHIFT.TraitLayout.Color'}}">

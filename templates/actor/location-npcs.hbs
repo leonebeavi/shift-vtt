@@ -1,30 +1,36 @@
-<section class="tab npcs{{#if (shiftEq activeTab 'npcs')}} active{{/if}}" data-tab="npcs" data-group="primary">
-  <div class="trait-group" data-group-key="npcs">
-    <header class="group-header">
-      <h2>{{localize "SHIFT.Location.NPCs"}}</h2>
-    </header>
+<section class="tab npcs{{#if (shiftEq activeTab 'npcs')}} active{{/if}}" data-tab="npcs" data-group="primary" data-drop="npc">
+  {{#each npcGroups as |group|}}
+    <div class="trait-group grid-{{group.columns}}{{#if group.collapsed}} collapsed{{/if}}" data-group-key="{{group.key}}"
+         {{#if group.color}}style="--group-color: {{group.color}};"{{/if}}>
+      <header class="group-header">
+        <a class="group-toggle" data-action="toggleGroup">
+          <i class="fa-solid {{#if group.collapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}"></i>
+        </a>
+        <h2>{{group.label}}</h2>
+      </header>
 
-    <div class="npc-grid">
-      {{#each npcs}}
-        {{!-- O card inteiro abre o NPC (não só o nome/avatar). O handler #onOpenNpc
-              resolve o uuid pelo closest("[data-npc-uuid]"), então a ação pode morar
-              na raiz do card; o botão de remover, com a própria data-action, ganha do
-              card por ser o elemento mais próximo no clique. --}}
-        <div class="npc-card" data-npc-uuid="{{uuid}}" data-role="{{role}}" style="--role: {{accent}};"
-             data-action="openNpc">
-          <img class="npc-img" src="{{img}}" alt="{{name}}"/>
-          <div class="npc-main">
-            <span class="npc-name">{{name}}</span>
-            <span class="npc-type">{{roleLabel}}</span>
+      <div class="npc-grid">
+        {{#each group.npcs}}
+          {{!-- O card inteiro abre o NPC (não só o nome/avatar). O handler #onOpenNpc
+                resolve o uuid pelo closest("[data-npc-uuid]"), então a ação pode morar
+                na raiz do card; o botão de remover, com a própria data-action, ganha do
+                card por ser o elemento mais próximo no clique. --}}
+          <div class="npc-card" data-npc-uuid="{{uuid}}" data-role="{{role}}" style="--role: {{accent}};"
+               data-action="openNpc">
+            <img class="npc-img" src="{{img}}" alt="{{name}}"/>
+            <div class="npc-main">
+              <span class="npc-name">{{name}}</span>
+              <span class="npc-type">{{roleLabel}}</span>
+            </div>
+            {{#if @root.editMode}}
+              <a class="ta-btn danger npc-remove" data-action="removeNpc"><i class="fa-solid fa-xmark"></i></a>
+            {{/if}}
           </div>
-          {{#if @root.editMode}}
-            <a class="ta-btn danger npc-remove" data-action="removeNpc"><i class="fa-solid fa-xmark"></i></a>
-          {{/if}}
-        </div>
-      {{/each}}
-      {{#unless npcs.length}}
-        <p class="empty npc-empty"><i class="fa-solid fa-hand-pointer"></i> {{localize "SHIFT.Location.NPCsHint"}}</p>
-      {{/unless}}
+        {{/each}}
+        {{#unless group.npcs.length}}
+          <p class="empty npc-empty"><i class="fa-solid fa-hand-pointer"></i> {{localize "SHIFT.Location.NPCsHint"}}</p>
+        {{/unless}}
+      </div>
     </div>
-  </div>
+  {{/each}}
 </section>

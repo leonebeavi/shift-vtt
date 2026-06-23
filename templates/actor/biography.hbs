@@ -1,7 +1,8 @@
-{{!-- SHIFT VTT — aba "Notes" do Actor. Em Character é só a Description (rich-text).
-      Nos demais (Adversary/Vehicle/Location) vira split: Description em cima (o texto
-      que pode ir para o Codex) e a GM Note embaixo, privada do GM e menor. Os dois
-      campos (system.description / system.gmNote) são os MESMOS que o Codex usa. --}}
+{{!-- SHIFT VTT — aba "Notes" do Actor. Quando o tipo tem GM Note (todos hoje:
+      Character/Adversary/Vehicle/Location) vira split: Description em cima (o texto
+      que pode ir para o Codex) e a GM Note embaixo, privada do GM e menor; sem GM Note,
+      mostra só a Description. Os dois campos (system.description / system.gmNote) são
+      os MESMOS que o Codex usa. --}}
 <section class="tab biography{{#if (shiftEq activeTab 'biography')}} active{{/if}}" data-tab="biography" data-group="primary">
   {{#if canViewNotes}}
     {{#if hasGmNote}}

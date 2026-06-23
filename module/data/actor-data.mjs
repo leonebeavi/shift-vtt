@@ -3,10 +3,13 @@
  */
 const fields = foundry.data.fields;
 
-/** Nota privada do GM, em rich-text. Vive na ficha do próprio Actor (Adversary,
- *  Vehicle, Location — nunca Character) e é o MESMO campo que o Codex do Party lê
- *  e edita, então as duas visões ficam sincronizadas. Nunca é revelada aos
- *  players; a descrição (system.description) é que pode ser revelada no Codex. */
+/** Nota privada do GM, em rich-text. Vive na ficha do próprio Actor (Character,
+ *  Adversary, Vehicle, Location) e é o MESMO campo que o Codex do Party lê e edita,
+ *  então as duas visões ficam sincronizadas. A UI só mostra pro GM; a descrição
+ *  (system.description) é que pode ser revelada no Codex. ATENÇÃO: num Actor que o
+ *  PLAYER possui (Character), o Foundry replica o system inteiro pro dono — então o
+ *  player CONSEGUE ler esta nota pelos DADOS (não há strip por-campo); a privacidade
+ *  é só de UI. Em Adversary/Vehicle/Location (que players não possuem) é de fato privada. */
 function gmNoteField() {
   return new fields.HTMLField({ required: false, blank: true, initial: "" });
 }
@@ -39,6 +42,7 @@ export class ShiftCharacterData extends ShiftActorBase {
       value: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 }),
       session: new fields.NumberField({ required: true, integer: true, min: 0, initial: 0 })
     });
+    schema.gmNote = gmNoteField();
     return schema;
   }
 }

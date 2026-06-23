@@ -153,10 +153,11 @@ export async function seedTechniques() {
 /**
  * Faz o seed do pack embutido "Macros | SHIFT" com um conjunto pequeno e
  * selecionado de macros úteis e personalizadas (cada uma guiada por prompt, em
- * vez de uma execução fixa e única). Espelha a receita de seed de trait/
- * technique: protegida por um flag de mundo, deduplicada por nome,
- * destravar → criar → marcar flag → re-travar. Os comandos das macros se apoiam
- * na API pública `game.shift.api` e no novo `actor.rechargeAllTraits()`.
+ * vez de uma execução fixa e única). Protegida por um flag de mundo. Cada macro tem
+ * uma IDENTIDADE estável (flag `macroKey`) e NOME canônico em inglês — o re-sync casa
+ * pela key (ou por nomes históricos en/pt) para ADOTAR e DEDUPLICAR o par en/pt que
+ * mundos antigos criavam ao trocar de idioma. Os comandos se apoiam na API pública
+ * `game.shift.api` e no `actor.rechargeAllTraits()` e já são language-aware em runtime.
  */
 export async function seedMacros() {
   const pack = game.packs.get("shift-vtt.shift-macros");
@@ -172,8 +173,6 @@ export async function seedMacros() {
   }
   const stamped = game.settings.get("shift-vtt", "macrosSeededVersion");
   if (stamped === game.system.version) return;
-
-  const L = k => game.i18n.localize(k);
 
   // Restaura todo Trait do(s) token(s) selecionado(s) (ou do seu personagem
   // atribuído) ao seu Max Die; funciona para todos os tipos de Actor.
@@ -210,39 +209,78 @@ await game.shift.api.actionRoll(actor);`;
   // GM: abre o diálogo "Request a Roll" para a party ativa.
   const requestRollCmd = `await game.shift.api.requestRoll();`;
 
-  const docs = [
-    { name: L("SHIFT.Macro.RechargeName"),    img: "icons/magic/time/arrows-circling-green.webp",      command: rechargeCmd },
-    { name: L("SHIFT.Macro.GrantXpName"),     img: "icons/magic/light/explosion-star-glow-yellow.webp", command: grantXpCmd },
-    { name: L("SHIFT.Macro.RequestRollName"), img: "icons/sundries/gaming/dice-runed-brown.webp",      command: requestRollCmd },
-    { name: L("SHIFT.Macro.NewSessionName"),  img: "icons/magic/time/day-night-sunset-sunrise.webp",   command: newSessionCmd },
-    { name: L("SHIFT.Macro.ActionRollName"),  img: "icons/sundries/gaming/dice-pair-white-green.webp", command: actionRollCmd },
-    { name: L("SHIFT.Macro.ClocksName"),      img: "icons/magic/time/clock-spinning-gold-pink.webp",   command: clocksCmd }
-  ].map(m => ({ name: m.name, type: "script", img: m.img, scope: "global", command: m.command.trim() }));
+  // Especificação canônica. O NOME fica EM INGLÊS, fixo: o nome de uma Macro é uma
+  // string ARMAZENADA que o Foundry mostra crua na sidebar/hotbar (não dá pra traduzir
+  // em tempo de render), então uma macro localizada por idioma só geraria duplicatas
+  // ao trocar a língua do mundo. O CORPO de cada macro já é language-aware (usa
+  // game.i18n em runtime). `key` é a identidade ESTÁVEL (gravada no flag macroKey);
+  // `aliases` lista nomes históricos (en + pt) para ADOTAR e DEDUPLICAR macros criadas
+  // antes deste flag existir (mundos antigos com o par en/pt).
+  const specs = [
+    { key: "recharge",    name: "Recharge Traits",      img: "icons/magic/time/arrows-circling-green.webp",       command: rechargeCmd,    aliases: ["recharge traits", "recarregar traits"] },
+    { key: "grantXp",     name: "Grant XP",             img: "icons/magic/light/explosion-star-glow-yellow.webp", command: grantXpCmd,     aliases: ["grant xp", "conceder xp"] },
+    { key: "requestRoll", name: "Request Roll",         img: "icons/sundries/gaming/dice-runed-brown.webp",       command: requestRollCmd, aliases: ["request roll", "pedir rolagem"] },
+    { key: "newSession",  name: "New Session",          img: "icons/magic/time/day-night-sunset-sunrise.webp",    command: newSessionCmd,  aliases: ["new session", "nova sessão", "nova sessao"] },
+    { key: "actionRoll",  name: "Action Roll",          img: "icons/sundries/gaming/dice-pair-white-green.webp",  command: actionRollCmd,  aliases: ["action roll"] },
+    { key: "clocks",      name: "Toggle Global Traits", img: "icons/magic/time/clock-spinning-gold-pink.webp",    command: clocksCmd,      aliases: ["toggle global traits", "alternar global traits"] }
+  ];
 
-  // Cria os que faltam e RE-SINCRONIZA o `command` dos já existentes — os comandos
-  // se apoiam na API pública, então uma correção aqui precisa alcançar mundos antigos.
-  const index = [...await pack.getIndex()];
-  const byName = new Map(index.map(e => [e.name.toLowerCase(), e]));
+  // Índice COM flags: casa pela identidade estável (flag macroKey) e, no fallback,
+  // por qualquer nome histórico (en/pt) — assim adotamos e limpamos as duplicatas
+  // que mundos antigos criaram ao trocar de idioma entre re-syncs.
+  const index = [...await pack.getIndex({ fields: ["flags", "command"] })];
+  const flagKeyOf = e => foundry.utils.getProperty(e, "flags.shift-vtt.macroKey") ?? null;
+
   const toCreate = [];
-  const toUpdate = [];
-  for (const d of docs) {
-    const ex = byName.get(d.name.toLowerCase());
-    if (!ex) { toCreate.push(d); continue; }
-    const full = await pack.getDocument(ex._id);
-    if (full && full.command !== d.command) toUpdate.push({ doc: full, command: d.command });
+  const toUpdate = [];   // { doc, data }
+  const toDelete = [];   // ids das duplicatas a remover
+  const claimed = new Set();   // ids já atribuídos a uma spec (não roubar entre specs)
+
+  for (const spec of specs) {
+    const matches = index.filter(e => !claimed.has(e._id) && (
+      flagKeyOf(e) === spec.key || spec.aliases.includes((e.name ?? "").trim().toLowerCase())
+    ));
+    matches.forEach(e => claimed.add(e._id));
+
+    const base = {
+      name: spec.name, type: "script", img: spec.img, scope: "global",
+      command: spec.command.trim(), flags: { "shift-vtt": { macroKey: spec.key } }
+    };
+    // Só macros REALMENTE seedadas entram no dedup/adoção: as que já têm a flag desta key,
+    // ou cujo command é IDÊNTICO ao canônico (o par en/pt antigo). Uma macro que o GM criou
+    // com o mesmo NOME mas corpo PRÓPRIO (sem flag, command diferente) fica INTACTA — nunca
+    // é apagada nem sobrescrita só por colidir de nome.
+    const seeded = matches.filter(e => flagKeyOf(e) === spec.key || (e.command ?? "").trim() === spec.command.trim());
+    if (!seeded.length) { toCreate.push(base); continue; }
+
+    // Mantém UMA (preferindo a que já tem a flag); as demais (seedadas) são duplicatas → apagar.
+    seeded.sort((a, b) => (flagKeyOf(b) === spec.key ? 1 : 0) - (flagKeyOf(a) === spec.key ? 1 : 0));
+    const [keep, ...dupes] = seeded;
+    toDelete.push(...dupes.map(e => e._id));
+
+    const full = await pack.getDocument(keep._id);
+    if (!full) continue;
+    // Re-sincroniza corpo/ícone/flag sempre (bugfix de command alcança mundos antigos).
+    // O NOME só é normalizado para o inglês se ainda for um default (alias en/pt); um
+    // nome custom que o GM deu fica intocado.
+    const data = { img: spec.img, scope: "global", command: spec.command.trim(), flags: { "shift-vtt": { macroKey: spec.key } } };
+    if (spec.aliases.includes(full.name.trim().toLowerCase())) data.name = spec.name;
+    toUpdate.push({ doc: full, data });
   }
-  if (!toCreate.length && !toUpdate.length) {
-    // Nada a criar/atualizar: já está em dia → carimba a versão para pular o diff no próximo login.
+
+  if (!toCreate.length && !toUpdate.length && !toDelete.length) {
+    // Nada a fazer: já está em dia → carimba a versão para pular o diff no próximo login.
     await game.settings.set("shift-vtt", "macrosSeededVersion", game.system.version);
     return;
   }
   try {
     await withUnlockedPack(pack, async () => {
       if (toCreate.length) await Macro.createDocuments(toCreate, { pack: pack.collection });
-      for (const u of toUpdate) await u.doc.update({ command: u.command });
+      for (const u of toUpdate) await u.doc.update(u.data);
+      if (toDelete.length) await Macro.deleteDocuments(toDelete, { pack: pack.collection });
       // Re-sync concluído: carimba a versão atual para que o próximo login pule o trabalho.
       await game.settings.set("shift-vtt", "macrosSeededVersion", game.system.version);
-      console.log(`shift-vtt | Macros: ${toCreate.length} criada(s), ${toUpdate.length} re-sincronizada(s) em ${pack.collection}`);
+      console.log(`shift-vtt | Macros: ${toCreate.length} criada(s), ${toUpdate.length} re-sincronizada(s), ${toDelete.length} duplicata(s) removida(s) em ${pack.collection}`);
     });
   } catch (err) {
     console.error("shift-vtt | Macro seeding failed", err);
@@ -551,7 +589,10 @@ export async function migrateTraitFeatures() {
  * para esta leitura ser garantida; some num release futuro.
  */
 export async function migrateCodexNote() {
-  if (game.settings.get("shift-vtt", "codexNoteMigrated")) return;
+  // Version-stamped (não boolean): re-roda quando um tipo de Actor GANHA o campo gmNote
+  // num release novo (ex.: Character na 2.7.0), pra ADOTAR notas que antes ficavam órfãs
+  // (sem destino) e seguiam guardadas, mas invisíveis, em system.codex[].note.
+  if (game.settings.get("shift-vtt", "codexNoteMigratedVersion") === game.system.version) return;
   const hasText = html => !!html && html.replace(/<[^>]*>/g, "").trim().length > 0;
 
   let moved = 0, orphaned = 0;
@@ -577,7 +618,7 @@ export async function migrateCodexNote() {
         moved++;
       }
     }
-    await game.settings.set("shift-vtt", "codexNoteMigrated", true);
+    await game.settings.set("shift-vtt", "codexNoteMigratedVersion", game.system.version);
     if (moved || orphaned) console.log(`shift-vtt | Codex GM notes: ${moved} moved to gmNote, ${orphaned} left in place (no target field).`);
   } catch (err) {
     // Sem setar o flag → re-tenta no próximo load (idempotente: gmNote já preenchido é pulado).

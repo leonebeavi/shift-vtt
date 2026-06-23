@@ -315,8 +315,13 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.typeLabel = game.i18n.localize("TYPES.Actor.location");
-    context.children = await this.#prepareChildren();
-    context.npcs = await this.#prepareNpcs();
+    context.landmarkGroups = await this.#prepareLandmarkGroups();
+    context.npcGroups = await this.#prepareNpcGroups();
+    // Contagens RESOLVIDAS (descartam UUIDs órfãos) para os contadores do header,
+    // somadas das seções já preparadas — preserva o comportamento de antes do
+    // agrupamento, que contava os cards resolvidos, não os UUIDs crus.
+    context.landmarkCount = context.landmarkGroups.reduce((n, g) => n + (g.children?.length ?? 0), 0);
+    context.npcCount = context.npcGroups.reduce((n, g) => n + (g.npcs?.length ?? 0), 0);
     context.safe = !!this.document.system.safe;
     // Breadcrumb das Locations-mãe (do topo até a mãe direta).
     context.breadcrumb = this.document.locationAncestors.slice().reverse().map(a => ({ uuid: a.uuid, name: a.name }));
@@ -362,6 +367,45 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
     return out;
   }
 
+  /** Subdivisões da aba Landmarks: as Locations-filhas agrupadas pela layout custom
+   *  (flag landmarkLayout). Landmarks são Actors por UUID — não têm campo system.group —
+   *  então a tag de cada uma vive num flag-map no pai (landmarkGroups: {uuid: key}). */
+  async #prepareLandmarkGroups() {
+    const map = this.document.getFlag("shift-vtt", "landmarkGroups") ?? {};
+    const entries = await this.#prepareChildren();
+    for (const e of entries) e.group = map[e.uuid] ?? "";
+    return this._groupEntries(this.layoutFor("landmark"), entries, {
+      tagOf: e => e.group, itemsKey: "children"
+    });
+  }
+
+  /** Subdivisões da aba NPCs (mesmo padrão: flag npcLayout + flag-map npcGroups). */
+  async #prepareNpcGroups() {
+    const map = this.document.getFlag("shift-vtt", "npcGroups") ?? {};
+    const entries = await this.#prepareNpcs();
+    for (const e of entries) e.group = map[e.uuid] ?? "";
+    return this._groupEntries(this.layoutFor("npc"), entries, {
+      tagOf: e => e.group, itemsKey: "npcs"
+    });
+  }
+
+  /** @override — torna os cards de Landmark/NPC arrastáveis para regroup entre seções.
+   *  Eles usam data-child-uuid/data-npc-uuid (não data-item-id), então o bind de drag
+   *  da base não os cobre; o drop é tratado por _onDropActor (#regroupActor). */
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    if (!this.isEditable) return;
+    for (const el of this.element.querySelectorAll(".landmark-row[data-child-uuid], .npc-card[data-npc-uuid]")) {
+      if (el.dataset.shiftDragBound) continue;
+      el.dataset.shiftDragBound = "1";
+      el.setAttribute("draggable", "true");
+      el.addEventListener("dragstart", ev => {
+        const uuid = el.dataset.childUuid ?? el.dataset.npcUuid;
+        if (uuid) ev.dataTransfer.setData("text/plain", JSON.stringify({ type: "Actor", uuid }));
+      });
+    }
+  }
+
   static async #onToggleChildSafe(event, target) {
     if (!this.isEditable) return;
     const uuid = target.closest("[data-child-uuid]")?.dataset.childUuid;
@@ -376,22 +420,49 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
   }
 
   /** Solta um Actor na Location: uma Location vira FILHA ("Landmark") aninhada;
-   *  qualquer outro Actor vira NPC. */
+   *  qualquer outro Actor vira NPC. Um card JÁ presente arrastado para uma seção é um
+   *  REGROUP (atualiza o flag-map), não um re-add. */
   async _onDropActor(event, actor) {
     if (!this.isEditable) return false;
     if (!(actor instanceof Actor)) actor = await Actor.implementation.fromDropData(actor);
     if (!actor || actor.uuid === this.document.uuid) return false;
+
+    // Regroup de um card já presente: só dentro da aba certa (Landmarks p/ filhas,
+    // NPCs p/ npcs), lendo a seção destino do DOM.
+    const isChild = (this.document.system.children ?? []).includes(actor.uuid);
+    const isNpc = (this.document.system.npcs ?? []).includes(actor.uuid);
+    if (isChild || isNpc) {
+      if (isChild && event.target?.closest?.("[data-tab='landmarks']")) return this.#regroupActor("landmark", actor.uuid, event);
+      if (isNpc && event.target?.closest?.("[data-tab='npcs']")) return this.#regroupActor("npc", actor.uuid, event);
+      return false;   // já presente, sem destino de regroup válido → no-op
+    }
+
     if (actor.type === "location") {
       await this.document.addChildLocation(actor.uuid);
       return true;
     }
     const npcs = [...(this.document.system.npcs ?? [])];
-    if (npcs.includes(actor.uuid)) return false;
     npcs.push(actor.uuid);
     await this.document.update({ "system.npcs": npcs });
     ui.notifications.info(game.i18n.format("SHIFT.Location.NpcAdded", {
       actor: actor.name, location: this.document.name
     }));
+    return true;
+  }
+
+  /** Re-tagueia um Landmark/NPC já presente na seção onde o card caiu (lida do DOM),
+   *  gravando no flag-map `${kind}Groups` do pai. Soltar no abrigo Ungrouped (ou sem
+   *  destino válido) limpa a tag (volta ao grupo basal). */
+  async #regroupActor(kind, uuid, event) {
+    const flag = kind === "landmark" ? "landmarkGroups" : "npcGroups";
+    const destKey = event.target?.closest?.("[data-group-key]")?.dataset.groupKey ?? null;
+    const layout = this.layoutFor(kind);
+    const map = { ...(this.document.getFlag("shift-vtt", flag) ?? {}) };
+    const cur = map[uuid] ?? "";
+    const next = (destKey && destKey !== CATCH_ALL_KEY && layout.some(s => s.key === destKey)) ? destKey : "";
+    if (next === cur) return false;
+    if (next) map[uuid] = next; else delete map[uuid];
+    await this.document.setFlag("shift-vtt", flag, map);
     return true;
   }
 
@@ -406,8 +477,11 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
     if (!this.isEditable) return;
     const uuid = target.closest("[data-npc-uuid]")?.dataset.npcUuid;
     if (!uuid) return;
-    const npcs = (this.document.system.npcs ?? []).filter(u => u !== uuid);
-    await this.document.update({ "system.npcs": npcs });
+    const update = { "system.npcs": (this.document.system.npcs ?? []).filter(u => u !== uuid) };
+    // Limpa a tag de seção órfã do flag-map (se houver) no mesmo write.
+    const map = this.document.getFlag("shift-vtt", "npcGroups") ?? {};
+    if (uuid in map) { const m = { ...map }; delete m[uuid]; update["flags.shift-vtt.npcGroups"] = m; }
+    await this.document.update(update);
   }
 
   static async #onOpenChild(event, target) {
@@ -419,11 +493,16 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
   static async #onRemoveChild(event, target) {
     if (!this.isEditable) return;
     const uuid = target.closest("[data-child-uuid]")?.dataset.childUuid;
-    if (uuid) await this.document.removeChildLocation(uuid);
+    if (!uuid) return;
+    await this.document.removeChildLocation(uuid);
+    // Limpa a tag de seção órfã do flag-map (se houver).
+    const map = this.document.getFlag("shift-vtt", "landmarkGroups") ?? {};
+    if (uuid in map) { const m = { ...map }; delete m[uuid]; await this.document.setFlag("shift-vtt", "landmarkGroups", m); }
   }
 
-  /** Cria uma nova Location e a aninha aqui como filha ("Landmark"). */
-  static async #onCreateChild() {
+  /** Cria uma nova Location e a aninha aqui como filha ("Landmark"). Se o "+" pertence
+   *  a uma subdivisão, a filha nasce já tagueada nela (flag-map landmarkGroups). */
+  static async #onCreateChild(event, target) {
     if (!this.isEditable) return;
     const created = await Actor.implementation.create({
       name: game.i18n.localize("SHIFT.Location.NewChild"),
@@ -431,6 +510,12 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
     });
     if (!created) return;
     await this.document.addChildLocation(created.uuid);
+    const groupKey = target?.dataset?.groupKey ?? "";
+    if (groupKey) {
+      const map = { ...(this.document.getFlag("shift-vtt", "landmarkGroups") ?? {}) };
+      map[created.uuid] = groupKey;
+      await this.document.setFlag("shift-vtt", "landmarkGroups", map);
+    }
     created.sheet?.render(true);
   }
 }
@@ -845,6 +930,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       openCodexEntry: ShiftPartySheet.#onOpenCodexEntry,
       codexBack: ShiftPartySheet.#onCodexBack,
       codexLinkChat: ShiftPartySheet.#onCodexLinkChat,
+      codexCreateMacro: ShiftPartySheet.#onCodexCreateMacro,
       removeCodexEntry: ShiftPartySheet.#onRemoveCodexEntry,
       revealCodexEntry: ShiftPartySheet.#onRevealCodexEntry,
       revealAllCodex: ShiftPartySheet.#onRevealAllCodex,
@@ -2203,6 +2289,30 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (!game.user.isGM) return;
     const uuid = target?.dataset?.codexUuid ?? this._codexOpen;
     if (uuid) await game.shift.api.codexChip(uuid, this.document.uuid);
+  }
+
+  /** Atalho de criação rápida: monta uma Macro de script que abre esta entrada do
+   *  Codex (game.shift.api.openCodex), pronta para a hotbar / um Active Tile. Abre a
+   *  ficha da macro recém-criada para o GM arrastá-la ou ajustá-la. GM-only. */
+  static async #onCodexCreateMacro(event, target) {
+    if (!game.user.isGM) return;
+    const uuid = target?.dataset?.codexUuid ?? this._codexOpen;
+    if (!uuid) return;
+    const doc = await fromUuid(uuid);
+    if (!doc) return void ui.notifications.warn(game.i18n.localize("SHIFT.Party.Codex.NoEntry"));
+    // JSON.stringify gera literais de string seguros (escapa aspas) para o corpo do script.
+    const command = `game.shift.api.openCodex(${JSON.stringify(uuid)}, ${JSON.stringify(this.document.uuid)});`;
+    const macro = await Macro.implementation.create({
+      name: game.i18n.format("SHIFT.Party.Codex.MacroName", { name: doc.name }),
+      type: "script",
+      scope: "global",
+      img: doc.img || "icons/sundries/books/book-stack-color.webp",
+      command,
+      flags: { "shift-vtt": { codexMacro: uuid } }
+    });
+    if (!macro) return;
+    ui.notifications.info(game.i18n.format("SHIFT.Party.Codex.MacroCreated", { name: doc.name }));
+    macro.sheet?.render(true);
   }
 
   static async #onRemoveCodexEntry(event, target) {

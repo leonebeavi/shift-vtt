@@ -31,6 +31,40 @@ function phaseFor(combatant) {
   return all.find(p => p.init === init) ?? all[all.length - 1];
 }
 
+// Tomar o spotlight seleciona o token do combatant no canvas de quem clicou —
+// operação puramente local (cada cliente tem sua própria seleção). `combatant.token.object`
+// só existe se o token estiver na cena ativa, então combate em outra cena é ignorado
+// naturalmente. O control() do core já gateia por permissão; players sem posse não
+// selecionam nada, GM seleciona qualquer um.
+//
+// control() retorna false (sem erro) se a camada de Tokens não for a ativa — comum quando
+// o GM está em outra ferramenta (Walls/Tiles/Lighting/...). Por isso ativamos a camada
+// antes, como acontece ao clicar um token diretamente; senão a seleção falharia em silêncio.
+//
+// Se o token controlado estiver fora da viewport, damos um pan suave até ele para que
+// "selecionar" sempre faça algo visível. Só fora da tela — nunca incondicional — para não
+// arrancar o enquadramento que o GM posicionou de propósito a cada spotlight tomado.
+function selectCombatantToken(combatant) {
+  const token = combatant?.token?.object;
+  if (!token || !canvas.ready) return;
+  if (!(game.user.isGM || token.isOwner)) return;
+  if (!token.layer?.active) canvas.tokens?.activate();
+  let controlled = false;
+  try { controlled = token.control({ releaseOthers: true }); } catch (_err) { /* sem ação */ }
+  if (controlled && isOffScreen(token.center)) canvas.animatePan(token.center);
+}
+
+// Verdadeiro se um ponto em coordenadas de mundo cai fora da viewport visível. Projetamos
+// pelo worldTransform do stage para pixels de tela e comparamos contra o renderer. Em caso
+// de dúvida (sem transform/renderer) assumimos visível, para nunca dar um pan indevido.
+function isOffScreen(point) {
+  const t = canvas.stage?.worldTransform;
+  const screen = canvas.app?.renderer?.screen;
+  if (!t || !screen) return false;
+  const p = t.apply(point);
+  return p.x < 0 || p.y < 0 || p.x > screen.width || p.y > screen.height;
+}
+
 function decorate(app, html) {
   const root = html instanceof HTMLElement ? html : html?.[0];
   if (!root) return;
@@ -93,8 +127,21 @@ function decorate(app, html) {
         `<span class="shift-combat-extra" data-tooltip="${game.i18n.localize("SHIFT.Combat.ActionsLeft")}">${pips}${overcome}</span>`
       );
 
-      // Spotlight: o owner clica para assumir o turno dentro da sua fase.
-      if ((combatant.isOwner || game.user.isGM) && !li.querySelector(".shift-spotlight")) {
+      // O controle da caixa de iniciativa é único: enquanto o character não
+      // rolou a ordem de turno, é o dado; depois de rolar, vira o spotlight.
+      // Nunca os dois empilhados.
+      const unrolledChar = actor.type === "character"
+        && (combatant.initiative === null || combatant.initiative === undefined);
+      const rollBtn = li.querySelector(".token-initiative [data-action='rollInitiative']");
+      if (unrolledChar) {
+        // Troca o grande SVG de d20 do core por um fa-icon limpo, mantendo o
+        // data-action="rollInitiative" (o clique do core ainda rola a ordem).
+        if (rollBtn) {
+          rollBtn.classList.add("shift-init-roll");
+          if (!rollBtn.querySelector("i")) rollBtn.innerHTML = `<i class="fa-solid fa-dice-d20"></i>`;
+        }
+      } else if ((combatant.isOwner || game.user.isGM) && !li.querySelector(".shift-spotlight")) {
+        // Spotlight: o owner clica para assumir o turno dentro da sua fase.
         const initBox2 = li.querySelector(".token-initiative") ?? li;
         initBox2.insertAdjacentHTML(
           "beforeend",
@@ -103,6 +150,7 @@ function decorate(app, html) {
         initBox2.querySelector(".shift-spotlight").addEventListener("click", ev => {
           ev.preventDefault();
           ev.stopPropagation();
+          selectCombatantToken(combatant);
           const CombatCls = CONFIG.Combat.documentClass;
           CombatCls.spotlight?.(combat, combatant.id);
         });

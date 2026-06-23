@@ -139,8 +139,14 @@
     },
     "TraitLayout": {
       "Title": "Editar Seções de Trait",
+      "TitleTechnique": "Editar Seções de Technique",
+      "TitleLandmark": "Editar Seções de Landmark",
+      "TitleNpc": "Editar Seções de NPC",
       "Edit": "Editar seções",
       "Hint": "Renomeie, reordene, defina o número de colunas (1-3), o tipo de Trait padrão do botão + e a cor de destaque de cada seção de Trait desta ficha. Você também pode criar novas seções suas. Um Trait entra numa seção ao ser criado ou arrastado nela; um Trait sem tag cai pela categoria.",
+      "HintTechnique": "Renomeie, reordene, defina o número de colunas (1-3), o tipo de Technique padrão do botão + e a cor de destaque de cada seção de Technique desta ficha. Você também pode criar novas seções suas. Uma Technique entra numa seção ao ser criada ou arrastada nela; uma sem tag cai pelo tipo.",
+      "HintLandmark": "Renomeie, reordene, defina o número de colunas (1-3) e a cor de destaque de cada seção de Landmark desta ficha. Você também pode criar novas seções suas. Arraste um card de Landmark para uma seção para movê-lo até ela.",
+      "HintNpc": "Renomeie, reordene, defina o número de colunas (1-3) e a cor de destaque de cada seção de NPC desta ficha. Você também pode criar novas seções suas. Arraste um card de NPC para uma seção para movê-lo até ela.",
       "Label": "Nome da seção",
       "Columns": "Colunas",
       "DefaultType": "Tipo de Trait padrão",
@@ -246,6 +252,9 @@
       "UnsafeRestConfirm": "Fazer um Descanso Arriscado para todos os {count} membro(s)?",
       "Codex": {
         "LinkChat": "Linkar no chat",
+        "CreateMacro": "Criar uma macro que abre esta entrada",
+        "MacroName": "{name} — Codex",
+        "MacroCreated": "Macro criada para abrir “{name}” no Codex.",
         "OpenChip": "Abrir no Codex",
         "NoParty": "Nenhuma party tem essa entrada de Codex.",
         "NoEntry": "Não foi possível resolver esse documento.",
@@ -729,6 +738,10 @@
         "Name": "Aviso de Core Trait Exausto",
         "Hint": "Ao Exaurir um Core Trait, oferece Drawback / Morte Heroica."
       },
+      "RandomTargetShift": {
+        "Name": "Inverter shift down aleatório no alvo",
+        "Hint": "Dar shift down num alvo normalmente abre o picker de Trait, e Shift+clique sorteia um Trait. Ligue para inverter: o clique normal sorteia e Shift+clique abre o picker."
+      },
       "EnableScale": {
         "Name": "Habilitar o Sistema de Escala",
         "Hint": "Regra opcional. Desligar esconde todo controle e selo de Escala."
@@ -828,6 +841,7 @@
       "AlreadyApplied": "O efeito desta rolagem já foi aplicado a um alvo.",
       "Retarget": "Trocar alvo",
       "RetargetHint": "Escolha outro alvo.",
+      "OpenSheet": "Abrir ficha",
       "None": "Sem alvo"
     },
     "Vehicle": {
@@ -854,6 +868,8 @@
       "NameLabel": "Nome do Trait",
       "Visible": "Visível aos jogadores",
       "PlayersRoll": "Jogadores podem rolar",
+      "RollTitle": "Rolar {name}",
+      "QuickRollTip": "Shift+Click: Roll Rápido",
       "ShiftsDown": "Faz shift down ao rolar o valor máximo",
       "ShiftOnTip": "Rolar o valor máximo faz shift down neste Trait · clique para desativar",
       "ShiftOffTip": "Rolar o valor máximo NÃO faz shift down · clique para ativar",

@@ -53,13 +53,13 @@
           </button>
         </div>
       {{/if}}
-      {{#if (shiftOr children.length npcs.length)}}
+      {{#if (shiftOr landmarkCount npcCount)}}
         <div class="header-stats">
-          {{#if children.length}}
-            <span class="adv-stat"><i class="fa-solid fa-map-location-dot"></i> <span class="pl">{{localize "SHIFT.Location.Landmarks"}}</span> <b class="pv">{{children.length}}</b></span>
+          {{#if landmarkCount}}
+            <span class="adv-stat"><i class="fa-solid fa-map-location-dot"></i> <span class="pl">{{localize "SHIFT.Location.Landmarks"}}</span> <b class="pv">{{landmarkCount}}</b></span>
           {{/if}}
-          {{#if npcs.length}}
-            <span class="adv-stat"><i class="fa-solid fa-users"></i> <span class="pl">{{localize "SHIFT.Location.NPCs"}}</span> <b class="pv">{{npcs.length}}</b></span>
+          {{#if npcCount}}
+            <span class="adv-stat"><i class="fa-solid fa-users"></i> <span class="pl">{{localize "SHIFT.Location.NPCs"}}</span> <b class="pv">{{npcCount}}</b></span>
           {{/if}}
         </div>
       {{/if}}
@@ -79,7 +79,7 @@
           <a class="tab-tool recharge" data-action="rechargeAll" data-tooltip="{{localize 'SHIFT.Tooltips.RechargeAll'}}">
             <i class="fa-solid fa-arrows-rotate"></i>
           </a>
-          {{#if (shiftEq activeTab 'traits')}}
+          {{#if (shiftOr (shiftEq activeTab 'traits') (shiftOr (shiftEq activeTab 'landmarks') (shiftEq activeTab 'npcs')))}}
             <a class="tab-tool" data-action="openTraitLayout" data-tooltip="{{localize 'SHIFT.TraitLayout.Edit'}}">
               <i class="fa-solid fa-table-columns"></i>
             </a>

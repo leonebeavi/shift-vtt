@@ -109,6 +109,19 @@ export function registerSettings() {
     default: true
   });
 
+  // Botão "Shift down target's Traits" (e o bônus de Critical "Shift down the
+  // target again"): por padrão, o clique normal abre o picker de Trait e Shift+clique
+  // sorteia um Trait elegível ao acaso. Ligada, INVERTE: o clique normal sorteia e
+  // Shift+clique abre o picker. O sorteio prefere os Traits afetáveis na Scale atual.
+  reg("randomTargetShiftDown", {
+    name: "SHIFT.Settings.RandomTargetShift.Name",
+    hint: "SHIFT.Settings.RandomTargetShift.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+
   // Scale é uma regra OPCIONAL. Estas vivem no submenu "Scale"
   // (config:false → escondidas da lista plana) para lerem como um grupo.
   // enableScale é a chave-mestra: desligada, esconde todo controle de Scale no sistema.
@@ -307,7 +320,7 @@ export function registerSettings() {
   // deixaram de ser opcionais por Trait; agora toda Trait tem ambos).
   reg("traitFeaturesRemoved", { scope: "world", config: false, type: Boolean, default: false });
   // Migração one-time: re-aloja a GM Note legada do Codex (system.codex[].note → system.gmNote do Actor/Item referenciado).
-  reg("codexNoteMigrated", { scope: "world", config: false, type: Boolean, default: false });
+  reg("codexNoteMigratedVersion", { scope: "world", config: false, type: String, default: "" });
   // Migração one-time: varre os Items órfãos do tipo `landmark` (descontinuado; Landmarks
   // viraram Locations aninhadas). Sem isso, ficariam como subtipo desconhecido na sidebar.
   reg("landmarksRemoved", { scope: "world", config: false, type: Boolean, default: false });

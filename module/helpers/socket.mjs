@@ -25,6 +25,19 @@ async function handle(data) {
     });
   }
 
+  // Atacante/GM → o Player dono do character: abre o prompt de Going Down
+  // (Drawback / Morte Heroica) SÓ no cliente daquele usuário. A escolha é do Player
+  // pelas regras, mas o Core costuma ser exaurido por outro cliente (ataque de
+  // Adversary aplicado pelo GM, relay de combate), então a decisão é roteada para
+  // quem possui o actor e pode escrever a consequência. Antes do gate de GM ativo
+  // porque o alvo normalmente é um Player.
+  if (data?.action === "promptCoreDeath") {
+    if (game.user.id !== data.userId) return;
+    const trait = data.traitUuid ? await fromUuid(data.traitUuid).catch(() => null) : null;
+    if (!trait?.isTrait) return;
+    return trait.promptCoreExhausted();
+  }
+
   // Tudo abaixo é Player → GM ativo (só o GM ativo aplica). A retransmissão é
   // PROPOSITALMENTE permissiva: pelas regras, um Player precisa poder dar shift down
   // em Traits que NÃO possui (o Trait de um Adversary durante um combate, uma Quest ou
@@ -74,8 +87,8 @@ async function handle(data) {
       const source = data.sourceUuid ? await fromUuid(data.sourceUuid) : null;
       if (!trait || !trait.hasClock) return; // Trait OU Quest (ambos têm clock e dão shift)
       const res = data.exhaust
-        ? await trait.exhaust({ promptDeath: false })
-        : await trait.shiftDown({ steps: data.steps ?? 1, promptDeath: false });
+        ? await trait.exhaust({})
+        : await trait.shiftDown({ steps: data.steps ?? 1 });
       if (!res.changed && !res.becameExhausted) return; // bloqueado / no-op
       const to = res.becameExhausted
         ? game.i18n.localize("SHIFT.DiceStatus.exhausted")
@@ -100,7 +113,7 @@ async function handle(data) {
       // já foi anunciado no card da rolagem.
       const trait = data.traitUuid ? await fromUuid(data.traitUuid) : null;
       if (!trait || !trait.hasClock) return; // Trait OU Quest (ambos têm clock e dão shift)
-      try { await trait.shiftDown({ steps: data.steps ?? 1, force: true, promptDeath: false }); } catch (err) { /* noop */ }
+      try { await trait.shiftDown({ steps: data.steps ?? 1, force: true }); } catch (err) { /* noop */ }
       if (data.xp > 0 && trait.actor?.type === "character") {
         try { await trait.actor.addXP(data.xp, { limited: true }); } catch (err) { /* noop */ }
       }
@@ -153,6 +166,17 @@ export async function emitOrRun(data) {
  */
 export function requestPlayerRoll({ userId, actorUuid, allowedTraits = null, rollType = null, includeVehicles = false } = {}) {
   const data = { action: "requestRoll", userId, actorUuid, allowedTraits, rollType, includeVehicles };
+  if (game.user.id === userId) return handle({ ...data });
+  game.socket.emit(CHANNEL, data);
+}
+
+/**
+ * Atacante/GM → Player: pede que `userId` abra o prompt de Going Down (exaustão de
+ * Core Trait) para o Trait `traitUuid`. Emite para os outros clientes; roda local
+ * se o alvo for o próprio usuário. Espelha requestPlayerRoll.
+ */
+export function requestCoreDeathPrompt({ userId, traitUuid } = {}) {
+  const data = { action: "promptCoreDeath", userId, traitUuid };
   if (game.user.id === userId) return handle({ ...data });
   game.socket.emit(CHANNEL, data);
 }

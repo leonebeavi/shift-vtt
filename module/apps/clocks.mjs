@@ -242,10 +242,15 @@ function clockRow(c, isGM) {
   // o hover mostra "Scale N". Exibido para todos quando o Trait está acima de Scale 1.
   const scalePip = (scaleOn && scale > 1)
     ? `<span class="scale-pip" data-scale="${scale}" data-tooltip="${scaleLabel}">${scale}</span>` : "";
+  // Tooltip do dado: o nome do dado e, quando rolável, a dica de Shift+clique para o
+  // roll Normal rápido (o atalho que pula o seletor de roll type).
+  const dieTip = c.exhausted
+    ? game.i18n.localize("SHIFT.DiceStatus.exhausted")
+    : (canRoll ? `${dieLabel(die)} · ${game.i18n.localize("SHIFT.Clocks.QuickRollTip")}` : dieLabel(die));
   return `
     <li class="clock trait-clock${c.exhausted ? " exhausted" : ""}${c.visible ? "" : " gm-only"}" data-clock-id="${c.id}"${accent ? ` style="--ac:${accent}"` : ""}${isGM ? ' draggable="true"' : ""}>
       <a class="clock-die${canRoll ? " rollable" : ""}" data-act="${canRoll ? "roll" : ""}"
-         data-tooltip="${c.exhausted ? game.i18n.localize("SHIFT.DiceStatus.exhausted") : dieLabel(die)}">
+         data-tooltip="${dieTip}">
         ${img ? `<img src="${img}" alt=""/>` : `<i class="fa-solid fa-xmark"></i>`}
         ${scalePip}
       </a>
@@ -343,11 +348,46 @@ async function onPanelClick(event) {
       clock.scale = opts[(opts.indexOf(clock.scale ?? 1) + 1) % opts.length];
       return saveClocks(clocks);
     }
-    case "roll":
+    case "roll": {
       if (!clock || clock.mode !== "trait" || clock.exhausted) return;
       if (!game.user.isGM && !clock.playersCanRoll) return;
-      return rollClockTrait(clock);
+      // Espelha o roll de Trait da ficha: clique escolhe o roll type (Normal/Risky/
+      // Inspired) num diálogo enxuto; Shift+clique pula direto pra um roll Normal rápido.
+      if (event.shiftKey) return rollClockTrait(clock, "normal");
+      const rollType = await promptClockRollType(clock);
+      if (rollType) await rollClockTrait(clock, rollType);
+      return;
+    }
   }
+}
+
+/**
+ * Escolhe o roll type de um Global Trait (Normal/Risky/Inspired) num diálogo enxuto de
+ * três botões — espelha o seletor de roll type do Action Roll, com a MESMA semântica do
+ * engine (Risky amplia o shift para qualquer dado sem sucesso; Inspired transforma
+ * qualquer sucesso em Critical). Retorna a chave escolhida, ou null se cancelado.
+ */
+async function promptClockRollType(clock) {
+  const ICONS = { normal: "fa-dice-d6", risky: "fa-triangle-exclamation", inspired: "fa-wand-sparkles" };
+  const buttons = Object.entries(CONFIG.SHIFT.rollTypes).map(([key, label]) => ({
+    action: key,
+    default: key === "normal",
+    icon: `fa-solid ${ICONS[key] ?? "fa-dice-d6"}`,
+    label: game.i18n.localize(label),
+    class: `roll-type-option ${key}`
+  }));
+  let choice = null;
+  try {
+    choice = await fvtt.DialogV2.wait({
+      window: { title: game.i18n.format("SHIFT.Clocks.RollTitle", { name: clock.name }), icon: "fa-solid fa-dice-d6" },
+      position: { width: 340 },
+      classes: ["shift-vtt", "shift-dialog", "clock-roll-type"],
+      content: "",
+      rejectClose: false,
+      buttons
+    });
+  } catch (err) { choice = null; }
+  return (choice && choice !== "cancel" && CONFIG.SHIFT.rollTypes[choice]) ? choice : null;
 }
 
 async function toggleClocksMinimized() {
@@ -375,9 +415,12 @@ function shiftClockDown(clock) {
 /**
  * Rola um Global Trait. Renderizado pelo MESMO roll card de um Action Roll
  * comum de Trait único, então a formatação (linha de dados, linha de resultado,
- * lista de ShiftDown) é idêntica à de qualquer outra rolagem de Trait.
+ * lista de ShiftDown) é idêntica à de qualquer outra rolagem de Trait. `rollType`
+ * (normal/risky/inspired) passa pelo MESMO engine de resolução do Action Roll:
+ * Risky amplia o ShiftDown para qualquer dado sem sucesso; Inspired vira Critical
+ * em qualquer sucesso.
  */
-async function rollClockTrait(clock) {
+async function rollClockTrait(clock, rollType = "normal") {
   const die = clock.currentDie;
   const roll = new Roll(`1${die}`);
   await roll.evaluate();
@@ -396,7 +439,7 @@ async function rollClockTrait(clock) {
     isMax: value === faces
   };
   const critRule = game.settings.get("shift-vtt", "critRule");
-  const outcome = game.shift.ShiftRoll.determineOutcome([entry], "normal", critRule);
+  const outcome = game.shift.ShiftRoll.determineOutcome([entry], rollType, critRule);
 
   // Um Global Trait marcado como "sem ShiftDown" nunca dá shift numa rolagem máxima: descarta o
   // shift planejado para que o card mostre um resultado simples (sem nota de ShiftDown).
@@ -431,9 +474,9 @@ async function rollClockTrait(clock) {
   const meta = CONFIG.SHIFT.rollResults[outcome.type];
   const cardData = {
     actor: { name: clock.name, img: CONFIG.SHIFT.diceImages[die] ?? "icons/svg/d20-grey.svg", uuid: "" },
-    rollType: "normal",
-    rollTypeLabel: game.i18n.localize(CONFIG.SHIFT.rollTypes.normal),
-    isSpecialType: false,
+    rollType,
+    rollTypeLabel: game.i18n.localize(CONFIG.SHIFT.rollTypes[rollType] ?? CONFIG.SHIFT.rollTypes.normal),
+    isSpecialType: rollType !== "normal",
     turnOrder: false,
     groupRoll: false,
     scale: clock.scale ?? 1,
