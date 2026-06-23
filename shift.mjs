@@ -12,7 +12,7 @@ import {
   ShiftCharacterData, ShiftAdversaryData, ShiftVehicleData, ShiftLocationData, ShiftPartyData
 } from "./module/data/actor-data.mjs";
 import {
-  ShiftTraitData, ShiftDescriptorData, ShiftTechniqueData, ShiftLandmarkData, ShiftQuestData
+  ShiftTraitData, ShiftDescriptorData, ShiftTechniqueData, ShiftQuestData
 } from "./module/data/item-data.mjs";
 import { ShiftRoll } from "./module/dice/shift-roll.mjs";
 import { registerChatHooks } from "./module/chat/chat.mjs";
@@ -36,9 +36,9 @@ import { registerStatusEffects } from "./module/helpers/status-effects.mjs";
 import { registerUserConfig } from "./module/helpers/user-config.mjs";
 import { ShiftBrowser } from "./module/apps/browser.mjs";
 import {
-  ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftLandmarkSheet, ShiftQuestSheet
+  ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftQuestSheet
 } from "./module/sheets/item-sheets.mjs";
-import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium, migrateQuestType, migrateAttitudeTransform, migrateTraitFeatures, migrateCodexNote } from "./module/helpers/migrations.mjs";
+import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium, migrateQuestType, migrateAttitudeTransform, migrateTraitFeatures, migrateCodexNote, migrateRemoveLandmarks } from "./module/helpers/migrations.mjs";
 
 /* ------------------------------------------------------------------ */
 /* Init                                                                */
@@ -86,7 +86,35 @@ Hooks.once("init", async () => {
       /** Alterna o painel fixado de Clocks. */
       clocks: () => toggleClocksPanel(),
       /** Abre o Item Browser. */
-      browser: opts => ShiftBrowser.pick(opts)
+      browser: opts => ShiftBrowser.pick(opts),
+      /** Abre a ficha da Party na aba Codex, já na entrada do documento `uuid`. Acha
+       *  a Party cujo codex contém essa entrada (ou a `partyUuid` dada, ou a ativa).
+       *  Chamável de macro (ex.: Monk's Active Tile Triggers) ou do chip de chat. */
+      openCodex: (uuid, partyUuid) => {
+        let party = partyUuid ? fromUuidSync(partyUuid) : null;
+        if (party?.type !== "party") {
+          party = (uuid ? game.actors.find(a => a.type === "party" && (a.system.codex ?? []).some(e => e.uuid === uuid)) : null)
+            ?? resolveActiveParty();
+        }
+        if (!party) return void ui.notifications.warn(game.i18n.localize("SHIFT.Party.Codex.NoParty"));
+        const sheet = party.sheet;
+        sheet.tabGroups.primary = "codex";
+        sheet._codexOpen = uuid || null;
+        sheet.render(true);
+      },
+      /** Posta no chat um chip clicável que linka uma entrada do Codex (clicar abre o
+       *  Codex naquela entrada via openCodex). */
+      codexChip: async (uuid, partyUuid) => {
+        const doc = uuid ? await fromUuid(uuid) : null;
+        if (!doc) return void ui.notifications.warn(game.i18n.localize("SHIFT.Party.Codex.NoEntry"));
+        const esc = foundry.utils.escapeHTML;
+        const pAttr = partyUuid ? ` data-party-uuid="${esc(partyUuid)}"` : "";
+        // O conteúdo (retrato/nome/cor) é preenchido por CLIENTE no hook do chat,
+        // respeitando o reveal de cada usuário (ver codexChipData + chat.mjs).
+        await ChatMessage.create({
+          content: `<div class="shift-vtt codex-chip" data-shift-codexlink data-codex-uuid="${esc(uuid)}"${pAttr} data-tooltip="${esc(game.i18n.localize("SHIFT.Party.Codex.OpenChip"))}"></div>`
+        });
+      }
     }
   };
 
@@ -110,7 +138,6 @@ Hooks.once("init", async () => {
     keyword: ShiftDescriptorData,
     drawback: ShiftDescriptorData,
     technique: ShiftTechniqueData,
-    landmark: ShiftLandmarkData,
     quest: ShiftQuestData
   });
 
@@ -160,9 +187,6 @@ Hooks.once("init", async () => {
   });
   ItemsC.registerSheet("shift-vtt", ShiftDescriptorSheet, {
     types: ["keyword", "drawback"], makeDefault: true, label: "SHIFT.SheetLabels.Descriptor"
-  });
-  ItemsC.registerSheet("shift-vtt", ShiftLandmarkSheet, {
-    types: ["landmark"], makeDefault: true, label: "SHIFT.SheetLabels.Landmark"
   });
   ItemsC.registerSheet("shift-vtt", ShiftQuestSheet, {
     types: ["quest"], makeDefault: true, label: "SHIFT.SheetLabels.Quest"
@@ -251,6 +275,7 @@ Hooks.once("ready", async () => {
     await migrateAttitudeTransform();
     await migrateTraitFeatures();
     await migrateCodexNote();
+    await migrateRemoveLandmarks();
     await seedCompendium();
     await seedTechniques();
     await seedMacros();

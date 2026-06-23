@@ -40,6 +40,13 @@ export class ShiftTraitData extends ShiftItemBase {
 
     schema.category = new fields.StringField({ required: true, initial: "custom", choices: CATEGORIES });
 
+    // Tag de SUBDIVISÃO na ficha de Actor: a `key` do grupo da aba Traits onde o
+    // Trait foi colocado (criado ou arrastado). Independente da `category`, que
+    // carrega as REGRAS (Pack/Cargo, Core na morte, etc.). Em branco = sem tag: o
+    // Trait cai na subdivisão pela categoria (comportamento legado), então Traits
+    // antigos seguem funcionando sem migração. Ver BaseShiftActorSheet#traitLayout.
+    schema.group = new fields.StringField({ required: false, blank: true, initial: "" });
+
     schema.maxDie = new fields.StringField({ required: true, initial: "d6", choices: DICE });
     schema.currentDie = new fields.StringField({ required: true, initial: "d6", choices: DICE });
     schema.exhausted = new fields.BooleanField({ initial: false });
@@ -242,15 +249,3 @@ export class ShiftTechniqueData extends ShiftItemBase {
   get isAtWill() { return !!this.recharges?.atWill; }
 }
 
-/* ------------------------------------------------------------------ */
-/* Landmark (áreas de Location)                                        */
-/* ------------------------------------------------------------------ */
-
-export class ShiftLandmarkData extends ShiftItemBase {
-  static defineSchema() {
-    const schema = super.defineSchema();
-    /** Landmarks Safe permitem Safe Rests; os Unsafe tornam o descanso arriscado. */
-    schema.safe = new fields.BooleanField({ initial: true });
-    return schema;
-  }
-}

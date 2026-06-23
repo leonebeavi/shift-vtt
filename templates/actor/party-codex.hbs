@@ -68,20 +68,9 @@
           {{/unless}}
           {{#if @root.isOwner}}
             <span class="cc-tools edit-only">
-              {{#if (shiftEq kind 'landmark')}}
-                {{!-- Landmarks: visibilidade controlada pelo GM (igual aos embutidos numa Location);
-                      virtuais (de uma Location) não se descatalogam à parte — removem-se com a Location. --}}
-                {{#if @root.isGM}}
-                  <a class="cc-tool reveal{{#if landmarkVisible}} on{{/if}}" data-action="toggleLandmarkVisible" data-tooltip="{{localize 'SHIFT.Party.Codex.RevealLandmark'}}"><i class="fa-solid {{#if landmarkVisible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i></a>
-                  {{#unless virtual}}
-                    <a class="cc-tool danger" data-action="removeCodexEntry" data-tooltip="{{localize 'SHIFT.Party.RemoveCodex'}}"><i class="fa-solid fa-xmark"></i></a>
-                  {{/unless}}
-                {{/if}}
-              {{else}}
-                <a class="cc-tool reveal" data-action="revealCodexEntry" data-tooltip="{{localize 'SHIFT.Party.Codex.RevealFull'}}"><i class="fa-solid fa-eye"></i></a>
-                {{#if @root.isGM}}
-                  <a class="cc-tool danger" data-action="removeCodexEntry" data-tooltip="{{localize 'SHIFT.Party.RemoveCodex'}}"><i class="fa-solid fa-xmark"></i></a>
-                {{/if}}
+              <a class="cc-tool reveal" data-action="revealCodexEntry" data-tooltip="{{localize 'SHIFT.Party.Codex.RevealFull'}}"><i class="fa-solid fa-eye"></i></a>
+              {{#if @root.isGM}}
+                <a class="cc-tool danger" data-action="removeCodexEntry" data-tooltip="{{localize 'SHIFT.Party.RemoveCodex'}}"><i class="fa-solid fa-xmark"></i></a>
               {{/if}}
             </span>
           {{/if}}

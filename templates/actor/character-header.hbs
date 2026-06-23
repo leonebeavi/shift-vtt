@@ -103,6 +103,11 @@
           <a class="tab-tool recharge" data-action="rechargeAll" data-tooltip="{{localize 'SHIFT.Tooltips.RechargeAll'}}">
             <i class="fa-solid fa-arrows-rotate"></i>
           </a>
+          {{#if (shiftEq activeTab 'traits')}}
+            <a class="tab-tool" data-action="openTraitLayout" data-tooltip="{{localize 'SHIFT.TraitLayout.Edit'}}">
+              <i class="fa-solid fa-table-columns"></i>
+            </a>
+          {{/if}}
         {{/if}}
         <a class="tab-tool{{#if editMode}} active{{/if}}" data-action="toggleEdit">
           <i class="fa-solid {{#if editMode}}fa-lock-open{{else}}fa-lock{{/if}}"></i>

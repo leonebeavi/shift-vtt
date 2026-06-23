@@ -71,6 +71,16 @@ export function registerSettings() {
     default: true
   });
 
+  // Pesos (relativos) da rolagem de Legs por viagem: 4 distribuições SS/US/SU/UU,
+  // cada uma [w1..w5]. Editadas no submenu Rest & Travel; vazio/malformado cai nos
+  // defaults de fábrica em CONFIG.SHIFT.travelLegWeights.
+  reg("travelLegWeights", {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: foundry.utils.deepClone(SHIFT.travelLegWeights)
+  });
+
   reg("critRule", {
     name: "SHIFT.Settings.CritRule.Name",
     hint: "SHIFT.Settings.CritRule.Hint",
@@ -290,7 +300,6 @@ export function registerSettings() {
   reg("lastSessionStart", { scope: "world", config: false, type: Number, default: 0 });
   reg("compendiumSeeded", { scope: "world", config: false, type: Boolean, default: false });
   reg("techniquesSeeded", { scope: "world", config: false, type: Boolean, default: false });
-  reg("macrosSeeded", { scope: "world", config: false, type: Boolean, default: false });
   // Migração one-time: Quests legadas (Trait category="quest") → tipo de Item "quest".
   reg("questTypeMigrated", { scope: "world", config: false, type: Boolean, default: false });
   reg("attitudeTransformMigrated", { scope: "world", config: false, type: Boolean, default: false });
@@ -299,6 +308,9 @@ export function registerSettings() {
   reg("traitFeaturesRemoved", { scope: "world", config: false, type: Boolean, default: false });
   // Migração one-time: re-aloja a GM Note legada do Codex (system.codex[].note → system.gmNote do Actor/Item referenciado).
   reg("codexNoteMigrated", { scope: "world", config: false, type: Boolean, default: false });
+  // Migração one-time: varre os Items órfãos do tipo `landmark` (descontinuado; Landmarks
+  // viraram Locations aninhadas). Sem isso, ficariam como subtipo desconhecido na sidebar.
+  reg("landmarksRemoved", { scope: "world", config: false, type: Boolean, default: false });
 
   // Estado de UI por jogador (painel Global Traits + posição do Action HUD)
   reg("clocksPanelOpen", { scope: "client", config: false, type: Boolean, default: true });

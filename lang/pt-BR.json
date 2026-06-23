@@ -12,7 +12,6 @@
       "keyword": "Keyword",
       "drawback": "Drawback",
       "technique": "Técnica",
-      "landmark": "Landmark",
       "quest": "Quest"
     }
   },
@@ -97,7 +96,6 @@
       "technique": "Nova Técnica",
       "keyword": "Nova Keyword",
       "drawback": "Novo Drawback",
-      "landmark": "Novo Landmark",
       "quest": "Nova Quest"
     },
     "Migration": {
@@ -136,7 +134,23 @@
       "Special": "Special Traits",
       "LocationCore": "Wealth & Security",
       "Vehicle": "Traits do Veículo",
-      "PartyTraits": "Traits da Party"
+      "PartyTraits": "Traits da Party",
+      "Ungrouped": "Sem seção"
+    },
+    "TraitLayout": {
+      "Title": "Editar Seções de Trait",
+      "Edit": "Editar seções",
+      "Hint": "Renomeie, reordene, defina o número de colunas (1-3), o tipo de Trait padrão do botão + e a cor de destaque de cada seção de Trait desta ficha. Você também pode criar novas seções suas. Um Trait entra numa seção ao ser criado ou arrastado nela; um Trait sem tag cai pela categoria.",
+      "Label": "Nome da seção",
+      "Columns": "Colunas",
+      "DefaultType": "Tipo de Trait padrão",
+      "Color": "Cor de destaque",
+      "ColorAuto": "Automática (pela seção)",
+      "Add": "Adicionar seção",
+      "Delete": "Excluir seção",
+      "Reset": "Restaurar o layout padrão do tipo",
+      "MoveUp": "Mover para cima",
+      "MoveDown": "Mover para baixo"
     },
     "Tabs": {
       "Traits": "Traits",
@@ -166,7 +180,6 @@
       "Descriptor": "Keyword / Drawback SHIFT",
       "Vehicle": "Ficha de Veículo SHIFT",
       "Location": "Ficha de Localidade SHIFT",
-      "Landmark": "Landmark SHIFT",
       "Quest": "Quest SHIFT",
       "Party": "Ficha de Grupo SHIFT"
     },
@@ -213,7 +226,6 @@
       "OpenVehicle": "Ver no Codex",
       "ClearLocation": "Limpar o local da party",
       "DropLocation": "Solte uma Localidade aqui.",
-      "NoLandmark": "— Sem landmark —",
       "UnsafeLandmarkBlock": "{landmark} é Inseguro · um Descanso Seguro não é possível aqui. SHIFT+clique no Descanso Seguro para forçar.",
       "GrantXp": "Dar XP",
       "RequestRoll": {
@@ -233,13 +245,16 @@
       "SafeRestConfirm": "Fazer um Descanso Seguro para todos os {count} membro(s)?",
       "UnsafeRestConfirm": "Fazer um Descanso Arriscado para todos os {count} membro(s)?",
       "Codex": {
+        "LinkChat": "Linkar no chat",
+        "OpenChip": "Abrir no Codex",
+        "NoParty": "Nenhuma party tem essa entrada de Codex.",
+        "NoEntry": "Não foi possível resolver esse documento.",
         "Label": "no codex",
         "All": "Tudo",
         "Enemies": "Inimigos",
         "Allies": "Aliados",
         "NPCs": "NPCs",
         "Locations": "Localidades",
-        "Landmarks": "Landmarks",
         "Vehicles": "Veículos",
         "Traits": "Traits",
         "Techniques": "Técnicas",
@@ -271,7 +286,6 @@
         "PartlyHidden": "Alguns detalhes estão ocultos dos jogadores",
         "Empty": "Nenhuma entrada combina com a busca.",
         "Notes": "Nota do Mestre",
-        "NotesPlaceholder": "Fraquezas, comportamento, onde encontraram…",
         "KnownTraits": "Traits conhecidos",
         "OvercomeHint": "Traits para overcome",
         "RevealTitle": "O que os jogadores veem",
@@ -380,7 +394,6 @@
       "CustomPlaceholder": "Para onde vão?",
       "Flavor": "Flavor",
       "FlavorPlaceholder": "Uma nota sobre a viagem (opcional)",
-      "LegsTotal": "Quantos Legs?",
       "Mode": "Modo",
       "ModeInherit": "Herdar do mundo",
       "Transport": "Transporte",
@@ -565,7 +578,6 @@
       "MissingForm": "(forma ausente)",
       "NoBase": "Nenhuma base capturada ainda.",
       "FormMissing": "O Trait dessa forma sumiu.",
-      "BaseRecaptured": "Forma base re-capturada.",
       "FormAdded": "{name} adicionado como forma de transform."
     },
     "Technique": {
@@ -587,20 +599,17 @@
       "NoLinkedItem": "Não há item de Keyword/Drawback com este nome. Crie um para vincular uma descrição."
     },
     "ItemSheet": {
-      "Dice": "Shift Die",
       "MaxDie": "Max Die",
       "CurrentDie": "Dado Atual",
       "Source": "Origem",
       "Rollable": "Rolável",
       "AutoShift": "Shift down automático no valor máximo",
       "Temporary": "Temporário",
-      "Encounter": "Regras de Encontro",
       "DefeatCounts": "Conta para superar",
       "MustFirst": "Deve ser Exaurido primeiro",
       "CountsLimit": "Conta no orçamento de Traits",
       "ExtraRequired": "Traits extras exigidos",
       "ExtraActions": "Ações extras por rodada",
-      "Scale": "Escala",
       "Recharge": "Recarga",
       "DiceConfig": "Dados e identidade",
       "EncounterConfig": "Regras de Encontro",
@@ -637,17 +646,12 @@
       "Exert": "Exert: sucesso automático (+1 XP)",
       "Exhaust": "Exaurir",
       "Transform": "Transform",
-      "Expand": "Mostrar detalhes",
-      "Edit": "Editar",
-      "Delete": "Excluir",
       "MaxDie": "O maior dado que este Trait alcança",
       "Temporary": "Temporário · some no próximo Descanso Seguro",
       "Hidden": "Oculto dos jogadores",
       "NotRollable": "Não rolável",
       "MakeTemporary": "Improvise um Trait temporário (Mochila desce)",
       "EditImage": "Trocar imagem",
-      "Xp": "XP acumulado",
-      "XpSession": "XP da sessão / limite",
       "Power": "Define ações/rodada e Traits para superar",
       "TraitBudget": "Traits / orçamento (Power+2)",
       "Defeat": "Exauridos / exigidos p/ superar",
@@ -659,7 +663,6 @@
       "Uses": "Usos restantes",
       "UseTechnique": "Gastar um uso",
       "ResetTechnique": "Restaurar usos",
-      "CollapseGroup": "Recolher / expandir",
       "NoCount": "Não conta para superar",
       "RechargeAll": "Recarregar todos os Traits"
     },
@@ -689,6 +692,15 @@
       "TravelRandomCore": {
         "Name": "Travel: fallback de Core aleatório",
         "Hint": "Quando Pack/Cargo esgota, escolhe o Core a baixar aleatoriamente. Desligado: o player escolhe (regra crua)."
+      },
+      "TravelLegWeights": {
+        "Name": "Probabilidades de Legs",
+        "Hint": "Pesos relativos de rolar 1–5 Legs conforme o Safe/Unsafe de origem → destino. Não precisam somar 100.",
+        "SS": "Safe → Safe",
+        "US": "Unsafe → Safe",
+        "SU": "Safe → Unsafe",
+        "UU": "Unsafe → Unsafe",
+        "Reset": "Restaurar padrões"
       },
       "CritRule": {
         "Name": "Regra de Sucesso Crítico",
@@ -824,7 +836,6 @@
       "CrewHint": "Arraste um Personagem aqui.",
       "Domain": {
         "Label": "Domínio",
-        "None": "—",
         "land": "Terrestre",
         "sea": "Aquático",
         "air": "Aéreo",
@@ -906,14 +917,8 @@
       "ActionRollName": "Action Roll",
       "ClocksName": "Alternar Global Traits",
       "SelectToken": "Selecione um token primeiro.",
-      "NoCharacters": "Nenhum personagem seu foi encontrado.",
       "GMOnly": "Apenas o Mestre pode fazer isso.",
-      "Recharged": "Recarregados {actors} ator(es) · {traits} Trait(s) restaurado(s).",
-      "GrantXpTitle": "Conceder XP",
-      "GrantXpHint": "Escolha quem recebe XP e quanto.",
-      "GrantXpReason": "Prêmio do Mestre",
-      "GrantedXp": "Concedido {amount} XP a {actors} personagem(ns).",
-      "Amount": "Quantidade"
+      "Recharged": "Recarregados {actors} ator(es) · {traits} Trait(s) restaurado(s)."
     },
     "Location": {
       "Landmarks": "Landmarks",
@@ -921,7 +926,6 @@
       "LandmarkDropHint": "Crie com + ou arraste uma Location existente aqui para aninhá-la.",
       "NewChild": "Novo landmark",
       "RemoveChild": "Desaninhar (remover desta Location)",
-      "SubLocations": "sub-locais",
       "CycleBlock": "Isso criaria um ciclo: esta Location já está dentro da que você soltou.",
       "ReparentNoPerm": "Não dá para mover este Landmark: você não é dono da Location-mãe atual. Peça ao GM.",
       "Safe": "Seguro",

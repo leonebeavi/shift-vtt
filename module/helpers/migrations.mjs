@@ -584,3 +584,45 @@ export async function migrateCodexNote() {
     console.error("shift-vtt | Codex note migration failed", err);
   }
 }
+
+/**
+ * Migração one-time: VARRE os Items órfãos do tipo `landmark`. O tipo foi
+ * descontinuado — os Landmarks viraram Locations aninhadas (Location-filhas). Um
+ * mundo pré-2.6.1 pode ter Items `landmark` soltos (no mundo) ou embutidos numa
+ * Location; sem o tipo registrado, eles apareceriam como subtipo desconhecido. Esta
+ * migração os APAGA (o conteúdo deles é descartado por design). CONSERVADORA: só
+ * mexe em Items do tipo `landmark`. One-time por flag, idempotente (um mundo já
+ * varrido não tem mais nenhum). Toca apenas Items de mundo e embutidos em Actors;
+ * compêndios de terceiros ficam intocados.
+ */
+export async function migrateRemoveLandmarks() {
+  if (game.settings.get("shift-vtt", "landmarksRemoved")) return;
+
+  // O tipo `landmark` foi DESREGISTRADO, então os Items legados viram documentos
+  // INVÁLIDOS: o Foundry V14 NÃO os coloca na coleção viva (game.items/actor.items não
+  // os iteram nem `.filter`); só ficam acessíveis por `invalidDocumentIds` + `getInvalid(id)`.
+  // Um `.filter` por type acharia ZERO. Então varremos os INVÁLIDOS por id (e, por garantia,
+  // também os válidos caso algum resolva numa carga transitória) e apagamos por id —
+  // deleteDocuments/deleteEmbeddedDocuments aceitam ids crus, sem precisar de instância viva.
+  const landmarkIds = coll => {
+    const invalid = [...(coll.invalidDocumentIds ?? [])]
+      .filter(id => coll.getInvalid(id, { strict: false })?.type === "landmark");
+    const valid = coll.filter(i => i.type === "landmark").map(i => i.id);
+    return [...new Set([...invalid, ...valid])];
+  };
+
+  let removed = 0;
+  try {
+    const worldIds = landmarkIds(game.items);
+    if (worldIds.length) { await Item.deleteDocuments(worldIds); removed += worldIds.length; }
+    for (const actor of game.actors) {
+      const ids = landmarkIds(actor.items);
+      if (ids.length) { await actor.deleteEmbeddedDocuments("Item", ids); removed += ids.length; }
+    }
+    await game.settings.set("shift-vtt", "landmarksRemoved", true);
+    if (removed) console.log(`shift-vtt | Swept ${removed} orphaned legacy landmark item(s).`);
+  } catch (err) {
+    // Sem setar o flag → re-tenta no próximo load (idempotente: nada de landmark restante).
+    console.error("shift-vtt | Landmark removal migration failed", err);
+  }
+}

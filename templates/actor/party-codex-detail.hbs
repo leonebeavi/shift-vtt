@@ -8,7 +8,10 @@
     <button type="button" class="cd-back" data-action="codexBack"><i class="fa-solid fa-arrow-left"></i> {{localize "SHIFT.Tabs.Codex"}}</button>
     {{#if codexDetail.hasBreadcrumb}}<span class="cd-crumbs">{{#each codexDetail.breadcrumb}}<a data-action="openCodexEntry" data-codex-uuid="{{uuid}}">{{name}}</a><i class="fa-solid fa-chevron-right"></i>{{/each}}</span>{{/if}}
     <span class="cd-title">{{codexDetail.name}}</span>
-    {{#if codexDetail.canOpenSheet}}<button type="button" class="cd-open" data-action="openMember"><i class="fa-solid fa-up-right-from-square"></i> {{localize "SHIFT.Party.Codex.OpenSheet"}}</button>{{/if}}
+    <div class="cd-actions">
+      {{#if isGM}}<button type="button" class="cd-open cd-link" data-action="codexLinkChat" data-codex-uuid="{{codexDetail.uuid}}" data-tooltip="{{localize 'SHIFT.Party.Codex.LinkChat'}}"><i class="fa-solid fa-comment"></i></button>{{/if}}
+      {{#if codexDetail.canOpenSheet}}<button type="button" class="cd-open" data-action="openMember"><i class="fa-solid fa-up-right-from-square"></i> {{localize "SHIFT.Party.Codex.OpenSheet"}}</button>{{/if}}
+    </div>
   </div>
   <div class="cd-body">
     <div class="cd-hero">
@@ -44,9 +47,6 @@
           {{/if}}
           {{#if (shiftEq codexDetail.kind 'location')}}
             {{#if codexDetail.showScale}}<span class="cc-stat" data-tooltip="{{localize 'SHIFT.Trait.Scale'}}"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> {{localize 'SHIFT.Trait.Scale'}} {{codexDetail.scale}}</span>{{/if}}
-          {{/if}}
-          {{#if (shiftEq codexDetail.kind 'landmark')}}
-            <span class="cc-stat lm-{{#if codexDetail.safe}}safe{{else}}unsafe{{/if}}" data-tooltip="{{#if codexDetail.safe}}{{localize 'SHIFT.Party.Codex.Safe'}}{{else}}{{localize 'SHIFT.Party.Codex.Unsafe'}}{{/if}}"><i class="fa-solid {{#if codexDetail.safe}}fa-shield-heart{{else}}fa-triangle-exclamation{{/if}}"></i> {{#if codexDetail.safe}}{{localize 'SHIFT.Location.Safe'}}{{else}}{{localize 'SHIFT.Location.Unsafe'}}{{/if}}</span>
           {{/if}}
         </div>
       </div>
@@ -122,17 +122,11 @@
     {{#if codexDetail.canEditReveal}}
       <div class="cd-section-label gm">{{localize "SHIFT.Party.Codex.RevealTitle"}}</div>
       <div class="cd-reveal">
-        {{#if (shiftEq codexDetail.kind 'landmark')}}
-          <a class="cd-reveal-toggle{{#if codexDetail.landmarkVisible}} on{{/if}}" data-action="toggleLandmarkVisible">
-            <i class="fa-solid {{#if codexDetail.landmarkVisible}}fa-eye{{else}}fa-eye-slash{{/if}}"></i> {{localize "SHIFT.Party.Codex.RevealLandmark"}}
+        {{#each codexDetail.revealFields}}
+          <a class="cd-reveal-toggle{{#if on}} on{{/if}}" data-action="toggleCodexReveal" data-field="{{f}}">
+            <i class="fa-solid {{#if on}}fa-eye{{else}}fa-eye-slash{{/if}}"></i> {{localize label}}
           </a>
-        {{else}}
-          {{#each codexDetail.revealFields}}
-            <a class="cd-reveal-toggle{{#if on}} on{{/if}}" data-action="toggleCodexReveal" data-field="{{f}}">
-              <i class="fa-solid {{#if on}}fa-eye{{else}}fa-eye-slash{{/if}}"></i> {{localize label}}
-            </a>
-          {{/each}}
-        {{/if}}
+        {{/each}}
       </div>
     {{/if}}
   </div>

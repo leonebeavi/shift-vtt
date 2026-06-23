@@ -37,9 +37,28 @@
     </span>
   </label>
 
-  <footer class="form-footer">
-    {{#each buttons}}
-      <button type="{{type}}"><i class="{{icon}}"></i> {{localize label}}</button>
-    {{/each}}
-  </footer>
+  <div class="lw-section">
+    <div class="setting-text">
+      <b>{{localize "SHIFT.Settings.TravelLegWeights.Name"}}</b>
+      <em>{{localize "SHIFT.Settings.TravelLegWeights.Hint"}}</em>
+    </div>
+    <div class="lw-grid">
+      <div class="lw-head"><span></span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+      {{#each legWeights}}
+        <div class="lw-row">
+          <span class="lw-label">{{localize label}}</span>
+          {{#each values}}<input type="number" name="lw_{{../key}}_{{@index}}" value="{{this}}" min="0" step="1"/>{{/each}}
+        </div>
+      {{/each}}
+    </div>
+  </div>
+
+  <div class="rt-bar">
+    <a class="lw-reset" data-action="resetLegWeights"><i class="fa-solid fa-rotate-left"></i> {{localize "SHIFT.Settings.TravelLegWeights.Reset"}}</a>
+    <footer class="form-footer">
+      {{#each buttons}}
+        <button type="{{type}}"><i class="{{icon}}"></i> {{localize label}}</button>
+      {{/each}}
+    </footer>
+  </div>
 </section>

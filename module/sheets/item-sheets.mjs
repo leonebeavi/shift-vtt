@@ -704,24 +704,6 @@ export class ShiftDescriptorSheet extends BaseShiftItemSheet {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* Landmark                                                            */
-/* ------------------------------------------------------------------ */
-
-export class ShiftLandmarkSheet extends BaseShiftItemSheet {
-
-  /** @override */
-  static DEFAULT_OPTIONS = {
-    classes: ["landmark"],
-    position: { width: 480, height: "auto" }
-  };
-
-  /** @override */
-  static PARTS = {
-    body: { template: "systems/shift-vtt/templates/item/landmark-sheet.hbs", scrollable: [""] }
-  };
-}
-
 /* Reatividade entre documentos: quando um Trait LINKADO como forma muda (nome/dice/…),
    re-renderiza as fichas de Trait abertas que o referenciam, pra a lista de formas refletir
    a edição na hora (sem precisar travar/destravar a ficha). */

@@ -1,6 +1,7 @@
 <section class="tab traits{{#if (shiftEq activeTab 'traits')}} active{{/if}}" data-tab="traits" data-group="primary">
   {{#each traitGroups as |group|}}
-    <div class="trait-group {{group.css}}{{#if group.collapsed}} collapsed{{/if}}" data-group-key="{{group.key}}">
+    <div class="trait-group grid-{{group.columns}}{{#if group.collapsed}} collapsed{{/if}}" data-group-key="{{group.key}}"
+         {{#if group.color}}style="--group-color: {{group.color}};"{{/if}}>
       <header class="group-header">
         <a class="group-toggle" data-action="toggleGroup">
           <i class="fa-solid {{#if group.collapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}"></i>
@@ -9,7 +10,7 @@
         {{#if @root.editMode}}
           {{#if group.createCategory}}
             <a class="group-add" data-action="createItem" data-type="trait" data-category="{{group.createCategory}}"
-               data-tooltip="{{localize 'SHIFT.Tooltips.NewTrait'}}">
+               data-group-key="{{group.key}}" data-tooltip="{{localize 'SHIFT.Tooltips.NewTrait'}}">
               <i class="fa-solid fa-plus"></i>
             </a>
           {{/if}}

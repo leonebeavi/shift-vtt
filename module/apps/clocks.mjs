@@ -262,7 +262,7 @@ function clockRow(c, isGM) {
     </li>`;
 }
 
-export function renderClocksPanel() {
+function renderClocksPanel() {
   const el = ensurePanel();
   const isGM = game.user.isGM;
   const open = game.settings.get("shift-vtt", "clocksPanelOpen");

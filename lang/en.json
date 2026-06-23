@@ -12,7 +12,6 @@
       "keyword": "Keyword",
       "drawback": "Drawback",
       "technique": "Technique",
-      "landmark": "Landmark",
       "quest": "Quest"
     }
   },
@@ -97,7 +96,6 @@
       "technique": "New Technique",
       "keyword": "New Keyword",
       "drawback": "New Drawback",
-      "landmark": "New Landmark",
       "quest": "New Quest"
     },
     "Migration": {
@@ -136,7 +134,23 @@
       "Special": "Special Traits",
       "LocationCore": "Wealth & Security",
       "Vehicle": "Vehicle Traits",
-      "PartyTraits": "Party Traits"
+      "PartyTraits": "Party Traits",
+      "Ungrouped": "Ungrouped"
+    },
+    "TraitLayout": {
+      "Title": "Edit Trait Sections",
+      "Edit": "Edit sections",
+      "Hint": "Rename, reorder, set the number of columns (1-3), the default Trait type for the + button, and the accent color of each Trait section on this sheet. You can also add new sections of your own. A Trait lands in a section when it is created or dragged there; an untagged Trait falls in by its category.",
+      "Label": "Section name",
+      "Columns": "Columns",
+      "DefaultType": "Default Trait type",
+      "Color": "Accent color",
+      "ColorAuto": "Automatic (by section)",
+      "Add": "Add section",
+      "Delete": "Delete section",
+      "Reset": "Reset to this type's default layout",
+      "MoveUp": "Move up",
+      "MoveDown": "Move down"
     },
     "Tabs": {
       "Traits": "Traits",
@@ -166,7 +180,6 @@
       "Descriptor": "SHIFT Keyword / Drawback",
       "Vehicle": "SHIFT Vehicle Sheet",
       "Location": "SHIFT Location Sheet",
-      "Landmark": "SHIFT Landmark",
       "Quest": "SHIFT Quest",
       "Party": "SHIFT Party Sheet"
     },
@@ -213,7 +226,6 @@
       "OpenVehicle": "View in the Codex",
       "ClearLocation": "Clear the party's location",
       "DropLocation": "Drop a Location here.",
-      "NoLandmark": "— No landmark —",
       "UnsafeLandmarkBlock": "{landmark} is Unsafe · a Safe Rest isn't possible here. SHIFT+click Safe Rest to override.",
       "GrantXp": "Grant XP",
       "RequestRoll": {
@@ -233,13 +245,16 @@
       "SafeRestConfirm": "Run a Safe Rest for all {count} member(s)?",
       "UnsafeRestConfirm": "Run an Unsafe Rest for all {count} member(s)?",
       "Codex": {
+        "LinkChat": "Link in chat",
+        "OpenChip": "Open in the Codex",
+        "NoParty": "No party has this Codex entry.",
+        "NoEntry": "Couldn't resolve that document.",
         "Label": "in codex",
         "All": "All",
         "Enemies": "Enemies",
         "Allies": "Allies",
         "NPCs": "NPCs",
         "Locations": "Locations",
-        "Landmarks": "Landmarks",
         "Vehicles": "Vehicles",
         "Traits": "Traits",
         "Techniques": "Techniques",
@@ -271,7 +286,6 @@
         "PartlyHidden": "Some details are hidden from players",
         "Empty": "No entries match the search.",
         "Notes": "GM Note",
-        "NotesPlaceholder": "Weaknesses, behaviour, where you met it…",
         "KnownTraits": "Known traits",
         "OvercomeHint": "Traits to overcome",
         "RevealTitle": "What players see",
@@ -380,7 +394,6 @@
       "CustomPlaceholder": "Where are they headed?",
       "Flavor": "Flavor",
       "FlavorPlaceholder": "A note on the journey (optional)",
-      "LegsTotal": "How many Legs?",
       "Mode": "Mode",
       "ModeInherit": "Inherit from world",
       "Transport": "Transport",
@@ -565,7 +578,6 @@
       "MissingForm": "(missing form)",
       "NoBase": "No base captured yet.",
       "FormMissing": "That form's Trait is missing.",
-      "BaseRecaptured": "Base form re-captured.",
       "FormAdded": "Added {name} as a transform form."
     },
     "Technique": {
@@ -587,20 +599,17 @@
       "NoLinkedItem": "No Keyword/Drawback item with this name. Create one to link a description."
     },
     "ItemSheet": {
-      "Dice": "Shift Die",
       "MaxDie": "Max Die",
       "CurrentDie": "Current Die",
       "Source": "Source",
       "Rollable": "Rollable",
       "AutoShift": "Auto shift down on max roll",
       "Temporary": "Temporary",
-      "Encounter": "Encounter Rules",
       "DefeatCounts": "Counts toward overcoming",
       "MustFirst": "Must be Exhausted first",
       "CountsLimit": "Counts toward Trait budget",
       "ExtraRequired": "Extra Traits required",
       "ExtraActions": "Extra actions per round",
-      "Scale": "Scale",
       "Recharge": "Recharge",
       "DiceConfig": "Dice & identity",
       "EncounterConfig": "Encounter rules",
@@ -637,17 +646,12 @@
       "Exert": "Exert: automatic success (+1 XP)",
       "Exhaust": "Exhaust",
       "Transform": "Transform",
-      "Expand": "Show details",
-      "Edit": "Edit",
-      "Delete": "Delete",
       "MaxDie": "Highest die this Trait can reach",
       "Temporary": "Temporary · gone next Safe Rest",
       "Hidden": "Hidden from players",
       "NotRollable": "Not rollable",
       "MakeTemporary": "Improvise a temporary Trait (Pack down)",
       "EditImage": "Change image",
-      "Xp": "Banked XP",
-      "XpSession": "Session XP / cap",
       "Power": "Sets actions/round and Traits to overcome",
       "TraitBudget": "Traits / budget (Power+2)",
       "Defeat": "Exhausted / needed to overcome",
@@ -659,7 +663,6 @@
       "Uses": "Uses left",
       "UseTechnique": "Spend a use",
       "ResetTechnique": "Reset uses",
-      "CollapseGroup": "Collapse / expand",
       "NoCount": "Doesn't count toward overcoming",
       "RechargeAll": "Recharge all Traits"
     },
@@ -689,6 +692,15 @@
       "TravelRandomCore": {
         "Name": "Travel: random Core fallback",
         "Hint": "When Pack/Cargo is exhausted, pick the Core Trait to shift down at random. Off: the player chooses (raw rule)."
+      },
+      "TravelLegWeights": {
+        "Name": "Travel Leg odds",
+        "Hint": "Relative weights of rolling 1–5 Legs by the Safe/Unsafe of origin → destination. They need not sum to 100.",
+        "SS": "Safe → Safe",
+        "US": "Unsafe → Safe",
+        "SU": "Safe → Unsafe",
+        "UU": "Unsafe → Unsafe",
+        "Reset": "Reset to defaults"
       },
       "CritRule": {
         "Name": "Critical Success Rule",
@@ -824,7 +836,6 @@
       "CrewHint": "Drag a Character here.",
       "Domain": {
         "Label": "Domain",
-        "None": "—",
         "land": "Land",
         "sea": "Aquatic",
         "air": "Air",
@@ -906,14 +917,8 @@
       "ActionRollName": "Action Roll",
       "ClocksName": "Toggle Global Traits",
       "SelectToken": "Select a token first.",
-      "NoCharacters": "No characters you own were found.",
       "GMOnly": "Only the GM can do that.",
-      "Recharged": "Recharged {actors} actor(s) · {traits} Trait(s) restored.",
-      "GrantXpTitle": "Grant XP",
-      "GrantXpHint": "Choose who receives XP and how much.",
-      "GrantXpReason": "GM award",
-      "GrantedXp": "Granted {amount} XP to {actors} character(s).",
-      "Amount": "Amount"
+      "Recharged": "Recharged {actors} actor(s) · {traits} Trait(s) restored."
     },
     "Location": {
       "Landmarks": "Landmarks",
@@ -921,7 +926,6 @@
       "LandmarkDropHint": "Create with + or drag an existing Location here to nest it.",
       "NewChild": "New landmark",
       "RemoveChild": "Unnest (remove from this Location)",
-      "SubLocations": "sub-locations",
       "CycleBlock": "That would create a loop: this Location is already inside the one you dropped.",
       "ReparentNoPerm": "Can't move this Landmark: you don't own its current parent Location. Ask the GM.",
       "Safe": "Safe",

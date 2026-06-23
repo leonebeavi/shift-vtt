@@ -4,6 +4,7 @@
  * e coloração de mensagem por autor.
  */
 import { dieLabel, fvtt, pickerRows, promptChoice, shiftSpeaker } from "../helpers/utils.mjs";
+import { codexChipData } from "../sheets/actor-sheets.mjs";
 import { scaleEffect, rollScaleOf } from "../dice/resolution.mjs";
 import { emitOrRun } from "../helpers/socket.mjs";
 
@@ -58,6 +59,15 @@ export function registerChatHooks() {
     root.querySelectorAll("[data-shift-retarget]").forEach(btn => {
       btn.addEventListener("click", ev => onRetarget(ev, message));
     });
+    // Chip de Codex: preenche o conteúdo POR CLIENTE (reveal-aware + cor do Codex) e
+    // liga o clique pra abrir a ficha da Party na entrada linkada (via a API).
+    root.querySelectorAll("[data-shift-codexlink]").forEach(el => {
+      try { fillCodexChip(el); } catch (_) { /* um chip ruim não quebra o resto do bind */ }
+      el.addEventListener("click", ev => {
+        ev.preventDefault();
+        game.shift?.api?.openCodex?.(el.dataset.codexUuid, el.dataset.partyUuid || null);
+      });
+    });
     // Preenche os chips de alvo a partir dos uuids persistidos (um único builder,
     // usado no primeiro render, no re-render do retarget e no reload).
     root.querySelectorAll(".target-panel").forEach(populateTargetPanel);
@@ -78,6 +88,24 @@ export function registerChatHooks() {
   };
   Hooks.on("getChatMessageContextOptions", (log, options) => addScaleUpContext(options));
   Hooks.on("getChatLogEntryContext", (html, options) => addScaleUpContext(options));
+}
+
+/** Preenche um chip de Codex no chat com conteúdo reveal-aware do usuário atual
+ *  (retrato/nome/tipo + a cor do Codex em --ccx-role). Roda no render de cada cliente. */
+function fillCodexChip(el) {
+  const esc = foundry.utils.escapeHTML;
+  const data = codexChipData(el.dataset.codexUuid, el.dataset.partyUuid || null);
+  if (!data) {
+    el.classList.add("locked");
+    el.innerHTML = `<span class="ccx-portrait"><i class="fa-solid fa-book-skull"></i></span><span class="ccx-body"><span class="ccx-name">Codex</span></span>`;
+    return;
+  }
+  if (data.color) el.style.setProperty("--ccx-role", data.color);
+  el.classList.toggle("locked", !!data.locked);
+  const portrait = data.img ? `<img src="${esc(data.img)}" alt=""/>` : `<i class="fa-solid ${data.icon}"></i>`;
+  el.innerHTML = `<span class="ccx-portrait">${portrait}</span>`
+    + `<span class="ccx-body"><span class="ccx-name">${esc(data.name)}</span><span class="ccx-role">${esc(data.roleLabel)}</span></span>`
+    + `<i class="fa-solid fa-book-skull ccx-icon"></i>`;
 }
 
 /** Resolve um ChatMessage a partir de um elemento de lista do menu de contexto

@@ -53,9 +53,8 @@
     {{/if}}
   </header>
 
-  {{!-- Context row: where the party is (Location + landmark, drives Rest rules)
-        and its active Vehicle (crew mirrors the roster), side by side. The
-        landmark dropdown only appears in edit mode — otherwise a clean label. --}}
+  {{!-- Context row: where the party is (Location, drives Rest rules) and its
+        active Vehicle (crew mirrors the roster), side by side. --}}
   {{#if (shiftOr locationInfo (shiftOr editMode activeVehicle))}}
     <div class="party-context">
       {{!-- Location --}}

@@ -92,11 +92,10 @@ export function registerParty() {
     }
   });
 
-  // Mesma sincronia para Items catalogados (trait/technique/landmark): Description e
-  // GM Note saem do próprio Item, então editar a ficha dele repinta o detalhe do Codex
-  // que o esteja mostrando. Sem pré-filtro por system.codex: um landmark VIRTUAL (de
-  // uma Location) não tem entrada própria no codex, mas seu detalhe abre por uuid — o
-  // teste app._codexOpen === item.uuid já é preciso. Pula quem está digitando ali.
+  // Mesma sincronia para Items catalogados (trait/technique): Description e GM Note
+  // saem do próprio Item, então editar a ficha dele repinta o detalhe do Codex que o
+  // esteja mostrando. O teste app._codexOpen === item.uuid é preciso por uuid. Pula
+  // quem está digitando ali.
   Hooks.on("updateItem", (item, changed) => {
     const sys = changed?.system ?? {};
     if (!("gmNote" in sys) && !("description" in sys)) return;

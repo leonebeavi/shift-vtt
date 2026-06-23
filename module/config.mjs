@@ -4,8 +4,6 @@
  */
 export const SHIFT = {};
 
-SHIFT.id = "shift-vtt";
-
 /* ------------------------------------------------------------------ */
 /* Dados                                                               */
 /* ------------------------------------------------------------------ */
@@ -73,7 +71,6 @@ SHIFT.defaultIcons = {
   technique: "icons/svg/target.svg",
   keyword: "icons/svg/regen.svg",
   drawback: "icons/svg/degen.svg",
-  landmark: "icons/svg/village.svg",
   quest: "icons/svg/book.svg"
 };
 
@@ -181,6 +178,18 @@ SHIFT.travelModes = {
   simple: "SHIFT.Settings.TravelMode.simple",
   standard: "SHIFT.Settings.TravelMode.standard",
   challenging: "SHIFT.Settings.TravelMode.challenging"
+};
+
+/* Pesos da rolagem DINÂMICA de Legs (1–5) por viagem, conforme o Safe/Unsafe de
+   origem→destino. Cada array é [w1,w2,w3,w4,w5] (soma 100 = porcentagens). Chave =
+   origem+destino: S=Safe, U=Unsafe. Destino seguro puxa pra menos Legs; inseguro,
+   pra mais; a origem amplifica (mesmo lado) ou amortece (lado oposto). O GM afina
+   estes números à vontade. */
+SHIFT.travelLegWeights = {
+  SS: [45, 30, 15, 7, 3],   // Safe → Safe: muito mais curta
+  US: [30, 28, 22, 13, 7],  // Unsafe → Safe: mais curta
+  SU: [7, 13, 22, 28, 30],  // Safe → Unsafe: mais longa
+  UU: [3, 7, 15, 30, 45]    // Unsafe → Unsafe: muito mais longa
 };
 
 /* ------------------------------------------------------------------ */

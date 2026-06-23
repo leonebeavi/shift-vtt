@@ -188,14 +188,10 @@ export class ShiftPartyData extends foundry.abstract.TypeDataModel {
        *  de dado rolável, shift up/down, exhaust, keywords/drawbacks, descrição e
        *  esconder-dos-players pela própria flag `revealed` do Trait.) */
 
-      /** O "lugar" atual da party (um uuid): normalmente uma Location "Actor.xxxx"
-       *  com `landmark` apontando um `landmark` Item específico DENTRO dela (um id);
-       *  mas também pode ser um landmark AVULSO ("Item.xxxx", sem Location-pai) solto
-       *  direto no slot — aí `landmark` fica vazio e o próprio Item carrega o
-       *  safe/unsafe. Quando definido, o lugar está sempre no codex e dirige as regras
-       *  de Rest cientes de local. */
+      /** O "lugar" atual da party (um uuid de Location "Actor.xxxx"; pode ser uma
+       *  Location-filha aninhada, que carrega o próprio safe/unsafe). Quando definido,
+       *  o lugar está sempre no codex e dirige as regras de Rest cientes de local. */
       location: new fields.StringField({ required: false, blank: true, initial: "" }),
-      landmark: new fields.StringField({ required: false, blank: true, initial: "" }),
 
       /** Vehicle ativo (um uuid "Actor.xxxx"). Quando definido, os membros character
        *  da party são auto-sincronizados como a crew desse vehicle. */

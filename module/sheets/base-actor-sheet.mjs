@@ -4,10 +4,36 @@
 import { dieLabel, dieStatusLabel, enrich, fvtt, openImagePicker, bindDescriptionSecrets, shiftSpeaker, dropStickyFocus } from "../helpers/utils.mjs";
 import { bindDragFeedback } from "../helpers/drag-feedback.mjs";
 import { ShiftBrowser } from "../apps/browser.mjs";
+import { TraitLayoutConfig } from "../apps/trait-layout-config.mjs";
 import { scaleEnabled } from "../settings.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
+
+/** Key do grupo de segurança "Ungrouped": recolhe os Traits cuja tag aponta para
+ *  um grupo apagado e cuja categoria nenhuma subdivisão da layout reivindica, para
+ *  que um Trait nunca desapareça da ficha. Some quando vazio. Exportada para que
+ *  subclasses que estreitam os grupos (a Party) preservem este abrigo. */
+export const CATCH_ALL_KEY = "__ungrouped";
+
+/** Normaliza uma subdivisão da layout de Traits (basal por tipo OU custom do flag
+ *  `traitLayout`) para a forma canônica consumida pela ficha. `columns` é 1/2/3;
+ *  `color` é hex da paleta ou "" (= cor padrão pela key, via LESS); `categories`
+ *  null reivindica TODAS as categorias, array reivindica uma lista, e [] significa
+ *  "só por tag" (subdivisões novas não capturam Traits antigos por engano). */
+function normalizeTraitGroup(g) {
+  const cols = Number(g.columns);
+  return {
+    key: g.key ?? foundry.utils.randomID(),
+    label: g.label ?? "",
+    columns: (cols === 1 || cols === 3) ? cols : 2,
+    color: typeof g.color === "string" ? g.color : "",
+    categories: g.categories === null ? null : (Array.isArray(g.categories) ? g.categories : []),
+    create: g.create ?? null,
+    hideEmpty: !!g.hideEmpty,
+    special: !!g.special
+  };
+}
 
 export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
@@ -53,6 +79,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       cycleScale: BaseShiftActorSheet.#onCycleScale,
       workTogether: BaseShiftActorSheet.#onWorkTogether,
       toggleGroup: BaseShiftActorSheet.#onToggleGroup,
+      openTraitLayout: BaseShiftActorSheet.#onOpenTraitLayout,
       openDescriptor: BaseShiftActorSheet.#onOpenDescriptor,
       editImage: BaseShiftActorSheet.#onEditImage
     }
@@ -62,9 +89,23 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   /* Context                                                           */
   /* ---------------------------------------------------------------- */
 
-  /** As subclasses definem como os Items de Trait são agrupados na ficha. */
+  /** As subclasses definem o layout BASAL das subdivisões de Trait (uma por tipo de
+   *  Actor). Forma: {key, label, columns:1|2|3, color, categories, create, ...}.
+   *  `categories` é o conjunto que a subdivisão reivindica para Traits SEM tag;
+   *  `create` é a categoria que o botão "+" dá a um Trait novo (o "tipo padrão" da
+   *  subdivisão). É o default de fábrica; cada Actor pode sobrescrever via flag. */
   get traitGroupSpec() {
-    return [{ key: "all", label: "SHIFT.TraitCategory.custom", categories: null, css: "grid-2", create: "custom" }];
+    return [{ key: "all", label: "SHIFT.TraitCategory.custom", categories: null, columns: 2, color: "", create: "custom" }];
+  }
+
+  /** A layout EFETIVA das subdivisões de Trait desta ficha: o flag por-Actor
+   *  `traitLayout` quando existe, senão o basal por tipo ({@link traitGroupSpec}).
+   *  Sempre normalizada. O editor {@link TraitLayoutConfig} grava o flag; o Reset
+   *  dele o remove (voltando ao basal). */
+  get traitLayout() {
+    const custom = this.document.getFlag?.("shift-vtt", "traitLayout");
+    const source = (Array.isArray(custom) && custom.length) ? custom : this.traitGroupSpec;
+    return source.map(normalizeTraitGroup);
   }
 
   /** Se o usuário atual pode LER o texto narrativo deste Actor: a aba de
@@ -132,23 +173,45 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   async #prepareTraitGroups() {
     const actor = this.document;
     const canSee = item => item.system.revealed || game.user.isGM || actor.isOwner;
-    const groups = [];
+    const layout = this.traitLayout;
 
-    for (const spec of this.traitGroupSpec) {
-      const traits = actor.traits
-        .filter(t => (spec.categories ? spec.categories.includes(t.system.category) : true))
-        .filter(canSee)
-        .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
+    // Bucketiza cada Trait visível na subdivisão que o exibe: a tag explícita
+    // (system.group) vence se o grupo ainda existe; senão cai pela categoria. O que
+    // não casa nenhum grupo vira "órfão" → grupo de segurança Ungrouped no fim.
+    const buckets = new Map(layout.map(g => [g.key, []]));
+    const orphans = [];
+    const visible = actor.traits.filter(canSee)
+      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
+    for (const t of visible) {
+      const key = this.#traitGroupKeyFor(t, layout);
+      if (buckets.has(key)) buckets.get(key).push(t);
+      else orphans.push(t);
+    }
+
+    const groups = [];
+    for (const spec of layout) {
       const ctxs = [];
-      for (const t of traits) ctxs.push(await this.#traitContext(t));
+      for (const t of buckets.get(spec.key)) ctxs.push(await this.#traitContext(t));
       groups.push({
         key: spec.key,
-        label: game.i18n.localize(spec.label),
-        css: spec.css ?? "grid-2",
+        label: game.i18n.localize(spec.label),   // basal = chave de locale; custom = literal (localize deixa passar)
+        columns: spec.columns,
+        color: spec.color || "",
         createCategory: spec.create ?? null,
-        special: spec.special ?? false,
-        hideEmpty: spec.hideEmpty ?? false,
+        special: spec.special,
+        hideEmpty: spec.hideEmpty,
         collapsed: this.#collapsed.has(spec.key),
+        traits: ctxs
+      });
+    }
+    if (orphans.length) {
+      const ctxs = [];
+      for (const t of orphans) ctxs.push(await this.#traitContext(t));
+      groups.push({
+        key: CATCH_ALL_KEY,
+        label: game.i18n.localize("SHIFT.Groups.Ungrouped"),
+        columns: 2, color: "", createCategory: null, special: false, hideEmpty: true,
+        collapsed: this.#collapsed.has(CATCH_ALL_KEY),
         traits: ctxs
       });
     }
@@ -320,16 +383,12 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
       return false;
     }
 
-    if (!["trait", "technique", "landmark"].includes(item.type)) return false;
-
-    // Landmarks só são exibidos pela ficha de Location; soltar um em qualquer outro
-    // Actor criaria um Item embutido invisível (lixo órfão). Rejeita fora da Location.
-    if (item.type === "landmark" && this.document.type !== "location") return false;
+    if (!["trait", "technique"].includes(item.type)) return false;
 
     // Soltar um item que JÁ está neste Actor é um reordenamento: reordena-o em
     // relação ao card onde caiu. Sempre fazemos isso nós mesmos e nunca delegamos
     // ao core aqui (o handler de drop do ActorSheetV2 do core não reordena de forma
-    // confiável um item já embutido), para que cards de Trait / Technique / Landmark
+    // confiável um item já embutido), para que cards de Trait / Technique
     // possam ser arrastados em qualquer ordem em vez de ficarem presos à alfabética.
     if (item.parent === this.document) return this.#sortItem(event, item);
 
@@ -342,35 +401,67 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
   async #sortItem(event, item) {
     const row = event.target?.closest?.("[data-item-id]");
     const target = row ? this.document.items.get(row.dataset.itemId) : null;
-    if (!target || target.id === item.id || target.type !== item.type) return false;
 
-    // As Traits são divididas em GRUPOS por categoria na ficha (veja traitGroupSpec):
-    // só reordena dentro do PRÓPRIO grupo do card arrastado, para que um drop entre
-    // grupos seja um no-op limpo em vez de embaralhar silenciosamente o grupo de origem.
-    // Techniques e Landmarks são listas planas únicas, então ordenam contra todos os
-    // irmãos do seu tipo.
-    // Snapshot do spec uma vez: traitGroupSpec é um getter que reconstrói o array a
-    // cada acesso, e #traitGroupKeyFor é chamado para o item, o alvo e cada irmão.
-    const spec = this.traitGroupSpec;
-    const groupKey = this.#traitGroupKeyFor(item, spec);
-    if (item.type === "trait" && this.#traitGroupKeyFor(target, spec) !== groupKey) return false;
+    // Techniques: lista plana única — ordena contra todos os irmãos do tipo.
+    if (item.type !== "trait") {
+      if (!target || target.id === item.id || target.type !== item.type) return false;
+      const siblings = this.document.items.filter(i => i.id !== item.id && i.type === item.type);
+      const updates = foundry.utils.performIntegerSort(item, { target, siblings })
+        .map(u => ({ _id: u.target.id, sort: u.update.sort }));
+      return this.document.updateEmbeddedDocuments("Item", updates);
+    }
 
-    const sameGroup = i => i.id !== item.id && i.type === item.type
-      && (item.type !== "trait" || this.#traitGroupKeyFor(i, spec) === groupKey);
-    const siblings = this.document.items.filter(sameGroup);
-    const updates = foundry.utils.performIntegerSort(item, { target, siblings })
-      .map(u => ({ _id: u.target.id, sort: u.update.sort }));
+    // Traits são divididos em SUBDIVISÕES na ficha. O destino é a subdivisão onde o
+    // card caiu, lido direto do DOM (data-group-key): soltar num grupo DIFERENTE
+    // RE-TAGUEIA o Trait (system.group) para ele grudar lá; soltar no mesmo grupo só
+    // reordena. Snapshot da layout uma vez (o getter reconstrói o array a cada acesso).
+    const layout = this.traitLayout;
+    const destKey = event.target?.closest?.("[data-group-key]")?.dataset.groupKey
+      ?? this.#traitGroupKeyFor(item, layout);
+    const curKey = this.#traitGroupKeyFor(item, layout);
+
+    // Nova tag ao mudar de grupo: a key do destino; o grupo de segurança limpa a tag
+    // (volta ao fallback por categoria). null = não mudou de grupo.
+    const regroup = destKey === curKey ? null : (destKey === CATCH_ALL_KEY ? "" : destKey);
+
+    // Irmãos = os Traits hoje exibidos no grupo DESTINO (fora o arrastado).
+    const siblings = this.document.traits.filter(t =>
+      t.id !== item.id && this.#traitGroupKeyFor(t, layout) === destKey);
+
+    let updates = [];
+    if (target && target.id !== item.id && target.type === "trait"
+        && this.#traitGroupKeyFor(target, layout) === destKey) {
+      updates = foundry.utils.performIntegerSort(item, { target, siblings })
+        .map(u => ({ _id: u.target.id, sort: u.update.sort }));
+    }
+
+    // Garante a (re)tag do arrastado no update set; se ele só trocou de grupo (sem um
+    // card-alvo de reorder), dá a ele um sort no fim do grupo destino.
+    if (regroup !== null) {
+      const own = updates.find(u => u._id === item.id);
+      if (own) own["system.group"] = regroup;
+      else {
+        const maxSort = siblings.reduce((m, s) => Math.max(m, s.sort ?? 0), 0);
+        updates.push({ _id: item.id, "system.group": regroup, sort: maxSort + CONST.SORT_INTEGER_DENSITY });
+      }
+    }
+
+    if (!updates.length) return false;
     return this.document.updateEmbeddedDocuments("Item", updates);
   }
 
-  /** A chave do trait-group que exibe uma dada Trait (conforme {@link traitGroupSpec}),
-   *  ou null para items que não são Trait / uma categoria que nenhum grupo reivindica.
-   *  Usada para manter um reordenamento por drag dentro do grupo visual do próprio card. */
-  #traitGroupKeyFor(item, spec = this.traitGroupSpec) {
+  /** A key da subdivisão que exibe uma dada Trait, conforme a layout efetiva
+   *  ({@link traitLayout}): a tag explícita `system.group` vence se o grupo ainda
+   *  existe; senão cai pela `category` no primeiro grupo que a reivindica (categories
+   *  null = todas); senão o grupo de segurança {@link CATCH_ALL_KEY}. null para
+   *  items que não são Trait. Usada para agrupar e para manter o reorder por drag. */
+  #traitGroupKeyFor(item, layout = this.traitLayout) {
     if (item.type !== "trait") return null;
+    const tag = item.system.group;
+    if (tag && layout.some(s => s.key === tag)) return tag;
     const cat = item.system.category;
-    const found = spec.find(s => !s.categories || s.categories.includes(cat));
-    return found?.key ?? null;
+    const found = layout.find(s => s.categories === null || (Array.isArray(s.categories) && s.categories.includes(cat)));
+    return found?.key ?? CATCH_ALL_KEY;
   }
 
   /** @override */
@@ -501,6 +592,9 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     if (!this.isEditable) return;
     const type = target.dataset.type ?? "trait";
     const category = target.dataset.category ?? "custom";
+    // A subdivisão dona do "+" tagueia o Trait novo (system.group) para ele nascer
+    // exatamente nela, independente da categoria. Vazio = sem tag (cai pela categoria).
+    const groupKey = target.dataset.groupKey ?? "";
 
     if (["trait", "technique"].includes(type)) {
       const picked = await ShiftBrowser.pick({
@@ -517,6 +611,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
         if (type === "trait") {
           data.system.category = category;
           data.system.temporary = false;
+          if (groupKey) data.system.group = groupKey;
         }
         await this.document.createEmbeddedDocuments("Item", [data]);
         return;
@@ -526,6 +621,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     const data = { type, name: game.i18n.localize(`SHIFT.New.${type}`) };
     if (type === "trait") {
       data.system = { category, maxDie: "d6", currentDie: "d6" };
+      if (groupKey) data.system.group = groupKey;
       if (category === "focus") data.system.source = "";
       if (category === "special") {
         // Special Traits são roláveis e contam para Overcoming (a contagem de defeat /
@@ -534,7 +630,6 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
         data.system.adversary = { countsTowardTraitLimit: false };
       }
     }
-    if (type === "landmark") data.img = "icons/svg/village.svg";
     const [created] = await this.document.createEmbeddedDocuments("Item", [data]);
     created?.sheet?.render(true);
   }
@@ -642,6 +737,18 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     if (this.#collapsed.has(key)) this.#collapsed.delete(key);
     else this.#collapsed.add(key);
     this.render();
+  }
+
+  /** Abre o editor de subdivisões de Trait DESTA ficha (renomear, reordenar, colunas,
+   *  tipo padrão, criar novas, cor de destaque). É por-Actor: grava o flag traitLayout.
+   *  O botão é inline na aba (clique-duplo fácil), então reaproveita um editor já
+   *  aberto deste Actor em vez de criar uma janela órfã de mesmo id. */
+  static #onOpenTraitLayout() {
+    if (!this.isEditable) return;
+    const id = `shift-trait-layout-${this.document.id}`;
+    const existing = foundry.applications.instances.get(id);
+    if (existing) return void existing.bringToFront?.();
+    new TraitLayoutConfig({ actor: this.document }).render(true);
   }
 
   static async #onOpenDescriptor(event, target) {

@@ -19,6 +19,9 @@ export class RestTravelConfig extends HandlebarsApplicationMixin(ApplicationV2) 
     form: {
       handler: RestTravelConfig.#onSubmit,
       closeOnSubmit: true
+    },
+    actions: {
+      resetLegWeights: RestTravelConfig.#onResetLegWeights
     }
   };
 
@@ -39,6 +42,14 @@ export class RestTravelConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       .map(([value, label]) => ({ value, label, selected: restMode === value }));
     context.travelModeOptions = Object.entries(CONFIG.SHIFT.travelModes)
       .map(([value, label]) => ({ value, label, selected: travelMode === value }));
+    // Tuner dos pesos de Legs: 4 distribuições (SS/US/SU/UU) × 5 Legs. Mostra a
+    // setting atual, com os defaults de fábrica como fallback de cada chave.
+    const weights = get("travelLegWeights") || CONFIG.SHIFT.travelLegWeights;
+    context.legWeights = ["SS", "US", "SU", "UU"].map(key => ({
+      key,
+      label: `SHIFT.Settings.TravelLegWeights.${key}`,
+      values: (Array.isArray(weights[key]) ? weights[key] : CONFIG.SHIFT.travelLegWeights[key]).slice(0, 5)
+    }));
     context.buttons = [
       { type: "submit", icon: "fa-solid fa-save", label: "SHIFT.Common.Confirm" }
     ];
@@ -53,5 +64,23 @@ export class RestTravelConfig extends HandlebarsApplicationMixin(ApplicationV2) 
     await game.settings.set("shift-vtt", "enableTravel", !!d.enableTravel);
     await game.settings.set("shift-vtt", "travelMode", travelModes.includes(d.travelMode) ? d.travelMode : "simple");
     await game.settings.set("shift-vtt", "travelRandomCore", !!d.travelRandomCore);
+
+    const weights = {};
+    for (const key of ["SS", "US", "SU", "UU"]) {
+      weights[key] = [0, 1, 2, 3, 4].map(i => Math.max(0, Math.round(Number(d[`lw_${key}_${i}`]) || 0)));
+    }
+    await game.settings.set("shift-vtt", "travelLegWeights", weights);
+  }
+
+  /** Repovoa os inputs de peso com os defaults de fábrica (CONFIG), SEM salvar — o
+   *  GM ainda confirma. Preserva edições não salvas dos outros campos (sem re-render). */
+  static #onResetLegWeights() {
+    const def = CONFIG.SHIFT.travelLegWeights;
+    for (const key of ["SS", "US", "SU", "UU"]) {
+      (def[key] ?? []).forEach((v, i) => {
+        const inp = this.element.querySelector(`[name="lw_${key}_${i}"]`);
+        if (inp) inp.value = v;
+      });
+    }
   }
 }
