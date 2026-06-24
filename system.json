@@ -2,7 +2,7 @@
   "id": "shift-vtt",
   "title": "SHIFT VTT",
   "description": "An unofficial Foundry VTT implementation of the SHIFT Roleplaying Game.",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
@@ -127,7 +127,7 @@
   },
   "url": "https://github.com/leonebeavi/shift-vtt",
   "manifest": "https://github.com/leonebeavi/shift-vtt/releases/latest/download/system.json",
-  "download": "https://github.com/leonebeavi/shift-vtt/releases/download/v2.8.0/system.zip",
+  "download": "https://github.com/leonebeavi/shift-vtt/releases/download/v2.8.1/system.zip",
   "license": "LICENSE.md",
   "readme": "README.md",
   "flags": {

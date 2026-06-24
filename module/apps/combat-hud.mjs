@@ -1,13 +1,15 @@
 /**
  * SHIFT VTT, Combat HUD.
  *
- * HUD flutuante ancorada no TOPO-CENTRO da janela do jogo, irmã do Action HUD
- * (ver action-hud.mjs para a arquitetura de HUD nativa em DOM puro). Mostra TODOS
- * os combatentes do combate ATIVO E INICIADO de uma vez, agrupados pelas fases do
- * SHIFT (divisores só de cor + ícone), SEM rolagem: o combatente em spotlight é
- * apenas o card destacado (anel + glow na cor da fase). Clicar num card passa o
- * spotlight; as setas ‹ › passam de 1 em 1 (com wrap). Se houver combatentes
- * demais para a largura, a fila quebra em linhas — nada fica escondido.
+ * HUD flutuante ancorada no TOPO da janela do jogo, irmã do Action HUD (ver
+ * action-hud.mjs para a arquitetura de HUD nativa em DOM puro). Mostra TODOS os
+ * combatentes do combate ATIVO (mesmo antes de iniciar) de uma vez, agrupados
+ * pelas fases do SHIFT (divisores só de cor + ícone), numa ÚNICA fila. A barra se
+ * estende dinamicamente até os limites da banda do topo — da direita do bloco de
+ * navegação de cena (#ui-left) até a esquerda da sidebar (#ui-right), medidos no
+ * positionHud — e os cards encolhem (flex-shrink) quando há muitos, evitando
+ * quebrar em dois andares. O combatente em spotlight é apenas o card destacado
+ * (anel + glow na cor da fase); clicar num card passa o spotlight.
  *
  * Não é a decoração da sidebar (essa é tracker.mjs). A fonte de verdade das fases
  * é ./../combat/phases.mjs (phaseFor), reaproveitada do tracker. O spotlight é o
@@ -24,10 +26,12 @@ import { phaseFor, PHASE_META } from "../combat/phases.mjs";
 let hudEl = null;      // #shift-combat-hud (container fixo)
 let listEl = null;     // fila de combatentes (flex, quebra em linhas se precisar)
 let roundNumEl = null;
+let toggleBtn = null;  // botão Start/End Combat (só GM)
+let roundBtns = [];    // botões que só valem com o combate iniciado (desabilitados antes)
 
 let combatId = null;      // combate sendo exibido
 let spotlightId = null;   // combatente destacado (= turno corrente do combate)
-let order = [];           // ids dos combatentes em ordem de fase (setas / wrap)
+let order = [];           // ids dos combatentes visíveis (valida o foco no resync)
 let listenersBound = false;
 
 // Quando true, o próximo render re-sincroniza o spotlight com o turno do combate
@@ -51,42 +55,41 @@ function ensureElement() {
 
   const L = key => game.i18n.localize(key);
   const isGM = game.user.isGM;
+  // Botões de controle (sem setas — spotlight é manual neste sistema). Esquerda:
+  // Roll Turn Order (em cima) / Start-End Combat (embaixo); direita: Roll All (em
+  // cima) / New Round (embaixo). Start/End, Roll All e New Round são só do GM.
+  const mini = (action, cls, icon, key) =>
+    `<button type="button" class="chud-mini ${cls}" data-chud="${action}"
+             aria-label="${L(key)}" data-tooltip="${L(key)}"><i class="fa-solid ${icon}"></i></button>`;
   hudEl.innerHTML = `
     <div class="chud-bar">
       <div class="chud-cap chud-cap-left">
-        <button type="button" class="chud-step" data-chud="prev"
-                aria-label="${L("SHIFT.Combat.PrevStep")}" data-tooltip="${L("SHIFT.Combat.PrevStep")}">
-          <i class="fa-solid fa-chevron-left"></i>
-        </button>
         <div class="chud-round">
           <span class="chud-round-label">${L("SHIFT.Combat.Round")}</span>
-          <span class="chud-round-num">1</span>
+          <span class="chud-round-num">—</span>
         </div>
-        <div class="chud-cap-btns">
-          <button type="button" class="chud-mini chud-reroll" data-chud="reroll"
-                  aria-label="${L("SHIFT.Combat.RollOrder")}" data-tooltip="${L("SHIFT.Combat.RollOrder")}">
-            <i class="fa-solid fa-dice-d20"></i>
-          </button>
-          ${isGM ? `
-          <button type="button" class="chud-mini chud-endround" data-chud="endRound"
-                  aria-label="${L("SHIFT.Combat.EndRound")}" data-tooltip="${L("SHIFT.Combat.EndRound")}">
-            <i class="fa-solid fa-flag-checkered"></i>
-          </button>` : ""}
+        <div class="chud-cap-col">
+          ${mini("rollTurnOrder", "chud-rollorder", "fa-dice-d20", "SHIFT.Combat.RollOrder")}
+          ${isGM ? mini("toggleCombat", "chud-toggle", "fa-play", "SHIFT.Combat.StartCombat") : ""}
         </div>
       </div>
       <div class="chud-sep"></div>
       <div class="chud-list"></div>
+      ${isGM ? `
       <div class="chud-sep"></div>
       <div class="chud-cap chud-cap-right">
-        <button type="button" class="chud-step" data-chud="next"
-                aria-label="${L("SHIFT.Combat.NextStep")}" data-tooltip="${L("SHIFT.Combat.NextStep")}">
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>
-      </div>
+        <div class="chud-cap-col">
+          ${mini("rollAll", "chud-rollall", "fa-dice", "SHIFT.Combat.RollAll")}
+          ${mini("newRound", "chud-newround", "fa-flag-checkered", "SHIFT.Combat.NextRound")}
+        </div>
+      </div>` : ""}
     </div>`;
 
   listEl = hudEl.querySelector(".chud-list");
   roundNumEl = hudEl.querySelector(".chud-round-num");
+  toggleBtn = hudEl.querySelector('[data-chud="toggleCombat"]');
+  // Estes só fazem sentido com o combate JÁ iniciado; ficam desabilitados antes.
+  roundBtns = [...hudEl.querySelectorAll('[data-chud="rollTurnOrder"], [data-chud="rollAll"], [data-chud="newRound"]')];
 
   bindListeners();
   return hudEl;
@@ -96,7 +99,14 @@ function bindListeners() {
   if (listenersBound) return;
   listenersBound = true;
   hudEl.addEventListener("click", onClick);
-  // O layout (quebra de linha) reflui sozinho via CSS; só reposicionamos a barra.
+  // Roda do mouse rola a fila na horizontal QUANDO ela está scrollável (senão deixa
+  // o evento passar para o canvas, que dá zoom). Scroll nativo simples, sem
+  // stepping/snap/centralização — não briga com o spotlight.
+  listEl.addEventListener("wheel", e => {
+    if (!listEl.classList.contains("is-scrollable")) return;
+    e.preventDefault();
+    listEl.scrollLeft += (e.deltaY || e.deltaX);
+  }, { passive: false });
   const reposition = foundry.utils.debounce(positionHud, 100);
   window.addEventListener("resize", reposition);
 }
@@ -112,21 +122,43 @@ function hide() {
 
 const TOP_GAP = 8;
 const EDGE = 6;
+const GAP = 8;       // folga entre a HUD e a navegação de cena / sidebar
+const MIN_W = 240;   // largura mínima da banda (janelas estreitas)
 
-/** Centraliza horizontalmente na viewport (o CSS mantém translateX(-50%)) e gruda
- *  no TOPO da janela (TOP_GAP). A navegação de cena fica à esquerda, então o
- *  centro-topo está livre e não precisamos desviar dela. */
+/** Dimensiona a HUD para a BANDA do topo: da direita do CONTEÚDO do bloco esquerdo
+ *  (controles + navegação de cena) até a esquerda da sidebar. O container recebe
+ *  left+width = banda; a barra dentro dele fica centrada na banda (≈ centro da tela,
+ *  pois os dois blocos têm largura parecida) e cresce para os lados conforme entram
+ *  combatentes, até o limite. Guards de sanidade evitam que um rect estranho colapse
+ *  a banda. */
 function positionHud() {
   if (!hudEl?.classList.contains("visible")) return;
-  const ow = hudEl.offsetWidth;
-  if (!ow) return;
-  const half = ow / 2;
+  const vw = window.innerWidth;
 
-  let cx = window.innerWidth / 2;
-  const maxCx = Math.max(half + EDGE, window.innerWidth - half - EDGE);
-  cx = Math.min(Math.max(cx, half + EDGE), maxCx);
+  // Limite esquerdo = borda direita do CONTEÚDO da esquerda. NÃO medir #ui-left: ele
+  // é um frame de 50% da viewport (não encolhe ao conteúdo), então seu rect.right
+  // daria ~50%vw e a banda começaria no canto, por cima do card de cenas. Medimos
+  // as colunas/itens internos (controles + nav de cena) e pegamos a borda à direita.
+  let left = EDGE;
+  for (const id of ["ui-left-column-2", "ui-left-column-1", "scene-navigation", "scene-controls"]) {
+    const r = document.getElementById(id)?.getBoundingClientRect();
+    if (r && r.width > 0 && r.right > 0 && r.right < vw * 0.4) left = Math.max(left, r.right + GAP);
+  }
 
-  hudEl.style.left = `${Math.round(cx)}px`;
+  // Limite direito = borda esquerda da sidebar (#ui-right encolhe ao conteúdo).
+  let right = vw - EDGE;
+  for (const id of ["ui-right", "sidebar"]) {
+    const r = document.getElementById(id)?.getBoundingClientRect();
+    if (r && r.width > 0 && r.left > vw * 0.5) { right = Math.min(right, r.left - GAP); break; }
+  }
+
+  // Banda estreita: puxa o início para a esquerda p/ caber MIN_W, mas a borda
+  // DIREITA do container nunca cruza a sidebar (senão o cap direito ficaria por
+  // cima dela). Se nem assim couber, usa só o que há entre EDGE e a sidebar.
+  if (right - left < MIN_W) left = Math.max(EDGE, right - MIN_W);
+  const width = Math.max(0, right - left);
+  hudEl.style.left = `${Math.round(left)}px`;
+  hudEl.style.width = `${Math.round(width)}px`;
   hudEl.style.top = `${TOP_GAP}px`;
 }
 
@@ -141,7 +173,7 @@ function visibleCombatants(combat) {
 }
 
 /** Sequência ordenada de itens (divisores + combatentes) por fase, e a lista
- *  `order` só com os ids de combatente (para as setas e o wrap). */
+ *  `order` só com os ids de combatente (valida o foco do spotlight no resync). */
 function buildItems(combat) {
   const all = visibleCombatants(combat);
   const byKey = {};
@@ -178,7 +210,22 @@ function isTargeted(combatant) {
 function render(combat) {
   ensureElement();
   combatId = combat.id;
-  if (roundNumEl) roundNumEl.textContent = String(combat.round ?? 1);
+
+  // Estado dos controles: antes de iniciar, o round mostra "—", o toggle é "Start
+  // Combat" e os botões de round (Roll Turn Order / Roll All / New Round) ficam
+  // desabilitados; depois de iniciado, round real, toggle vira "End Combat" e os
+  // botões de round liberam.
+  const started = combat.started;
+  if (roundNumEl) roundNumEl.textContent = combat.round > 0 ? String(combat.round) : "—";
+  if (toggleBtn) {
+    const label = game.i18n.localize(started ? "SHIFT.Combat.EndCombat" : "SHIFT.Combat.StartCombat");
+    const icon = toggleBtn.querySelector("i");
+    if (icon) icon.className = `fa-solid ${started ? "fa-power-off" : "fa-play"}`;
+    toggleBtn.setAttribute("aria-label", label);
+    toggleBtn.setAttribute("data-tooltip", label);
+    toggleBtn.classList.toggle("is-end", started);
+  }
+  for (const b of roundBtns) b.disabled = !started;
 
   const items = buildItems(combat);
   order = items.filter(it => it.type === "combatant").map(it => it.combatant.id);
@@ -189,17 +236,37 @@ function render(combat) {
   // manual (clique no card). Re-sincroniza no resync (turno/round/start) ou se o
   // foco local sumiu; senão preserva o foco local (browse do jogador). NUNCA cai
   // num "primeiro da fila" automático.
+  const wasResync = resync;
   if (resync || !order.includes(spotlightId)) {
     spotlightId = combat.combatant?.id ?? null;
   }
   resync = false;
 
+  const savedScroll = listEl.scrollLeft;
   listEl.innerHTML = items
     .map(it => it.type === "divider" ? dividerHtml(it.meta) : cardHtml(it.combatant, it.meta))
     .join("");
 
   hudEl.classList.add("visible");
   positionHud();
+
+  // Depois do positionHud (que define a largura da banda): se a fila não couber nem
+  // com os cards encolhidos (min 140px), vira SCROLLÁVEL — clipa e rola, então nada
+  // transborda por cima da sidebar/caps. Mede com a largura já assentada.
+  listEl.classList.toggle("is-scrollable", listEl.scrollWidth > listEl.clientWidth + 1);
+  // Numa mudança de turno (resync) com a fila scrollável, centraliza o card em
+  // spotlight para o turno corrente ficar SEMPRE visível; senão preserva a posição
+  // de scroll (um rebuild de pip não joga a fila de volta ao início nem mexe no
+  // browse do GM).
+  const spot = listEl.classList.contains("is-scrollable")
+    ? listEl.querySelector(".chud-card.is-spotlight") : null;
+  if (wasResync && spot) {
+    const lr = listEl.getBoundingClientRect();
+    const sr = spot.getBoundingClientRect();
+    listEl.scrollLeft += (sr.left - lr.left) - (listEl.clientWidth - sr.width) / 2;
+  } else {
+    listEl.scrollLeft = savedScroll;
+  }
 }
 
 function dividerHtml(meta) {
@@ -307,24 +374,16 @@ function takeSpotlight(id) {
   }
 }
 
-/** Passa o spotlight `d` combatentes na ordem, com wrap. */
-function stepBy(d) {
-  if (!order.length) return;
-  let i = order.indexOf(spotlightId);
-  if (i < 0) i = 0;
-  const ni = ((i + d) % order.length + order.length) % order.length;
-  takeSpotlight(order[ni]);
-}
-
 /* ------------------------------------------------------------------ */
 /* Eventos                                                             */
 /* ------------------------------------------------------------------ */
 
 function onClick(e) {
-  // Botões de cap (prev/next/reroll/endRound)
+  // Botões de controle do cap (rollTurnOrder/toggleCombat/rollAll/newRound).
   const cap = e.target.closest("[data-chud]");
   if (cap) {
     e.preventDefault();
+    if (cap.disabled) return;
     return void onCap(cap.dataset.chud);
   }
   const card = e.target.closest(".chud-card");
@@ -355,10 +414,13 @@ function onCap(action) {
   const combat = game.combats.get(combatId);
   if (!combat) return;
   switch (action) {
-    case "prev": return stepBy(-1);
-    case "next": return stepBy(1);
-    case "reroll": return void rollTurnOrder(combat);
-    case "endRound": if (game.user.isGM) return void combat.nextRound();
+    case "rollTurnOrder": return void rollTurnOrder(combat);
+    // Controle de combate — só GM. endCombat() do core já pede confirmação + apaga.
+    case "toggleCombat":
+      if (!game.user.isGM) return;
+      return void (combat.started ? combat.endCombat() : combat.startCombat());
+    case "rollAll": if (game.user.isGM) return void combat.rollAll(); break;
+    case "newRound": if (game.user.isGM) return void combat.nextRound(); break;
   }
 }
 
@@ -399,8 +461,10 @@ async function onDefeat(combatant) {
 
 function refresh() {
   if (game.settings.get("shift-vtt", "enableCombatHud") === false) return hide();
+  // Aparece assim que há um combate ativo COM combatentes (mesmo antes de iniciar),
+  // para o botão Start Combat ficar acessível pela HUD.
   const combat = game.combats?.active;
-  if (!combat || !combat.started) return hide();
+  if (!combat || !combat.combatants.size) return hide();
   render(combat);
 }
 
@@ -433,6 +497,15 @@ export function registerCombatHud() {
   }
   // Mira é por-cliente e não dispara hook de documento; repinta os badges/estado.
   Hooks.on("targetToken", () => { if (hudEl?.classList.contains("visible")) debounced(); });
+
+  // A banda muda quando a sidebar RECOLHE/expande ou a navegação de cena muda de
+  // largura: re-mede e reposiciona. NÃO reagimos a renderSidebar — ele dispara a
+  // cada mensagem/clique no chat e fazia a HUD "se mexer"; collapseSidebar cobre o
+  // recolher de verdade (a única mudança de largura da sidebar).
+  const reposition = foundry.utils.debounce(positionHud, 60);
+  for (const hook of ["collapseSidebar", "renderSceneNavigation"]) {
+    Hooks.on(hook, () => reposition());
+  }
 
   Hooks.on("canvasReady", () => refresh());
   Hooks.once("ready", () => refresh());
