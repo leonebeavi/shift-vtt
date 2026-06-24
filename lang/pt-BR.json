@@ -520,7 +520,16 @@
       "AdvantagePhase": "Vantagem",
       "Spotlight": "Entrar em cena",
       "RollFromChat": "Rolar sua ordem de turno",
-      "NothingToRoll": "Nenhum personagem seu aguardando rolagem."
+      "NothingToRoll": "Nenhum personagem seu aguardando rolagem.",
+      "Round": "Rodada",
+      "RollOrder": "Rolar ordem de turno",
+      "EndRound": "Terminar rodada",
+      "PrevStep": "Combatente anterior",
+      "NextStep": "Próximo combatente",
+      "OpenSheet": "Abrir ficha",
+      "Target": "Marcar como alvo",
+      "Hide": "Ocultar / revelar",
+      "Defeat": "Marcar como derrotado"
     },
     "Adversary": {
       "Power": "Power",
@@ -775,6 +784,10 @@
         "Hint": "Abre os submenus da HUD no clique ou no hover.",
         "click": "Clique",
         "hover": "Passar o mouse"
+      },
+      "CombatHud": {
+        "Name": "Combat HUD",
+        "Hint": "Barra flutuante com todos os combatentes no topo da tela durante um encontro iniciado."
       },
       "Advancements": {
         "Name": "Avanços de XP",

@@ -520,7 +520,16 @@
       "AdvantagePhase": "Advantage",
       "Spotlight": "Take the spotlight",
       "RollFromChat": "Roll your turn order",
-      "NothingToRoll": "No owned characters waiting to roll."
+      "NothingToRoll": "No owned characters waiting to roll.",
+      "Round": "Round",
+      "RollOrder": "Roll turn order",
+      "EndRound": "End round",
+      "PrevStep": "Previous combatant",
+      "NextStep": "Next combatant",
+      "OpenSheet": "Open sheet",
+      "Target": "Target",
+      "Hide": "Hide / reveal",
+      "Defeat": "Mark defeated"
     },
     "Adversary": {
       "Power": "Power",
@@ -775,6 +784,10 @@
         "Hint": "Open HUD submenus on click or on hover.",
         "click": "Click",
         "hover": "Hover"
+      },
+      "CombatHud": {
+        "Name": "Combat HUD",
+        "Hint": "Floating bar of all combatants at the top of the screen during a started encounter."
       },
       "Advancements": {
         "Name": "XP Advancements",

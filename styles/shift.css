@@ -3748,6 +3748,387 @@ body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
   left: auto;
   right: -5px;
 }
+#shift-combat-hud {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+  font-family: "Signika", sans-serif;
+}
+#shift-combat-hud.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+#shift-combat-hud .chud-bar {
+  display: flex;
+  align-items: stretch;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(rgba(26, 21, 26, 0.94), rgba(26, 21, 26, 0.94)) padding-box,
+    linear-gradient(90deg, #288ccc, #12aa5b, #ffc511) border-box;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.55);
+  padding: 11px 13px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: 95vw;
+  color: #f4eef3;
+}
+#shift-combat-hud .chud-cap {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+#shift-combat-hud .chud-cap-left {
+  gap: 10px;
+  padding-right: 13px;
+}
+#shift-combat-hud .chud-cap-right {
+  padding-left: 13px;
+}
+#shift-combat-hud .chud-step {
+  width: 26px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f2730;
+  border: 1px solid #4d4050;
+  border-radius: 8px;
+  color: #cdbfca;
+  cursor: pointer;
+  font-size: 12px;
+  transition: border-color 0.12s, color 0.12s;
+}
+#shift-combat-hud .chud-step:hover {
+  border-color: #ffc511;
+  color: #ffc511;
+}
+#shift-combat-hud .chud-round {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+#shift-combat-hud .chud-round-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #8a7d88;
+}
+#shift-combat-hud .chud-round-num {
+  font-size: 25px;
+  font-weight: 700;
+  color: #f4eef3;
+}
+#shift-combat-hud .chud-cap-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+#shift-combat-hud .chud-mini {
+  width: 30px;
+  height: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f2730;
+  border: 1px solid #4d4050;
+  border-radius: 7px;
+  color: #cdbfca;
+  cursor: pointer;
+  font-size: 11px;
+  transition: border-color 0.12s, color 0.12s;
+}
+#shift-combat-hud .chud-reroll:hover {
+  border-color: #ffc511;
+  color: #ffc511;
+}
+#shift-combat-hud .chud-endround:hover {
+  border-color: #ff5fa2;
+  color: #ff5fa2;
+}
+#shift-combat-hud .chud-sep {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(rgba(77, 64, 80, 0), rgba(77, 64, 80, 0.6) 16%, rgba(77, 64, 80, 0.6) 84%, rgba(77, 64, 80, 0));
+}
+#shift-combat-hud .chud-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  align-content: center;
+  gap: 18px 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#shift-combat-hud .chud-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  border-radius: 8px;
+  color: var(--accent);
+  background: linear-gradient(var(--dv1), var(--dv2));
+  border: 1px solid var(--dvb);
+  flex: 0 0 auto;
+}
+#shift-combat-hud .chud-divider i {
+  font-size: 13px;
+}
+#shift-combat-hud .chud-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: #f4eef3;
+  width: 152px;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid #3a313b;
+  transition: opacity 0.15s, background 0.15s, box-shadow 0.2s;
+}
+#shift-combat-hud .chud-card.is-acted {
+  opacity: 0.52;
+}
+#shift-combat-hud .chud-card.is-defeated {
+  opacity: 0.45;
+  cursor: default;
+}
+#shift-combat-hud .chud-card.is-hidden .chud-portrait {
+  filter: grayscale(0.9);
+  opacity: 0.6;
+}
+#shift-combat-hud .chud-card.is-hidden .chud-name, #shift-combat-hud .chud-card.is-hidden .chud-meta {
+  opacity: 0.55;
+}
+#shift-combat-hud .chud-card.is-spotlight {
+  background: var(--tint);
+  border-color: transparent;
+  box-shadow: 0 0 0 1.5px var(--accent), 0 0 14px 0 var(--glow);
+  animation: shift-combat-glow 2.6s ease-in-out infinite;
+}
+@keyframes shift-combat-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 1.5px var(--accent), 0 0 13px 0 var(--glow);
+  }
+  50% {
+    box-shadow: 0 0 0 1.5px var(--accent), 0 0 20px 2px var(--glow);
+  }
+}
+#shift-combat-hud .chud-portrait {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+#shift-combat-hud .chud-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 9px;
+  pointer-events: none;
+}
+#shift-combat-hud .chud-portrait::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 1.5px var(--ring);
+  pointer-events: none;
+}
+#shift-combat-hud .chud-card.is-acted .chud-portrait img {
+  filter: grayscale(0.55);
+}
+#shift-combat-hud .chud-card.is-defeated .chud-portrait img {
+  filter: none;
+}
+#shift-combat-hud .chud-badge-defeat {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 10, 14, 0.62);
+  border-radius: 8px;
+  color: #de2b54;
+  font-size: 16px;
+}
+#shift-combat-hud .chud-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+#shift-combat-hud .chud-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #f4eef3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
+  line-height: 1;
+}
+#shift-combat-hud .chud-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#shift-combat-hud .chud-pips {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+#shift-combat-hud .chud-pip {
+  font-size: 10px;
+  color: #5c4f5c;
+}
+#shift-combat-hud .chud-pip.on {
+  color: #ffd23f;
+}
+#shift-combat-hud .chud-overcome {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+#shift-combat-hud .chud-overcome > i {
+  font-size: 9px;
+  color: var(--accent);
+  opacity: 0.85;
+}
+#shift-combat-hud .chud-overcome.is-done > i {
+  color: #45c465;
+  opacity: 1;
+}
+#shift-combat-hud .chud-segs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+#shift-combat-hud .chud-seg {
+  width: 12px;
+  height: 5px;
+  border-radius: 2px;
+  background: #3a313b;
+  box-shadow: inset 0 0 0 1px rgba(77, 64, 80, 0.4);
+}
+#shift-combat-hud .chud-seg.filled {
+  background: linear-gradient(90deg, #ff5fa2, #de2b54);
+  box-shadow: none;
+}
+#shift-combat-hud .chud-overcome.is-done .chud-seg.filled {
+  background: #45c465;
+}
+#shift-combat-hud .chud-tbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 1px;
+}
+#shift-combat-hud .chud-tb {
+  width: 21px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #4d4050;
+  border-radius: 5px;
+  color: #8a7d88;
+  cursor: pointer;
+  font-size: 9px;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+  flex: 0 0 auto;
+}
+#shift-combat-hud .chud-tb.is-disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+#shift-combat-hud .chud-tb-target:not(.is-disabled):hover, #shift-combat-hud .chud-tb-defeat:not(.is-disabled):hover {
+  border-color: #de2b54;
+  color: #de2b54;
+}
+#shift-combat-hud .chud-tb-hide:not(.is-disabled):hover {
+  border-color: #9a5cf0;
+  color: #9a5cf0;
+}
+#shift-combat-hud .chud-tb-target.is-active {
+  background: rgba(222, 43, 84, 0.2);
+  border-color: #de2b54;
+  color: #de2b54;
+}
+#shift-combat-hud .chud-tb-hide.is-active {
+  background: rgba(154, 92, 240, 0.2);
+  border-color: #9a5cf0;
+  color: #9a5cf0;
+}
+#shift-combat-hud .chud-tb-defeat.is-active {
+  background: rgba(222, 43, 84, 0.2);
+  border-color: #de2b54;
+  color: #de2b54;
+}
+#shift-combat-hud .phase-advantage {
+  --accent: #ffc511;
+  --tint: rgba(255, 197, 17, 0.14);
+  --glow: rgba(255, 197, 17, 0.45);
+  --ring: rgba(255, 197, 17, 0.55);
+  --dv1: rgba(255, 197, 17, 0.16);
+  --dv2: rgba(255, 197, 17, 0.05);
+  --dvb: rgba(255, 197, 17, 0.4);
+}
+#shift-combat-hud .phase-p1 {
+  --accent: #45c465;
+  --tint: rgba(69, 196, 101, 0.14);
+  --glow: rgba(69, 196, 101, 0.45);
+  --ring: rgba(69, 196, 101, 0.55);
+  --dv1: rgba(69, 196, 101, 0.16);
+  --dv2: rgba(69, 196, 101, 0.05);
+  --dvb: rgba(69, 196, 101, 0.4);
+}
+#shift-combat-hud .phase-adv {
+  --accent: #ff5fa2;
+  --tint: rgba(255, 95, 162, 0.14);
+  --glow: rgba(255, 95, 162, 0.45);
+  --ring: rgba(255, 95, 162, 0.55);
+  --dv1: rgba(255, 95, 162, 0.16);
+  --dv2: rgba(255, 95, 162, 0.05);
+  --dvb: rgba(255, 95, 162, 0.4);
+}
+#shift-combat-hud .phase-p2 {
+  --accent: #2f9fd0;
+  --tint: rgba(47, 159, 208, 0.14);
+  --glow: rgba(47, 159, 208, 0.45);
+  --ring: rgba(47, 159, 208, 0.55);
+  --dv1: rgba(47, 159, 208, 0.16);
+  --dv2: rgba(47, 159, 208, 0.05);
+  --dvb: rgba(47, 159, 208, 0.4);
+}
+#shift-combat-hud .phase-unrolled {
+  --accent: #b5a4b3;
+  --tint: rgba(181, 164, 179, 0.14);
+  --glow: rgba(181, 164, 179, 0.45);
+  --ring: rgba(181, 164, 179, 0.55);
+  --dv1: rgba(181, 164, 179, 0.16);
+  --dv2: rgba(181, 164, 179, 0.05);
+  --dvb: rgba(181, 164, 179, 0.4);
+}
 .shift-vtt.browser .window-content {
   background: var(--shift-bg);
   color: var(--shift-text);

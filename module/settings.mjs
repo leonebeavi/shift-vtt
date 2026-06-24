@@ -10,6 +10,7 @@
  */
 import { SHIFT } from "./config.mjs";
 import { refreshActionHud } from "./apps/action-hud.mjs";
+import { refreshCombatHud } from "./apps/combat-hud.mjs";
 import { applyStatusEffects } from "./helpers/status-effects.mjs";
 
 export function registerSettings() {
@@ -283,6 +284,19 @@ export function registerSettings() {
     },
     default: "hover",
     onChange: () => refreshActionHud()
+  });
+
+  // Combat HUD flutuante (carrossel de combatentes no centro-topo). Sem submenu
+  // próprio, então fica visível na lista (config:true); cada jogador liga/desliga
+  // a sua. A HUD é DOM manual (não ApplicationV2), então o onChange a reavalia.
+  reg("enableCombatHud", {
+    name: "SHIFT.Settings.CombatHud.Name",
+    hint: "SHIFT.Settings.CombatHud.Hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => refreshCombatHud()
   });
 
   /* ============================================================

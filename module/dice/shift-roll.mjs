@@ -427,11 +427,12 @@ export class ShiftRoll {
     // ----- Chat card ----------------------------------------------------------
     const meta = CONFIG.SHIFT.rollResults[outcome.type];
     const critRollOk = outcome.type === "criticalSuccess";
-    // Botões de bônus de Critical Success aparecem em TODO crit, exceto em cards de
-    // turn-order (sem interação com alvo). O botão base "Apply to Target" aparece em
-    // todo sucesso; os bônus de crit são *somados* ao ataque base (não o substituem),
-    // então o Player precisa do shift base e do bônus, e eles não podem ser desabilitados.
-    const showCrit = critRollOk && !turnOrder;
+    // Botões de bônus de Critical Success aparecem em TODO crit — inclusive na rolagem
+    // de ordem de turno (pelo livro, ela é um Action Roll "como qualquer outro"). Mas a
+    // turn order não tem alvo, então o bônus "shift down no alvo de novo" (enemy) é
+    // omitido lá (via crit.allowEnemy); só own/ally/narrative aparecem. O botão base
+    // "Apply to Target" segue só fora da turn order (sucesso sem alvo não aplica nada).
+    const showCrit = critRollOk;
     const showApply = succeeded && !turnOrder;
 
     // Technique Scaled Up: oferece o botão "Scale Up" quando o Focus Trait vinculado
@@ -495,7 +496,7 @@ export class ShiftRoll {
       },
       shifts,
       xp,
-      crit: { show: showCrit, count: outcome.critCount },
+      crit: { show: showCrit, count: outcome.critCount, allowEnemy: !turnOrder },
       apply: { show: showApply, targetUuids: targetUuids.join(",") },
       scaleUp: { show: showScaleUp },
       phase: phase !== null ? {

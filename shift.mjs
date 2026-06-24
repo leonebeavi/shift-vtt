@@ -23,6 +23,7 @@ import { ShiftActorDirectory } from "./module/apps/party-directory.mjs";
 import { registerParty, resolveActiveParty } from "./module/apps/party.mjs";
 import { registerClocks, toggleClocksPanel } from "./module/apps/clocks.mjs";
 import { registerActionHud } from "./module/apps/action-hud.mjs";
+import { registerCombatHud } from "./module/apps/combat-hud.mjs";
 import { registerSession, startSession, promptNewSession } from "./module/session.mjs";
 import { registerSocket } from "./module/helpers/socket.mjs";
 import { AdvancementConfig } from "./module/apps/advancement-config.mjs";
@@ -260,6 +261,7 @@ Hooks.once("init", async () => {
   registerTrackerDecorations();
   registerClocks();
   registerActionHud();
+  registerCombatHud();
   registerSession();
   registerStatusEffects();
   registerRanges();

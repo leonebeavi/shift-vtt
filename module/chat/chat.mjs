@@ -845,7 +845,10 @@ async function onCritBonus(event, message) {
   }
 
   const flags = message.flags?.["shift-vtt"] ?? {};
-  if (flags.turnOrder) return; // rolls de turn-order não têm interação com alvo
+  // Na turn order o bônus de Critical Success vale (own/ally/narrative), mas o "enemy"
+  // (shift down no alvo) não, pois não há alvo. O botão "enemy" nem é renderizado lá
+  // (crit.allowEnemy); este guard é só defensivo.
+  if (flags.turnOrder && bonus === "enemy") return;
 
   // Guard de re-entrância: um único bônus de crit por vez por card, para que dois
   // cliques (botões diferentes incluídos) não leiam o mesmo `used` antes de a

@@ -100,9 +100,11 @@
         <button type="button" data-shift-crit="ally" data-tooltip="{{localize 'SHIFT.CritBonus.AllyHint'}}">
           <i class="fa-solid fa-hand-holding-heart"></i> {{localize "SHIFT.CritBonus.Ally"}}
         </button>
+        {{#if crit.allowEnemy}}
         <button type="button" data-shift-crit="enemy" data-tooltip="{{localize 'SHIFT.CritBonus.EnemyHint'}}">
           <i class="fa-solid fa-angles-down"></i> {{localize "SHIFT.CritBonus.Enemy"}}
         </button>
+        {{/if}}
         <button type="button" data-shift-crit="narrative" data-tooltip="{{localize 'SHIFT.CritBonus.NarrativeHint'}}">
           <i class="fa-solid fa-feather"></i> {{localize "SHIFT.CritBonus.Narrative"}}
         </button>

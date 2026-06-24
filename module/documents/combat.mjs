@@ -141,6 +141,9 @@ export class ShiftCombat extends Combat {
     await super.startCombat();
     await this.resetActionResources();
     if (game.user.isGM) await this.#promptAdvantage();
+    // Ninguém entra em cena automaticamente: zera o turno corrente para o spotlight
+    // começar VAZIO; o GM escolhe quem age clicando (na Combat HUD ou no tracker).
+    try { await this.update({ turn: null }); } catch (err) { /* sem ação */ }
     return this;
   }
 
@@ -205,6 +208,9 @@ export class ShiftCombat extends Combat {
       // essas colocações para a fase normal de primeira ação (Phase 1, init 3),
       // preservando que esses combatants ajam cedo sem repetir a vantagem especial.
       await this.#demoteAdvantage();
+      // Sem reroll, resetTurnOrder não roda: zera o turno mesmo assim, para o novo
+      // round começar sem ninguém auto-selecionado (seleção sempre manual).
+      try { await this.update({ turn: null }); } catch (err) { /* sem ação */ }
     }
     return this;
   }
@@ -229,8 +235,10 @@ export class ShiftCombat extends Combat {
       }
     }
     if (updates.length) await this.updateEmbeddedDocuments("Combatant", updates);
-    // Por padrão, o spotlight volta para o topo do novo round.
-    try { await this.update({ turn: 0 }); } catch (err) { /* sem ação */ }
+    // Ninguém entra em cena automaticamente: o spotlight começa VAZIO (turn null) e
+    // é escolhido manualmente. setupTurns() preserva turn null através das rolagens
+    // de iniciativa, então fica vazio até alguém tomar o spotlight de propósito.
+    try { await this.update({ turn: null }); } catch (err) { /* sem ação */ }
     if (announce) {
       await ChatMessage.create({
         content: `<div class="shift-vtt chat-card info-card combat">
