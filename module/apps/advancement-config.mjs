@@ -76,19 +76,30 @@ export class AdvancementConfig extends HandlebarsApplicationMixin(ApplicationV2)
   }
 
   static #onReset() {
-    // Restaura as CHAVES de locale dos defaults (não as strings já traduzidas), as
-    // mesmas usadas em CONFIG.SHIFT.advancements. Assim, após Reset+Save, getAdvancements()
-    // continua localizando ao vivo e os labels não congelam no idioma do GM.
+    // Mostra os labels DEFAULT já traduzidos no editor (antes mostrava as chaves cruas
+    // "SHIFT.Advancement.*"). O #onSubmit reconverte cada default para a sua chave de
+    // locale, então após Reset+Save eles seguem localizando ao vivo e não congelam no
+    // idioma do GM.
     this.#rows = CONFIG.SHIFT.advancements.map(a => ({
-      label: a.label,
+      label: game.i18n.localize(a.label),
       cost: a.cost
     }));
     this.render();
   }
 
+  /** Reconverte um label de volta à CHAVE de locale do default correspondente, casando
+   *  pelo texto traduzido. Assim os defaults sobrevivem ao Save como chaves (seguem
+   *  traduzindo ao vivo) enquanto labels custom do GM passam como literais. */
+  static #defaultKeyFor(row) {
+    const def = CONFIG.SHIFT.advancements.find(d => row.label?.trim() === game.i18n.localize(d.label));
+    return def ? def.label : row.label;
+  }
+
   static async #onSubmit(event, form, formData) {
     this.#readForm();
-    const rows = this.#rows.filter(r => r.label?.trim());
+    const rows = this.#rows
+      .filter(r => r.label?.trim())
+      .map(r => ({ label: AdvancementConfig.#defaultKeyFor(r), cost: r.cost }));
     await game.settings.set("shift-vtt", "advancements", rows);
     for (const app of foundry.applications.instances.values()) {
       if (app.document?.type === "character") app.render();

@@ -5,14 +5,16 @@
       "adversary": "Adversary",
       "vehicle": "Vehicle",
       "location": "Location",
-      "party": "Party"
+      "party": "Party",
+      "faction": "Faction"
     },
     "Item": {
       "trait": "Trait",
       "keyword": "Keyword",
       "drawback": "Drawback",
       "technique": "Technique",
-      "quest": "Quest"
+      "quest": "Quest",
+      "connection": "Connection"
     }
   },
   "SHIFT": {
@@ -96,7 +98,8 @@
       "technique": "New Technique",
       "keyword": "New Keyword",
       "drawback": "New Drawback",
-      "quest": "New Quest"
+      "quest": "New Quest",
+      "connection": "New Connection"
     },
     "Migration": {
       "QuestFailed": "Quest migration failed. Reload the world to retry; see the console (F12)."
@@ -120,6 +123,8 @@
       "Cargo": "Cargo",
       "Wealth": "Wealth",
       "Security": "Security",
+      "Influence": "Influence",
+      "Numbers": "Numbers",
       "Max": "Max",
       "Scale": "Scale"
     },
@@ -133,6 +138,7 @@
       "AdversaryTraits": "Traits",
       "Special": "Special Traits",
       "LocationCore": "Wealth & Security",
+      "FactionCore": "Influence & Numbers",
       "Vehicle": "Vehicle Traits",
       "PartyTraits": "Party Traits",
       "Ungrouped": "Ungrouped"
@@ -164,7 +170,8 @@
       "Notes": "Notes",
       "Roster": "Roster",
       "Codex": "Codex",
-      "Quests": "Quests"
+      "Quests": "Quests",
+      "Connections": "Connections"
     },
     "Sheet": {
       "Name": "Name",
@@ -186,8 +193,46 @@
       "Descriptor": "SHIFT Keyword / Drawback",
       "Vehicle": "SHIFT Vehicle Sheet",
       "Location": "SHIFT Location Sheet",
+      "Faction": "SHIFT Faction Sheet",
       "Quest": "SHIFT Quest",
-      "Party": "SHIFT Party Sheet"
+      "Party": "SHIFT Party Sheet",
+      "Connection": "SHIFT Connection"
+    },
+    "Connection": {
+      "ConfigLabel": "Connection",
+      "KindLabel": "Kind",
+      "Keyword": "Disposition",
+      "Add": "Add Connection",
+      "Empty": "No connections yet",
+      "PickTarget": "Connect to…",
+      "Blank": "Blank (set later)",
+      "JumpCodex": "Open in Codex",
+      "All": "All",
+      "AddFromCodex": "Add Connection",
+      "Overrides": "Per-member standing",
+      "GroupDie": "Group",
+      "NoMembers": "No party characters.",
+      "Affiliate": "Affiliate a character",
+      "AffiliateWho": "Affiliate which character?",
+      "AffiliationTrait": "Member: {faction}",
+      "Affiliated": "{actor} affiliated with {faction}.",
+      "Ladder": {
+        "npc": { "d4": "Intimate", "d6": "Warm", "d8": "Cordial", "d10": "Distant", "d12": "Hostile", "exhausted": "Vengeful" },
+        "location": { "d4": "Acclaimed", "d6": "Welcome", "d8": "Tolerated", "d10": "Unwelcome", "d12": "Reviled", "exhausted": "Hunted" },
+        "faction": { "d4": "Allied", "d6": "Favored", "d8": "Tolerated", "d10": "Watched", "d12": "Enemy", "exhausted": "Marked" }
+      },
+      "Kind": {
+        "npc": "NPC",
+        "location": "Location",
+        "faction": "Faction"
+      }
+    },
+    "Faction": {
+      "Members": "Members",
+      "MembersHint": "Drag actors here to add members.",
+      "MemberAdded": "Added {actor} to {faction}.",
+      "MembersAdded": "Added {count} member(s) to {faction}.",
+      "Size": { "cell": "Cell", "band": "Band", "order": "Order", "empire": "Empire" }
     },
     "Party": {
       "Members": "Members",
@@ -264,6 +309,7 @@
         "Allies": "Allies",
         "NPCs": "NPCs",
         "Locations": "Locations",
+        "Factions": "Factions",
         "Vehicles": "Vehicles",
         "Traits": "Traits",
         "Techniques": "Techniques",
@@ -273,6 +319,8 @@
         "Safe": "Safe to rest",
         "Unsafe": "Unsafe · resting is risky",
         "RevealLandmark": "Reveal this landmark to players",
+        "Affiliated": "Affiliated characters",
+        "RevealNpc": "Reveal this character to players",
         "RevealFull": "Choose what players see for this entry · Ctrl+Click reveals everything",
         "RevealSectionsTitle": "Reveal sections to players",
         "RevealSectionsHint": "Pick what players can see for this entry. Anything unchecked stays hidden.",
@@ -308,6 +356,7 @@
           "Ally": "Ally",
           "NPC": "NPC",
           "Place": "Place",
+          "Faction": "Faction",
           "Vehicle": "Vehicle",
           "Trait": "Trait",
           "Technique": "Technique"
@@ -697,6 +746,10 @@
         "Name": "Enable the Travel System",
         "Hint": "Optional rule. Off hides the journey control on the Party sheet."
       },
+      "EnableConnections": {
+        "Name": "Enable Connections",
+        "Hint": "Optional pillar. Off hides the Connections tab on the Party sheet and the Faction filter in the Codex."
+      },
       "TravelMode": {
         "Name": "Travel Mode",
         "Hint": "Simple: narrated only. Standard: each Leg spends Pack/Cargo. Challenging: adds a per-Leg roll whose failure costs an extra resource.",
@@ -826,16 +879,6 @@
         "Add": "Add a status",
         "Reset": "Restore default markers",
         "Delete": "Remove this status"
-      },
-      "Theme": {
-        "Name": "Theme",
-        "Hint": "Light or dark for all SHIFT sheets and chat.",
-        "dark": "Dark",
-        "light": "Light"
-      },
-      "UiTheme": {
-        "Name": "Bunny Glass interface",
-        "Hint": "Skin Foundry's own interface (sidebar, chat, HUDs, windows) to match the SHIFT sheets. Turn off for Foundry's default look."
       }
     },
     "Recharge": {
@@ -940,12 +983,6 @@
       "ToggleTool": "Distance Ranges"
     },
     "Macro": {
-      "RechargeName": "Recharge Traits",
-      "GrantXpName": "Grant XP",
-      "RequestRollName": "Request Roll",
-      "NewSessionName": "New Session",
-      "ActionRollName": "Action Roll",
-      "ClocksName": "Toggle Global Traits",
       "SelectToken": "Select a token first.",
       "GMOnly": "Only the GM can do that.",
       "Recharged": "Recharged {actors} actor(s) · {traits} Trait(s) restored."
@@ -965,6 +1002,7 @@
       "NPCs": "NPCs",
       "NPCsHint": "Drag a character here to add an NPC.",
       "NpcAdded": "{actor} was tied to {location}.",
+      "NpcsAdded": "Tied {count} NPC(s) to {location}.",
       "Size": {
         "site": "Site",
         "locale": "Locale",

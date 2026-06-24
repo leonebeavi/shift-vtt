@@ -51,6 +51,18 @@ export function registerChatHooks() {
     root.querySelectorAll("[data-shift-pending]").forEach(btn => {
       btn.addEventListener("click", ev => onApplyPendingShift(ev, message));
     });
+    // Pending shift já aplicado (reload, ou um segundo client): trava o botão de imediato,
+    // igual ao guard de [data-shift-apply] acima. Resolve o Trait por nome de forma
+    // assíncrona, pois um card pode carregar vários pending distintos.
+    {
+      const done = message.flags?.["shift-vtt"]?.pendingApplied;
+      if (Array.isArray(done) && done.length) {
+        root.querySelectorAll("[data-shift-pending]").forEach(async btn => {
+          const it = await pendingTraitFromCard(message, btn.dataset.shiftName ?? "");
+          if (it && done.includes(it.uuid)) btn.disabled = true;
+        });
+      }
+    }
     root.querySelectorAll("[data-shift-join]").forEach(btn => {
       btn.addEventListener("click", ev => onJoinGroup(ev, message));
     });
@@ -805,21 +817,58 @@ async function onApplyPendingShift(event, message) {
     if (btn) btn.disabled = false;
     return;
   }
+  // Idempotência: shiftDown/commitShift NÃO são idempotentes (cada chamada adianta o
+  // Shift Die/clock um degrau). O disable síncrono do botão só vale na sessão atual:
+  // após um reload, ou num segundo client que ainda mostre o botão ativo, um novo
+  // clique recairia o mesmo shift e corromperia em silêncio um documento compartilhado.
+  // Gravamos por uuid no card (um group roll pode ter vários pending distintos), igual
+  // à flag "applied" do Apply-to-Target, mas como lista.
+  const doneList = pendingAppliedList(message);
+  if (doneList.includes(item.uuid)) {
+    if (btn) btn.disabled = true;
+    return;
+  }
   // SEM gate de ownership aqui (igual ao onApplyToTarget): pelas regras, dar shift down
   // ao rolar uma Quest/Trait de Party é intended mesmo quem não possui o documento. O
   // que decide se há shift são as flags do item (rollable/autoShiftOnRoll), não a posse.
   // Quando o usuário não pode escrever o actor do Trait, repassa a mutação ao cliente
   // do GM ativo (sem clique do GM), em vez de chamar item.update e falhar em silêncio.
   if (item.actor?.canUserModify?.(game.user, "update") === false) {
+    // Sem GM ativo para repassar: avisa e REABILITA o botão, em vez de deixá-lo cinza
+    // dando a impressão de que o shift foi consumido (igual ao Apply-to-Target).
+    if (!game.users.activeGM) {
+      ui.notifications.warn(game.i18n.localize("SHIFT.Warnings.NoGM"));
+      if (btn) btn.disabled = false;
+      return;
+    }
+    await markPendingApplied(message, item.uuid);
     emitOrRun({ action: "commitShift", traitUuid: item.uuid, steps: 1, xp: 0 });
     return;
   }
   try {
     await item.shiftDown({ steps: 1, force: true });
+    await markPendingApplied(message, item.uuid);
   } catch (err) {
     console.warn("shift-vtt | pending shift apply failed", err);
     if (btn) btn.disabled = false;
   }
+}
+
+/** A lista de uuids de Trait/Quest cujo shift "pending" já foi aplicado neste card. */
+function pendingAppliedList(message) {
+  const done = message.getFlag("shift-vtt", "pendingApplied");
+  return Array.isArray(done) ? done : [];
+}
+
+/** Marca um pending shift (por uuid do Trait/Quest) como aplicado no card, para que
+ *  reload ou um segundo client não o recaiam. Best-effort: gravar a flag exige poder
+ *  atualizar a mensagem (o autor do card pode); quando não dá, o disable síncrono do
+ *  DOM ainda cobre a sessão atual. */
+async function markPendingApplied(message, uuid) {
+  try {
+    const doneList = pendingAppliedList(message);
+    if (!doneList.includes(uuid)) await message.setFlag("shift-vtt", "pendingApplied", [...doneList, uuid]);
+  } catch (err) { /* melhor esforço */ }
 }
 
 /** Desabilita visualmente os botões de bônus de Critical Success de um card

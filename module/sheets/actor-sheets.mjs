@@ -5,7 +5,7 @@ import { BaseShiftActorSheet, CATCH_ALL_KEY } from "./base-actor-sheet.mjs";
 import { getAdvancements } from "../apps/advancement-config.mjs";
 import { enrich, dieLabel, dieStatusLabel, fvtt, dropStickyFocus } from "../helpers/utils.mjs";
 import { requestPlayerRoll, emitOrRun } from "../helpers/socket.mjs";
-import { travelEnabled } from "../settings.mjs";
+import { travelEnabled, connectionsEnabled } from "../settings.mjs";
 
 const T = "systems/shift-vtt/templates";
 
@@ -450,6 +450,24 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
     return true;
   }
 
+  /** Drop de uma PASTA de Actors: Locations viram filhas (Landmarks), o resto vira NPC —
+   *  todos de uma vez (mesma rota do drop individual, em lote, com dedup). */
+  async _onDropFolder(event, folder) {
+    if (!this.isEditable || folder?.type !== "Actor") return false;
+    const have = new Set(this.document.system.npcs ?? []);
+    const npcAdd = [];
+    let children = 0;
+    for (const a of folder.contents) {
+      if (!(a instanceof Actor) || a.uuid === this.document.uuid) continue;
+      if (a.type === "location") { await this.document.addChildLocation(a.uuid); children++; }
+      else if (a.type !== "party" && !have.has(a.uuid)) { have.add(a.uuid); npcAdd.push(a.uuid); }
+    }
+    if (npcAdd.length) await this.document.update({ "system.npcs": [...(this.document.system.npcs ?? []), ...npcAdd] });
+    if (!npcAdd.length && !children) return false;
+    if (npcAdd.length) ui.notifications.info(game.i18n.format("SHIFT.Location.NpcsAdded", { count: npcAdd.length, location: this.document.name }));
+    return true;
+  }
+
   /** Re-tagueia um Landmark/NPC já presente na seção onde o card caiu (lida do DOM),
    *  gravando no flag-map `${kind}Groups` do pai. Soltar no abrigo Ungrouped (ou sem
    *  destino válido) limpa a tag (volta ao grupo basal). */
@@ -520,6 +538,170 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Faction                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Ficha de Facção — espelha a Location, mas sem landmarks/safe (não é um lugar).
+ * Core Traits (Attitude + Influência + Efetivo, via traitGroupSpec) + Focus, uma aba
+ * de NPCs-membros (mesma máquina de drop/regroup da Location) e Notes. O header reusa
+ * o estilo da Location (.location-header) com um degradê próprio (.faction-header).
+ */
+export class ShiftFactionSheet extends BaseShiftActorSheet {
+
+  /** @override */
+  static DEFAULT_OPTIONS = {
+    classes: ["faction"],
+    position: { width: 680, height: 720 },
+    actions: {
+      openNpc: ShiftFactionSheet.#onOpenNpc,
+      removeNpc: ShiftFactionSheet.#onRemoveNpc
+    }
+  };
+
+  /** @override */
+  static PARTS = {
+    header: { template: `${T}/actor/faction-header.hbs` },
+    traits: { template: `${T}/actor/actor-traits.hbs`, scrollable: [""] },
+    npcs: { template: `${T}/actor/faction-npcs.hbs`, scrollable: [""] },
+    biography: { template: `${T}/actor/biography.hbs`, scrollable: [""] }
+  };
+
+  /** @override
+   *  Modelamos a Facção com Attitude + dois Cores (Influência e Efetivo) + Focus,
+   *  espelhando os Cores da Location (Attitude/Wealth/Security). */
+  get traitGroupSpec() {
+    return [
+      { key: "attitude", label: "SHIFT.Groups.Attitude", categories: ["attitude"], columns: 1, color: "", create: "attitude" },
+      { key: "core", label: "SHIFT.Groups.FactionCore", categories: ["core"], columns: 2, color: "", create: "core" },
+      { key: "focus", label: "SHIFT.Groups.Focus", categories: ["focus", "adversary", "custom", "pack", "cargo", "special"], columns: 2, color: "", create: "focus" }
+    ];
+  }
+
+  /** @override */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    context.typeLabel = game.i18n.localize("TYPES.Actor.faction");
+    context.npcGroups = await this.#prepareNpcGroups();
+    context.npcCount = context.npcGroups.reduce((n, g) => n + (g.npcs?.length ?? 0), 0);
+    context.tabs = this._visibleTabs([
+      { id: "traits", label: "SHIFT.Tabs.Traits", icon: "fa-dice-d20" },
+      { id: "npcs", label: "SHIFT.Faction.Members", icon: "fa-users" },
+      { id: "biography", label: "SHIFT.Tabs.Notes", icon: "fa-book-open" }
+    ]);
+    return context;
+  }
+
+  /** Resolve os UUIDs dos NPCs-membros em dados de card (role/cor/legenda do Codex),
+   *  descartando os órfãos. Espelha ShiftLocationSheet#prepareNpcs. */
+  async #prepareNpcs() {
+    const out = [];
+    for (const uuid of this.document.system.npcs ?? []) {
+      const a = await fromUuid(uuid);
+      if (!a) continue;
+      const role = deriveCodexRole(a);
+      const kind = codexKind(a);
+      out.push({
+        uuid, name: a.name, img: a.img, role,
+        roleLabel: codexRoleLabel(a, role, kind),
+        accent: codexAccent(a, role, kind)
+      });
+    }
+    return out;
+  }
+
+  /** Subdivisões da aba Membros (flag npcLayout + flag-map npcGroups), igual Location. */
+  async #prepareNpcGroups() {
+    const map = this.document.getFlag("shift-vtt", "npcGroups") ?? {};
+    const entries = await this.#prepareNpcs();
+    for (const e of entries) e.group = map[e.uuid] ?? "";
+    return this._groupEntries(this.layoutFor("npc"), entries, {
+      tagOf: e => e.group, itemsKey: "npcs"
+    });
+  }
+
+  /** @override — torna os cards de NPC arrastáveis (regroup entre seções). */
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    if (!this.isEditable) return;
+    for (const el of this.element.querySelectorAll(".npc-card[data-npc-uuid]")) {
+      if (el.dataset.shiftDragBound) continue;
+      el.dataset.shiftDragBound = "1";
+      el.setAttribute("draggable", "true");
+      el.addEventListener("dragstart", ev => {
+        const uuid = el.dataset.npcUuid;
+        if (uuid) ev.dataTransfer.setData("text/plain", JSON.stringify({ type: "Actor", uuid }));
+      });
+    }
+  }
+
+  /** Solta um Actor na Facção: vira NPC-membro. Um card já presente arrastado para a
+   *  seção é um REGROUP (atualiza o flag-map), não um re-add. */
+  async _onDropActor(event, actor) {
+    if (!this.isEditable) return false;
+    if (!(actor instanceof Actor)) actor = await Actor.implementation.fromDropData(actor);
+    if (!actor || actor.uuid === this.document.uuid) return false;
+
+    const isNpc = (this.document.system.npcs ?? []).includes(actor.uuid);
+    if (isNpc) {
+      if (event.target?.closest?.("[data-tab='npcs']")) return this.#regroupNpc(actor.uuid, event);
+      return false;
+    }
+    const npcs = [...(this.document.system.npcs ?? []), actor.uuid];
+    await this.document.update({ "system.npcs": npcs });
+    ui.notifications.info(game.i18n.format("SHIFT.Faction.MemberAdded", {
+      actor: actor.name, faction: this.document.name
+    }));
+    return true;
+  }
+
+  /** Drop de uma PASTA de Actors: inclui TODAS as entradas como NPCs-membros (dedup),
+   *  numa única escrita (mesma rota do drop individual, em lote). */
+  async _onDropFolder(event, folder) {
+    if (!this.isEditable || folder?.type !== "Actor") return false;
+    const have = new Set(this.document.system.npcs ?? []);
+    const add = folder.contents
+      .filter(a => a instanceof Actor && a.uuid !== this.document.uuid && !["party", "faction"].includes(a.type))
+      .map(a => a.uuid)
+      .filter(u => !have.has(u));
+    if (!add.length) return false;
+    await this.document.update({ "system.npcs": [...(this.document.system.npcs ?? []), ...add] });
+    ui.notifications.info(game.i18n.format("SHIFT.Faction.MembersAdded", { count: add.length, faction: this.document.name }));
+    return true;
+  }
+
+  /** Re-tagueia um NPC já presente na seção onde o card caiu (flag-map npcGroups). */
+  async #regroupNpc(uuid, event) {
+    const destKey = event.target?.closest?.("[data-group-key]")?.dataset.groupKey ?? null;
+    const layout = this.layoutFor("npc");
+    const map = { ...(this.document.getFlag("shift-vtt", "npcGroups") ?? {}) };
+    const cur = map[uuid] ?? "";
+    const next = (destKey && destKey !== CATCH_ALL_KEY && layout.some(s => s.key === destKey)) ? destKey : "";
+    if (next === cur) return false;
+    if (next) map[uuid] = next; else delete map[uuid];
+    await this.document.setFlag("shift-vtt", "npcGroups", map);
+    return true;
+  }
+
+  static async #onOpenNpc(event, target) {
+    const uuid = target.closest("[data-npc-uuid]")?.dataset.npcUuid;
+    if (!uuid) return;
+    const actor = await fromUuid(uuid);
+    actor?.sheet?.render(true);
+  }
+
+  static async #onRemoveNpc(event, target) {
+    if (!this.isEditable) return;
+    const uuid = target.closest("[data-npc-uuid]")?.dataset.npcUuid;
+    if (!uuid) return;
+    const update = { "system.npcs": (this.document.system.npcs ?? []).filter(u => u !== uuid) };
+    const map = this.document.getFlag("shift-vtt", "npcGroups") ?? {};
+    if (uuid in map) { const m = { ...map }; delete m[uuid]; update["flags.shift-vtt.npcGroups"] = m; }
+    await this.document.update(update);
+  }
+}
+
 
 /* ------------------------------------------------------------------ */
 /* Party                                                              */
@@ -532,22 +714,22 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
  *  navegado pelo que a coisa É. */
 const ROLE_GROUP = {
   boss: "enemy", elite: "enemy", minion: "enemy",
-  ally: "ally", npc: "npc", place: "location", vehicle: "vehicle", trait: "trait", technique: "technique"
+  ally: "ally", npc: "npc", place: "location", faction: "faction", vehicle: "vehicle", trait: "trait", technique: "technique"
 };
 const ROLE_ICONS = {
   boss: "fa-skull", elite: "fa-fire", minion: "fa-paw",
-  ally: "fa-handshake", npc: "fa-user", place: "fa-map-location-dot", vehicle: "fa-car-side",
+  ally: "fa-handshake", npc: "fa-user", place: "fa-map-location-dot", faction: "fa-flag", vehicle: "fa-car-side",
   trait: "fa-dice-d20", technique: "fa-bolt"
 };
 const ROLE_COLORS = {
   boss: "#de2b54", elite: "#f07d39", minion: "#ffc511",
-  ally: "#45c465", npc: "#2f9fd0", place: "#ffce4a", vehicle: "#5b8def", trait: "#a06bff", technique: "#23bda6"
+  ally: "#45c465", npc: "#2f9fd0", place: "#ffce4a", faction: "#c77dff", vehicle: "#5b8def", trait: "#a06bff", technique: "#23bda6"
 };
 const ROLE_LABEL = {
   boss: "SHIFT.Party.Codex.Role.Boss", elite: "SHIFT.Party.Codex.Role.Elite",
   minion: "SHIFT.Party.Codex.Role.Minion",
   ally: "SHIFT.Party.Codex.Role.Ally", npc: "SHIFT.Party.Codex.Role.NPC",
-  place: "SHIFT.Party.Codex.Role.Place", vehicle: "SHIFT.Party.Codex.Role.Vehicle",
+  place: "SHIFT.Party.Codex.Role.Place", faction: "SHIFT.Party.Codex.Role.Faction", vehicle: "SHIFT.Party.Codex.Role.Vehicle",
   trait: "SHIFT.Party.Codex.Role.Trait", technique: "SHIFT.Party.Codex.Role.Technique"
 };
 /** Ícone/cor por domínio de Vehicle (campo system.domain). */
@@ -578,7 +760,7 @@ function npcTier(power) {
  *  com conteúdo. */
 const CODEX_FILTERS = {
   all: null, enemy: ["enemy"], ally: ["ally"], npc: ["npc"],
-  location: ["location"],
+  location: ["location"], faction: ["faction"],
   trait: ["trait"], technique: ["technique"], vehicle: ["vehicle"]
 };
 /** Botões de filtro ordenados (chaves de label). `all` sempre aparece; os demais
@@ -589,6 +771,7 @@ const CODEX_FILTER_BUTTONS = [
   { id: "ally", label: "SHIFT.Party.Codex.Allies", group: "ally" },
   { id: "npc", label: "SHIFT.Party.Codex.NPCs", group: "npc" },
   { id: "location", label: "SHIFT.Party.Codex.Locations", group: "location" },
+  { id: "faction", label: "SHIFT.Party.Codex.Factions", group: "faction" },
   { id: "vehicle", label: "SHIFT.Party.Codex.Vehicles", group: "vehicle" },
   { id: "trait", label: "SHIFT.Party.Codex.Traits", group: "trait" },
   { id: "technique", label: "SHIFT.Party.Codex.Techniques", group: "technique" }
@@ -643,6 +826,7 @@ function deriveCodexRole(doc) {
     return "trait";
   }
   if (doc?.type === "location") return "place";
+  if (doc?.type === "faction") return "faction";
   if (doc?.type === "vehicle") return "vehicle";
   const D = CONST.TOKEN_DISPOSITIONS;
   const disp = doc?.prototypeToken?.disposition ?? doc?.token?.disposition ?? null;
@@ -661,6 +845,7 @@ function codexKind(doc) {
     return "trait";
   }
   if (doc?.type === "location") return "location";
+  if (doc?.type === "faction") return "faction";
   if (doc?.type === "vehicle") return "vehicle";
   return "actor"; // character / adversary
 }
@@ -678,6 +863,7 @@ function codexAccent(doc, role, kind) {
   if (kind === "trait") return `var(--die-${doc.system.maxDie || "d6"})`;
   if (kind === "vehicle") return VEHICLE_DOMAIN_COLOR[doc.system.domain] ?? ROLE_COLORS.vehicle;
   if (kind === "location") return SCALE_COLOR[doc.system.scale] ?? ROLE_COLORS.place;
+  if (kind === "faction") return SCALE_COLOR[doc.system.scale] ?? ROLE_COLORS.faction;
   if (role === "npc") return NPC_TIER_COLOR[npcTier(doc.system.power)];
   return ROLE_COLORS[role] ?? "#b5a4b3";
 }
@@ -696,6 +882,10 @@ function codexRoleLabel(doc, role, kind) {
   }
   if (kind === "location") {
     const sz = game.i18n.localize(CONFIG.SHIFT.locationSizes[doc.system.scale] ?? "");
+    return sz ? `${typeLabelOf(doc)} · ${sz}` : typeLabelOf(doc);
+  }
+  if (kind === "faction") {
+    const sz = game.i18n.localize(CONFIG.SHIFT.factionScales[doc.system.scale] ?? "");
     return sz ? `${typeLabelOf(doc)} · ${sz}` : typeLabelOf(doc);
   }
   if (kind === "vehicle" && doc.system.domain) {
@@ -918,6 +1108,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
    *  default é: topo ou com filhas = expandida; filha-folha = compacta. */
   #questFlipped = new Set();
 
+  /** Filtro da aba Conexões: Set de kinds ativos (npc/location/faction); vazio = todos. */
+  _connectionFilters = new Set();
+
   /** @override */
   static DEFAULT_OPTIONS = {
     classes: ["party"],
@@ -937,6 +1130,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       hideAllCodex: ShiftPartySheet.#onHideAllCodex,
       toggleCodexReveal: ShiftPartySheet.#onToggleCodexReveal,
       toggleCodexLandmark: ShiftPartySheet.#onToggleCodexLandmark,
+      toggleCodexNpc: ShiftPartySheet.#onToggleCodexNpc,
       toggleTraitHide: ShiftPartySheet.#onToggleTraitHide,
       rollQuest: ShiftPartySheet.#onRollQuest,
       questResolve: ShiftPartySheet.#onQuestResolve,
@@ -958,7 +1152,13 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       travelAdvance: ShiftPartySheet.#onTravelAdvance,
       travelArrive: ShiftPartySheet.#onTravelArrive,
       travelFinish: ShiftPartySheet.#onTravelFinish,
-      travelAbort: ShiftPartySheet.#onTravelAbort
+      travelAbort: ShiftPartySheet.#onTravelAbort,
+      codexConnection: ShiftPartySheet.#onCodexConnection,
+      rollConnection: ShiftPartySheet.#onRollConnection,
+      openConnectionCodex: ShiftPartySheet.#onOpenConnectionCodex,
+      connectionFilter: ShiftPartySheet.#onConnectionFilter,
+      connectionOverrides: ShiftPartySheet.#onConnectionOverrides,
+      connectionFocus: ShiftPartySheet.#onConnectionFocus
     }
   };
 
@@ -968,7 +1168,8 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     roster: { template: `${T}/actor/party-roster.hbs`, scrollable: [".party-roster"] },
     traits: { template: `${T}/actor/party-traits.hbs`, scrollable: [".party-traits-page"] },
     codex: { template: `${T}/actor/party-codex.hbs`, scrollable: [".codex-grid", ".cd-body"] },
-    quests: { template: `${T}/actor/party-quests.hbs`, scrollable: [".party-quests"] }
+    quests: { template: `${T}/actor/party-quests.hbs`, scrollable: [".party-quests"] },
+    connections: { template: `${T}/actor/party-connections.hbs`, scrollable: [".party-connections"] }
   };
 
   tabGroups = { primary: "roster" };
@@ -1002,6 +1203,13 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const context = await super._prepareContext(options);
     const sys = this.document.system;
 
+    // Pilar opcional Conexões: flag de gate + guard (se a aba ativa foi desligada, volta pro roster).
+    context.connectionsEnabled = connectionsEnabled();
+    if (!context.connectionsEnabled && this.tabGroups.primary === "connections") {
+      this.tabGroups.primary = "roster";
+      context.activeTab = "roster";
+    }
+
     context.members = await this.#rosterContext();
 
     // Os Party Traits renderizam cards ".ptrait" ricos; enriquece cada description
@@ -1022,6 +1230,17 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     context.traitGroups = allGroups.filter(g => g.key === "party" || g.key === CATCH_ALL_KEY);
     // A aba Quests é montada a partir de actor.quests (tipo próprio), não dos Traits.
     context.questGroup = await this.#questGroup();
+    // Aba Conexões (pilar opcional): cards + botões de filtro por kind. Só monta se ligado.
+    if (context.connectionsEnabled) {
+      context.connectionGroup = await this.#connectionGroup();
+      const cf = this._connectionFilters;
+      context.connectionFilters = [
+        { kind: "all", icon: "fa-asterisk", label: "SHIFT.Connection.All", active: cf.size === 0 },
+        { kind: "npc", icon: "fa-user", label: "SHIFT.Connection.Kind.npc", active: cf.has("npc") },
+        { kind: "location", icon: "fa-location-dot", label: "SHIFT.Connection.Kind.location", active: cf.has("location") },
+        { kind: "faction", icon: "fa-flag", label: "SHIFT.Connection.Kind.faction", active: cf.has("faction") }
+      ];
+    }
 
     const codex = await this.#codexContext();
     context.codex = codex.cards;
@@ -1049,6 +1268,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       { id: "codex", label: "SHIFT.Tabs.Codex", icon: "fa-book-skull", badge: context.codexCount },
       { id: "quests", label: "SHIFT.Tabs.Quests", icon: "fa-scroll", badge: questCount }
     ];
+    if (context.connectionsEnabled) {
+      context.tabs.push({ id: "connections", label: "SHIFT.Tabs.Connections", icon: "fa-heart", badge: context.connectionGroup?.total ?? 0 });
+    }
     return context;
   }
 
@@ -1265,6 +1487,92 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     };
   }
 
+  /* --- Connections (pilar opcional: relação com NPC/Local/Facção) ---
+   *  Cada Connection é um Item type próprio (ShiftConnectionData) que vive na Party;
+   *  o die é seu clock (D4 melhor → D12 pior → Exhausted hostil). O alvo (system.target)
+   *  é sempre uma entrada do Codex (tie mandatória). A aba é montada como a de Quests
+   *  (mesmo motor de clock), com card próprio: foto do alvo + dado + legenda. */
+
+  async #connectionGroup() {
+    const isOwner = this.document.isOwner;
+    const canSee = c => c.system.revealed || game.user.isGM || isOwner;
+    const visible = this.document.connections.filter(canSee);
+    const active = this._connectionFilters;
+    let list = active.size ? visible.filter(c => active.has(c.system.kind)) : visible;
+    list = [...list].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
+    const cards = [];
+    for (const c of list) cards.push(await this.#connectionContext(c));
+    return { cards, total: visible.length };
+  }
+
+  /** Contexto de um card de Connection: foto/nome do alvo (resolvido live do UUID),
+   *  o clock + a keyword de disposição (legenda) e o tie do Codex. O dado/keyword
+   *  exibidos são EFETIVOS por viewer: um player com override no seu personagem vê o
+   *  seu; o GM vê o de grupo + um breakdown dos overrides (overrideChips). */
+  async #connectionContext(c) {
+    const sys = c.system;
+    let targetName = c.name, targetImg = c.img;
+    if (sys.target) {
+      const doc = await fromUuid(sys.target).catch(() => null);
+      if (doc) { targetName = doc.name; targetImg = doc.img ?? targetImg; }
+    }
+    // Keyword de uma disposição: explícita (texto livre) tem prioridade; senão a escada i18n.
+    const kwFor = statusKey => {
+      const k = CONFIG.SHIFT.connectionKeywords[sys.kind]?.[statusKey];
+      return k ? game.i18n.localize(k) : "";
+    };
+    const groupKeyword = sys.keyword || kwFor(c.statusKey);
+
+    // Override por-membro: o player vê o do SEU personagem; o GM vê o de grupo + breakdown.
+    const overrides = (sys.memberOverrides ?? []).filter(o => o.die || o.exhausted || o.keyword);
+    const members = this.document.partyMembers;
+    let effStatusKey = c.statusKey, effKeyword = groupKeyword, effExhausted = sys.exhausted;
+    const overrideChips = [];
+    if (!game.user.isGM && overrides.length) {
+      const own = new Set(members.filter(m => m.isOwner).map(m => m.uuid));
+      const mine = overrides.find(o => own.has(o.member) && (o.die || o.exhausted));
+      if (mine) {
+        effExhausted = !!mine.exhausted;
+        effStatusKey = mine.exhausted ? "exhausted" : (mine.die || c.statusKey);
+        effKeyword = mine.keyword || kwFor(effStatusKey);
+      }
+    } else if (game.user.isGM) {
+      for (const o of overrides) {
+        if (!o.die && !o.exhausted) continue;
+        const m = members.find(x => x.uuid === o.member);
+        if (!m) continue;
+        const sk = o.exhausted ? "exhausted" : (o.die || c.statusKey);
+        overrideChips.push({
+          name: m.name, img: m.img, statusKey: sk,
+          dieImg: CONFIG.SHIFT.diceImages[sk] ?? null,
+          keyword: o.keyword || kwFor(sk)
+        });
+      }
+    }
+
+    const desc = (this.canViewNotes && sys.description)
+      ? await enrich(sys.description, { relativeTo: c }) : "";
+    const inCodex = !!sys.target && (this.document.system.codex ?? []).some(e => e.uuid === sys.target);
+    return {
+      id: c.id, kind: sys.kind, isFaction: sys.kind === "faction",
+      kindLabel: game.i18n.localize(`SHIFT.Connection.Kind.${sys.kind}`),
+      targetName, targetImg, targetUuid: sys.target || "", inCodex,
+      keyword: effKeyword,
+      statusKey: effStatusKey,
+      dieImg: CONFIG.SHIFT.diceImages[effStatusKey] ?? null,
+      statusLabel: dieStatusLabel(effStatusKey),
+      currentLabel: dieLabel(sys.currentDie),
+      maxLabel: dieLabel(sys.maxDie),
+      exhausted: effExhausted,
+      hidden: !sys.revealed,
+      canRoll: c.canRoll && this.canRollTraits,
+      canUp: c.canShiftUp && this.isEditable,
+      canDown: c.canShiftDown && this.isEditable,
+      desc,
+      overrideChips, hasOverrides: overrideChips.length > 0
+    };
+  }
+
   /* --- Codex (reveal granular; cards por tipo; Actors E Items) ---
    *  Uma entrada é um rumor travado "???" só quando NADA foi revelado; ocultar
    *  apenas o nome mantém a entrada navegável sob um placeholder ("Unknown"). O GM
@@ -1431,6 +1739,12 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       const tags = see("traits") ? this.#codexTags(doc) : [];
       return Object.assign(base, { tags, tagsLower: tags.map(t => lower(t.label)).join(" ") });
     }
+    if (kind === "faction") {
+      // Sem stat row de Power/defeat (facção não tem); o tier vem no subtítulo e a cor
+      // pela escala. Só as tags dos Core/Focus revelados.
+      const tags = see("traits") ? this.#codexTags(doc) : [];
+      return Object.assign(base, { tags, tagsLower: tags.map(t => lower(t.label)).join(" ") });
+    }
     // actor (character / adversary)
     const defeat = doc.system.defeat ?? { value: 0, max: 0 };
     const tags = see("traits") ? this.#codexTags(doc) : [];
@@ -1476,15 +1790,45 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     // Só os kinds com um campo `concept` SEPARADO (actor/location/vehicle) mostram também
     // o subtítulo curto; trait/technique não têm concept próprio (era um excerto da própria
     // descrição), então deixam só a Description full pra não duplicar.
-    const kindHasDesc = ["actor", "location", "vehicle", "trait", "technique"].includes(kind);
-    const kindHasConcept = ["actor", "location", "vehicle"].includes(kind);
+    const kindHasDesc = ["actor", "location", "faction", "vehicle", "trait", "technique"].includes(kind);
+    const kindHasConcept = ["actor", "location", "faction", "vehicle"].includes(kind);
     const showDesc = kindHasDesc && see("description") && !!this.#plain(doc.system.description).trim();
     // GM Note: o MESMO system.gmNote da ficha do Actor (Adversary/Vehicle/Location),
     // sempre privada do GM, editável aqui e sincronizada com a ficha.
     const hasGmNote = "gmNote" in (doc.system ?? {});
 
+    // Status da Connection deste alvo (se houver), pro chip no header do detalhe.
+    let connection = null;
+    if (connectionsEnabled()) {
+      const conn = this.document.connections.find(x => x.system.target === uuid);
+      if (conn && (isGM || conn.system.revealed)) {
+        const kwKey = CONFIG.SHIFT.connectionKeywords[conn.system.kind]?.[conn.statusKey];
+        connection = {
+          statusKey: conn.statusKey,
+          keyword: conn.system.keyword || (kwKey ? game.i18n.localize(kwKey) : ""),
+          dieImg: CONFIG.SHIFT.diceImages[conn.statusKey] ?? null,
+          statusLabel: dieStatusLabel(conn.statusKey)
+        };
+      }
+    }
+    // Personagens afiliados (system.npcs de Location/Faction), reveal-gated como os
+    // landmarks (revealNpcs[]): GM vê todos, players só os revelados.
+    const affiliated = [];
+    for (const npcUuid of (doc.system.npcs ?? [])) {
+      const rev = !!entry.revealNpcs?.includes(npcUuid);
+      if (!isGM && !rev) continue;
+      const a = await fromUuid(npcUuid).catch(() => null);
+      if (!a) continue;
+      affiliated.push({ uuid: npcUuid, name: a.name, img: a.img, revealed: rev });
+    }
+
     const base = {
       uuid, isGM, kind, reveal: r, canEditReveal: isGM, nameHidden,
+      // Botão de coração (criar/abrir Connection a partir do Codex): só com o pilar
+      // ligado e em alvos conectáveis (NPC/Local/Facção).
+      connectionsEnabled: connectionsEnabled(),
+      canConnect: kind === "actor" || kind === "location" || kind === "faction",
+      connection, affiliated, hasAffiliated: affiliated.length > 0,
       role, roleColor: codexAccent(doc, role, kind),
       name: nameHidden ? game.i18n.localize("SHIFT.Party.Codex.Unknown") : doc.name,
       img: nameHidden ? null : doc.img, icon: ROLE_ICONS[role] ?? "fa-question",
@@ -1548,6 +1892,15 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
         breadcrumb, hasBreadcrumb: breadcrumb.length > 0,
         traits, hasTraits: traits.length > 0,
         landmarks, hasLandmarks: landmarks.length > 0
+      });
+    }
+    if (kind === "faction") {
+      const traits = see("traits")
+        ? await Promise.all(doc.items.filter(i => i.type === "trait").sort(byTraitOrder).map(t => this.#traitTile(t, doc, canViewDesc, doc.uuid))) : [];
+      return Object.assign(base, {
+        concept: see("concept") ? (doc.system.concept ?? "") : "",
+        showScale: see("scale"), scale: doc.system.scale ?? 1,
+        traits, hasTraits: traits.length > 0
       });
     }
     if (kind === "vehicle") {
@@ -1847,8 +2200,10 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     return this.#dropData?.shiftCodexSource === this.document.uuid;
   }
 
-  /** @override — o alvo do drop decide: o slot de Location/Vehicle → define ele; a
-   *  aba Codex → uma entrada de codex; em qualquer outro lugar → um membro do roster. */
+  /** @override — o alvo do drop decide: slot de Location/Vehicle → define ele; card de
+   *  Quest → link; aba Codex → entrada de codex. No DEFAULT (fora desses): um Character
+   *  vira membro do roster; qualquer outro Actor (NPC/Adversary/Location/Vehicle/Faction)
+   *  é CATALOGADO no Codex em vez de virar membro. Uma party é rejeitada (é container). */
   async _onDropActor(event, actor) {
     if (!this.isEditable) return false;
     let a = (actor instanceof Actor) ? actor : await Actor.implementation.fromDropData(actor);
@@ -1863,10 +2218,16 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (this.#isLocationDrop(event)) return this.#setLocation(a);
     if (this.#isVehicleDrop(event)) return this.#setVehicle(a);
     if (this.#isCodexDrop(event)) return this.#isOwnCodexDrag() ? true : this.#addCodexEntry(a.uuid);
-    // Locations/Vehicles/parties NÃO são membros do roster; eles têm seus próprios slots.
-    if (["party", "location", "vehicle"].includes(a.type)) {
+    // Uma party é um container — não vira membro nem entrada de codex.
+    if (a.type === "party") {
       ui.notifications.warn(game.i18n.localize("SHIFT.Party.CannotAdd"));
       return false;
+    }
+    // DEFAULT (fora de slot/quest/aba Codex): só Characters viram membros do roster;
+    // qualquer outro Actor (NPC/Adversary/Location/Vehicle/Faction) é CATALOGADO no Codex
+    // em vez de tentar virar membro. (Locations/Vehicles nos PRÓPRIOS slots já tratados acima.)
+    if (a.type !== "character") {
+      return this.#isOwnCodexDrag() ? true : this.#addCodexEntry(a.uuid);
     }
     if (a.inCompendium) a = await Actor.implementation.create(game.actors.fromCompendium(a), { fromCompendium: true });
     await this.document.addPartyMembers(a);   // também sincroniza a crew do vehicle ativo
@@ -2112,7 +2473,7 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
 
   /** Uma entrada de codex nova com um formato consistente em todo caminho de adição. */
   static #newCodexEntry(uuid, revealOn = []) {
-    return { uuid, reveal: ShiftPartySheet.#revealSet(revealOn), revealLandmarks: [] };
+    return { uuid, reveal: ShiftPartySheet.#revealSet(revealOn), revealLandmarks: [], revealNpcs: [] };
   }
 
   /** Monta o drag-data canônico de uma entrada do codex a partir do seu UUID, para
@@ -2375,6 +2736,24 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       if (!ce) codex.push({ uuid: childUuid, reveal: ShiftPartySheet.#revealSet(["name"]), revealLandmarks: [] });
       else { ce.reveal = ce.reveal ?? {}; ce.reveal.name = true; }
     }
+    await this.document.update({ "system.codex": codex });
+    this.render({ parts: ["codex"] });
+  }
+
+  /** GM: revela/oculta um NPC afiliado (system.npcs) na entrada de Codex aberta —
+   *  espelha #onToggleCodexLandmark, mas o NPC não vira card próprio do Codex. */
+  static async #onToggleCodexNpc(event, target) {
+    if (!game.user.isGM) return;
+    const parentUuid = target.closest(".codex-detail")?.dataset.codexUuid;
+    const npcUuid = target.dataset.npcUuid;
+    if (!parentUuid || !npcUuid) return;
+    const codex = foundry.utils.deepClone(this.document.system.codex ?? []);
+    const e = codex.find(x => x.uuid === parentUuid);
+    if (!e) return;
+    e.revealNpcs = e.revealNpcs ?? [];
+    const i = e.revealNpcs.indexOf(npcUuid);
+    if (i >= 0) e.revealNpcs.splice(i, 1);
+    else e.revealNpcs.push(npcUuid);
     await this.document.update({ "system.codex": codex });
     this.render({ parts: ["codex"] });
   }
@@ -2646,6 +3025,147 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     if (!quest || !uuid) return;
     const links = (quest.system.links ?? []).filter(u => u !== uuid);
     await quest.update({ "system.links": links });
+  }
+
+  /* --- Connections (criar com tie de Codex, rolar, atalho, filtro) - */
+
+  /** Cria (ou abre) a Connection da entrada do Codex aberta — o caminho ÚNICO de
+   *  adicionar: o alvo já está catalogado, então não há re-add nem toast "já no
+   *  codex"; a tie já existe por construção. Se já houver conexão pro alvo, só salta
+   *  pra aba Conexões. O kind sai do tipo do documento (location/faction → próprio,
+   *  resto → npc). Disparado pelo botão de coração no detalhe do Codex. */
+  static async #onCodexConnection(event, target) {
+    if (!this.isEditable) return;
+    const uuid = target.closest("[data-codex-uuid]")?.dataset.codexUuid;
+    if (!uuid) return;
+    const existing = this.document.connections.find(c => c.system.target === uuid);
+    if (!existing) {
+      const doc = await fromUuid(uuid).catch(() => null);
+      if (!doc) return;
+      const kind = doc.type === "location" ? "location" : (doc.type === "faction" ? "faction" : "npc");
+      await this.document.createEmbeddedDocuments("Item", [{
+        type: "connection", name: doc.name, img: doc.img, system: { target: uuid, kind }
+      }]);
+    }
+    this.tabGroups.primary = "connections";
+    this.render();
+  }
+
+  /** Rola o dado de uma Connection direto (o motor de roll aceita qualquer hasClock).
+   *  Espelha #onRollQuest. */
+  static async #onRollConnection(event, target) {
+    if (!this.canRollTraits) return;
+    await this.getItem(target)?.roll();
+  }
+
+  /** Atalho da Connection para a sua entrada no Codex (abre a aba Codex naquela entrada). */
+  static #onOpenConnectionCodex(event, target) {
+    const uuid = target.closest("[data-target-uuid]")?.dataset.targetUuid;
+    if (!uuid) return;
+    this.tabGroups.primary = "codex";
+    this._codexOpen = uuid;
+    this.render();
+  }
+
+  /** Alterna um filtro de kind da aba Conexões (multi-seleção; "all" limpa tudo). */
+  static #onConnectionFilter(event, target) {
+    const kind = target.dataset.kind;
+    if (kind === "all") this._connectionFilters.clear();
+    else if (kind) this._connectionFilters.has(kind) ? this._connectionFilters.delete(kind) : this._connectionFilters.add(kind);
+    this.render({ parts: ["connections"] });
+  }
+
+  /** GM: edita os overrides por-membro de uma Connection — para os Characters da party
+   *  que fogem da escala de grupo. Diálogo com um die-select (— = grupo) + keyword por
+   *  membro; salva system.memberOverrides. Só GM (espelha a curadoria do Codex). */
+  static async #onConnectionOverrides(event, target) {
+    if (!this.isEditable || !game.user.isGM) return;
+    const conn = this.getItem(target);
+    if (!conn) return;
+    const L = k => game.i18n.localize(k);
+    const esc = foundry.utils.escapeHTML;
+    const members = this.document.partyMembers.filter(m => m.type === "character");
+    if (!members.length) return void ui.notifications.warn(L("SHIFT.Connection.NoMembers"));
+    const cur = new Map((conn.system.memberOverrides ?? []).map(o => [o.member, o]));
+    const dice = ["d4", "d6", "d8", "d10", "d12"];
+    const rows = members.map((m, i) => {
+      const o = cur.get(m.uuid) ?? {};
+      const sel = o.exhausted ? "exhausted" : (o.die || "");
+      const opts = [`<option value="">${esc(L("SHIFT.Connection.GroupDie"))}</option>`]
+        .concat(dice.map(d => `<option value="${d}"${sel === d ? " selected" : ""}>${esc(dieLabel(d))}</option>`))
+        .concat(`<option value="exhausted"${sel === "exhausted" ? " selected" : ""}>${esc(dieStatusLabel("exhausted"))}</option>`)
+        .join("");
+      return `<div class="conn-ov-row">
+        <img src="${esc(m.img)}" alt=""/>
+        <span class="conn-ov-name">${esc(m.name)}</span>
+        <select name="die_${i}">${opts}</select>
+        <input type="text" name="kw_${i}" value="${esc(o.keyword ?? "")}" placeholder="${esc(L("SHIFT.Connection.Keyword"))}"/>
+      </div>`;
+    }).join("");
+    let result = null;
+    try {
+      result = await fvtt.DialogV2.prompt({
+        window: { title: L("SHIFT.Connection.Overrides") },
+        classes: ["shift-vtt", "shift-dialog", "conn-ov-dialog"],
+        content: `<div class="shift-prompt conn-ov">${rows}</div>`,
+        rejectClose: false,
+        ok: {
+          label: L("SHIFT.Common.Confirm"),
+          callback: (e, btn) => {
+            const out = [];
+            members.forEach((m, i) => {
+              const die = btn.form.elements[`die_${i}`]?.value ?? "";
+              const kw = (btn.form.elements[`kw_${i}`]?.value ?? "").trim();
+              if (die === "exhausted") out.push({ member: m.uuid, die: "", exhausted: true, keyword: kw, note: "" });
+              else if (die) out.push({ member: m.uuid, die, exhausted: false, keyword: kw, note: "" });
+              else if (kw) out.push({ member: m.uuid, die: "", exhausted: false, keyword: kw, note: "" });
+            });
+            return out;
+          }
+        }
+      });
+    } catch (_) { result = null; }
+    if (result === null) return;
+    await conn.update({ "system.memberOverrides": result });
+  }
+
+  /** Filiação (Connection de Faction): cunha um Focus Trait de membro num Character que
+   *  você possui e o linka à Connection (links[]). É o caminho canônico facção=Trait. */
+  static async #onConnectionFocus(event, target) {
+    if (!this.isEditable) return;
+    const conn = this.getItem(target);
+    if (!conn || conn.system.kind !== "faction") return;
+    const L = k => game.i18n.localize(k);
+    const esc = foundry.utils.escapeHTML;
+    const members = this.document.partyMembers.filter(m => m.type === "character" && m.isOwner);
+    if (!members.length) return void ui.notifications.warn(L("SHIFT.Connection.NoMembers"));
+    const opts = members.map((m, i) => `<option value="${i}">${esc(m.name)}</option>`).join("");
+    let pick = null;
+    try {
+      pick = await fvtt.DialogV2.prompt({
+        window: { title: L("SHIFT.Connection.Affiliate") },
+        classes: ["shift-vtt", "shift-dialog"],
+        content: `<div class="shift-prompt"><div class="form-group">
+          <label>${esc(L("SHIFT.Connection.AffiliateWho"))}</label>
+          <select name="m">${opts}</select>
+        </div></div>`,
+        rejectClose: false,
+        ok: { label: L("SHIFT.Common.Confirm"), callback: (e, btn) => btn.form.elements.m?.value ?? "" }
+      });
+    } catch (_) { pick = null; }
+    if (pick === null || pick === "") return;
+    const member = members[Number(pick)];
+    if (!member) return;
+    const faction = conn.name;
+    const [trait] = await member.createEmbeddedDocuments("Item", [{
+      name: game.i18n.format("SHIFT.Connection.AffiliationTrait", { faction }),
+      type: "trait", img: CONFIG.SHIFT.defaultIcons.trait,
+      system: { category: "focus", maxDie: "d6", currentDie: "d6", source: faction }
+    }]);
+    if (trait) {
+      await conn.update({ "system.links": [...(conn.system.links ?? []), trait.uuid] });
+      ui.notifications.info(game.i18n.format("SHIFT.Connection.Affiliated", { actor: member.name, faction }));
+    }
   }
 
   /* --- Party-wide actions (GM/owner) ---------------------------- */

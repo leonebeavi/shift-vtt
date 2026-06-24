@@ -5,14 +5,16 @@
       "adversary": "Adversário",
       "vehicle": "Veículo",
       "location": "Localidade",
-      "party": "Grupo"
+      "party": "Grupo",
+      "faction": "Facção"
     },
     "Item": {
       "trait": "Trait",
       "keyword": "Keyword",
       "drawback": "Drawback",
       "technique": "Técnica",
-      "quest": "Quest"
+      "quest": "Quest",
+      "connection": "Conexão"
     }
   },
   "SHIFT": {
@@ -96,7 +98,8 @@
       "technique": "Nova Técnica",
       "keyword": "Nova Keyword",
       "drawback": "Novo Drawback",
-      "quest": "Nova Quest"
+      "quest": "Nova Quest",
+      "connection": "Nova Conexão"
     },
     "Migration": {
       "QuestFailed": "Falha ao migrar as Quests. Recarregue o mundo para tentar de novo; veja o console (F12)."
@@ -120,6 +123,8 @@
       "Cargo": "Carga",
       "Wealth": "Riqueza",
       "Security": "Segurança",
+      "Influence": "Influência",
+      "Numbers": "Efetivo",
       "Max": "Max",
       "Scale": "Escala"
     },
@@ -133,6 +138,7 @@
       "AdversaryTraits": "Traits",
       "Special": "Special Traits",
       "LocationCore": "Wealth & Security",
+      "FactionCore": "Influência & Efetivo",
       "Vehicle": "Traits do Veículo",
       "PartyTraits": "Traits da Party",
       "Ungrouped": "Sem seção"
@@ -164,7 +170,8 @@
       "Notes": "Notas",
       "Roster": "Roster",
       "Codex": "Codex",
-      "Quests": "Quests"
+      "Quests": "Quests",
+      "Connections": "Conexões"
     },
     "Sheet": {
       "Name": "Nome",
@@ -186,8 +193,46 @@
       "Descriptor": "Keyword / Drawback SHIFT",
       "Vehicle": "Ficha de Veículo SHIFT",
       "Location": "Ficha de Localidade SHIFT",
+      "Faction": "Ficha de Facção SHIFT",
       "Quest": "Quest SHIFT",
-      "Party": "Ficha de Grupo SHIFT"
+      "Party": "Ficha de Grupo SHIFT",
+      "Connection": "Conexão SHIFT"
+    },
+    "Connection": {
+      "ConfigLabel": "Conexão",
+      "KindLabel": "Tipo",
+      "Keyword": "Disposição",
+      "Add": "Adicionar Conexão",
+      "Empty": "Nenhuma conexão ainda",
+      "PickTarget": "Conectar a…",
+      "Blank": "Em branco (definir depois)",
+      "JumpCodex": "Abrir no Codex",
+      "All": "Todos",
+      "AddFromCodex": "Adicionar Conexão",
+      "Overrides": "Standing por membro",
+      "GroupDie": "Grupo",
+      "NoMembers": "Sem personagens na party.",
+      "Affiliate": "Filiar um personagem",
+      "AffiliateWho": "Filiar qual personagem?",
+      "AffiliationTrait": "Membro: {faction}",
+      "Affiliated": "{actor} filiado a {faction}.",
+      "Ladder": {
+        "npc": { "d4": "Íntimo", "d6": "Caloroso", "d8": "Ameno", "d10": "Arredio", "d12": "Hostil", "exhausted": "Vingativo" },
+        "location": { "d4": "Aclamado", "d6": "Bem-quisto", "d8": "Tolerado", "d10": "Malvisto", "d12": "Hostilizado", "exhausted": "Caçado" },
+        "faction": { "d4": "Aliado", "d6": "Favorecido", "d8": "Tolerado", "d10": "Vigiado", "d12": "Inimigo", "exhausted": "Marcado" }
+      },
+      "Kind": {
+        "npc": "NPC",
+        "location": "Local",
+        "faction": "Facção"
+      }
+    },
+    "Faction": {
+      "Members": "Membros",
+      "MembersHint": "Arraste atores aqui para adicionar membros.",
+      "MemberAdded": "{actor} adicionado a {faction}.",
+      "MembersAdded": "{count} membro(s) adicionado(s) a {faction}.",
+      "Size": { "cell": "Célula", "band": "Bando", "order": "Ordem", "empire": "Império" }
     },
     "Party": {
       "Members": "Membros",
@@ -264,6 +309,7 @@
         "Allies": "Aliados",
         "NPCs": "NPCs",
         "Locations": "Localidades",
+        "Factions": "Facções",
         "Vehicles": "Veículos",
         "Traits": "Traits",
         "Techniques": "Técnicas",
@@ -273,6 +319,8 @@
         "Safe": "Seguro para descansar",
         "Unsafe": "Inseguro · descansar é arriscado",
         "RevealLandmark": "Revelar este landmark aos jogadores",
+        "Affiliated": "Personagens afiliados",
+        "RevealNpc": "Revelar este personagem aos jogadores",
         "RevealFull": "Escolher o que os jogadores veem desta entrada · Ctrl+Click revela tudo",
         "RevealSectionsTitle": "Revelar seções aos jogadores",
         "RevealSectionsHint": "Escolha o que os jogadores podem ver desta entrada. O que ficar desmarcado segue oculto.",
@@ -308,6 +356,7 @@
           "Ally": "Aliado",
           "NPC": "NPC",
           "Place": "Lugar",
+          "Faction": "Facção",
           "Vehicle": "Veículo",
           "Trait": "Trait",
           "Technique": "Técnica"
@@ -697,6 +746,10 @@
         "Name": "Ativar o Sistema de Travel",
         "Hint": "Regra opcional. Desligada, esconde o controle de jornada na ficha de Party."
       },
+      "EnableConnections": {
+        "Name": "Ativar Conexões",
+        "Hint": "Pilar opcional. Desligado, esconde a aba Conexões na ficha de Party e o filtro de Facção no Codex."
+      },
       "TravelMode": {
         "Name": "Modo de Travel",
         "Hint": "Simples: só narrado. Padrão: cada Leg gasta Pack/Cargo. Desafiador: adiciona uma rolagem por Leg cuja falha custa um recurso extra.",
@@ -826,16 +879,6 @@
         "Add": "Adicionar estado",
         "Reset": "Restaurar marcadores padrão",
         "Delete": "Remover este estado"
-      },
-      "Theme": {
-        "Name": "Tema",
-        "Hint": "Aparência clara ou escura para fichas e chat SHIFT.",
-        "dark": "Escuro",
-        "light": "Claro"
-      },
-      "UiTheme": {
-        "Name": "Interface Bunny Glass",
-        "Hint": "Aplica a estética das fichas SHIFT à interface do próprio Foundry (sidebar, chat, HUDs, janelas). Desligue para voltar ao visual padrão do Foundry."
       }
     },
     "Recharge": {
@@ -940,12 +983,6 @@
       "ToggleTool": "Faixas de Distância"
     },
     "Macro": {
-      "RechargeName": "Recarregar Traits",
-      "GrantXpName": "Conceder XP",
-      "RequestRollName": "Pedir Rolagem",
-      "NewSessionName": "Nova Sessão",
-      "ActionRollName": "Action Roll",
-      "ClocksName": "Alternar Global Traits",
       "SelectToken": "Selecione um token primeiro.",
       "GMOnly": "Apenas o Mestre pode fazer isso.",
       "Recharged": "Recarregados {actors} ator(es) · {traits} Trait(s) restaurado(s)."
@@ -965,6 +1002,7 @@
       "NPCs": "NPCs",
       "NPCsHint": "Arraste um personagem aqui para adicionar um NPC.",
       "NpcAdded": "{actor} foi vinculado a {location}.",
+      "NpcsAdded": "{count} NPC(s) vinculado(s) a {location}.",
       "Size": {
         "site": "Sítio",
         "locale": "Localidade",

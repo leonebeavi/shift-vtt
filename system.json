@@ -2,7 +2,7 @@
   "id": "shift-vtt",
   "title": "SHIFT VTT",
   "description": "An unofficial Foundry VTT implementation of the SHIFT Roleplaying Game.",
-  "version": "2.8.1",
+  "version": "2.9.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
@@ -67,6 +67,11 @@
         "htmlFields": [
           "description"
         ]
+      },
+      "faction": {
+        "htmlFields": [
+          "description"
+        ]
       }
     },
     "Item": {
@@ -91,6 +96,11 @@
         ]
       },
       "quest": {
+        "htmlFields": [
+          "description"
+        ]
+      },
+      "connection": {
         "htmlFields": [
           "description"
         ]

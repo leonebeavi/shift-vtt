@@ -1,0 +1,74 @@
+{{!-- SHIFT VTT — Connections tab (pilar opcional). Conexão = relação do GRUPO com
+      NPC/Local/Facção (Item type "connection"): o die é o clock (D4 melhor → D12 pior
+      → Exhausted hostil), com keyword de disposição de legenda. Reusa o card .ptrait
+      das Quests (glass + hover herdados) com a foto do alvo à esquerda do dado.
+      Adicionar é feito a partir do Codex (botão de coração no detalhe); aqui ficam só
+      os filtros por kind (NPC/Local/Facção). --}}
+<section class="party-page connections{{#if (shiftEq activeTab 'connections')}} active{{/if}}"
+         data-page="connections" data-tab="connections" data-group="primary">
+  <div class="party-connections party-traits-page">
+    <div class="conn-toolbar">
+      <div class="conn-filters">
+        {{#each connectionFilters}}
+          <a class="conn-filter{{#if this.active}} active{{/if}}" data-action="connectionFilter" data-kind="{{this.kind}}"
+             data-tooltip="{{localize this.label}}"><i class="fa-solid {{this.icon}}"></i></a>
+        {{/each}}
+      </div>
+    </div>
+
+    <div class="ptrait-grid">
+      {{#each connectionGroup.cards}}
+        <div class="ptrait conn-card status-{{this.statusKey}}{{#if this.exhausted}} is-exhausted{{/if}}{{#if this.hidden}} is-gmhidden{{/if}}"
+             data-item-id="{{this.id}}">
+          <div class="ptrait-head">
+            {{#if this.inCodex}}
+              <a class="conn-portrait" data-action="openConnectionCodex" data-target-uuid="{{this.targetUuid}}" data-tooltip="{{localize 'SHIFT.Connection.JumpCodex'}}">
+                <img src="{{this.targetImg}}" alt="{{this.targetName}}"/>
+                <span class="conn-portrait-hover"><i class="fa-solid fa-book-skull"></i></span>
+              </a>
+            {{else}}
+              <span class="conn-portrait"><img src="{{this.targetImg}}" alt="{{this.targetName}}"/></span>
+            {{/if}}
+            {{#if this.canRoll}}
+              <a class="ptrait-die" data-action="rollConnection" data-tooltip="{{this.statusLabel}}">
+                {{#if this.dieImg}}<img src="{{this.dieImg}}" alt="{{this.currentLabel}}"/>{{else}}<i class="fa-solid fa-xmark exhausted-x"></i>{{/if}}
+              </a>
+            {{else}}
+              <span class="ptrait-die" data-tooltip="{{this.statusLabel}}">{{#if this.dieImg}}<img src="{{this.dieImg}}" alt="{{this.currentLabel}}"/>{{else}}<i class="fa-solid fa-xmark exhausted-x"></i>{{/if}}</span>
+            {{/if}}
+            <div class="ptrait-title">
+              <span class="ptrait-namerow">
+                {{#if @root.editMode}}<a class="ptrait-name" data-action="editItem">{{this.targetName}}</a>{{else}}<span class="ptrait-name">{{this.targetName}}</span>{{/if}}
+                <span class="conn-kind">{{this.kindLabel}}</span>
+              </span>
+              <span class="ptrait-sub">{{#if this.keyword}}<b>{{this.keyword}}</b> &middot; {{/if}}{{this.statusLabel}} &middot; {{localize "SHIFT.Trait.Max"}} {{this.maxLabel}}{{#if this.hasOverrides}}<span class="conn-overrides">{{#each this.overrideChips}}<span class="conn-ov-chip status-{{this.statusKey}}" data-tooltip="{{this.name}}: {{this.keyword}}"><img src="{{this.img}}" alt="{{this.name}}"/>{{#if this.dieImg}}<img class="conn-ov-die" src="{{this.dieImg}}" alt=""/>{{else}}<i class="fa-solid fa-xmark"></i>{{/if}}</span>{{/each}}</span>{{/if}}</span>
+            </div>
+            {{#if @root.editable}}
+              <div class="ptrait-tools">
+                {{#if @root.isGM}}
+                  <a class="ta-btn hide{{#if this.hidden}} on{{/if}}" data-action="toggleTraitHide" data-tooltip="{{localize 'SHIFT.Party.HideToggle'}}"><i class="fa-solid {{#if this.hidden}}fa-eye-slash{{else}}fa-eye{{/if}}"></i></a>
+                {{/if}}
+                <a class="ta-btn up{{#unless this.canUp}} disabled{{/unless}}" data-action="shiftUp" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftUp'}}"><i class="fa-solid fa-circle-arrow-up"></i></a>
+                <a class="ta-btn down{{#unless this.canDown}} disabled{{/unless}}" data-action="shiftDown" data-tooltip="{{localize 'SHIFT.Tooltips.ShiftDown'}}"><i class="fa-solid fa-circle-arrow-down"></i></a>
+                {{#if @root.isGM}}
+                  <a class="ta-btn" data-action="connectionOverrides" data-tooltip="{{localize 'SHIFT.Connection.Overrides'}}"><i class="fa-solid fa-users-gear"></i></a>
+                {{/if}}
+                {{#if this.isFaction}}
+                  <a class="ta-btn" data-action="connectionFocus" data-tooltip="{{localize 'SHIFT.Connection.Affiliate'}}"><i class="fa-solid fa-user-plus"></i></a>
+                {{/if}}
+                {{#if @root.editMode}}
+                  <a class="ta-btn edit" data-action="editItem"><i class="fa-solid fa-pen-to-square"></i></a>
+                  <a class="ta-btn danger" data-action="deleteItem"><i class="fa-solid fa-trash"></i></a>
+                {{/if}}
+              </div>
+            {{/if}}
+          </div>
+          {{#if this.desc}}<div class="ptrait-desc">{{{this.desc}}}</div>{{/if}}
+        </div>
+      {{/each}}
+      {{#unless connectionGroup.cards.length}}
+        <div class="party-empty"><i class="fa-solid fa-heart"></i><p>{{localize "SHIFT.Connection.Empty"}}</p></div>
+      {{/unless}}
+    </div>
+  </div>
+</section>

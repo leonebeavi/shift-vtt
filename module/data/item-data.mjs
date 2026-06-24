@@ -187,6 +187,87 @@ export class ShiftQuestData extends ShiftItemBase {
 }
 
 /* ------------------------------------------------------------------ */
+/* Connection                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Uma Connection é a relação do GRUPO com um alvo: um NPC, uma Location ou uma
+ * Faction. Item de PRIMEIRA CLASSE que vive na Party (como a Quest e os Traits de
+ * categoria party), carregando o MESMO Shift Die como clock — o motor de
+ * shift/exhaust vive no ShiftItem, gated por `hasClock`. A escala segue a direção
+ * do engine (melhor → pior): D4 = relação mais forte, D12 = quase rompida,
+ * Exhausted = hostil "on sight" (a relação exausta não rola — não dá pra sacar
+ * nada dela). O `target` é sempre uma entrada do Codex da Party (a tie é
+ * mandatória e bidirecional); a escada de keywords por `kind` mora em
+ * CONFIG.SHIFT.connectionKeywords. Pensado para CRESCER (os overrides por-membro
+ * entram aqui depois, em `memberOverrides`).
+ */
+export class ShiftConnectionData extends ShiftItemBase {
+  static defineSchema() {
+    const schema = super.defineSchema();   // description, gmNote, source
+
+    // Clock (mesmo Shift Die de Traits/Quests). maxDie é o TETO (melhor relação
+    // possível): o default d4 deixa a relação chegar a Íntimo, mas o GM pode
+    // baixá-lo pra capar quão próximo um alvo pode ficar. currentDie começa neutro.
+    schema.maxDie = new fields.StringField({ required: true, initial: "d4", choices: DICE });
+    schema.currentDie = new fields.StringField({ required: true, initial: "d8", choices: DICE });
+    schema.exhausted = new fields.BooleanField({ initial: false });
+
+    // Rolável e auto-shift configuráveis (igual Quest). Diferente da Quest, o padrão
+    // de autoShiftOnRoll é OFF: sacar uma relação (pedir um favor) não a corrói
+    // sozinha — quem move a escala é o jogo/GM. O actionRoll aceita qualquer hasClock.
+    schema.rollable = new fields.BooleanField({ initial: true });
+    schema.autoShiftOnRoll = new fields.BooleanField({ initial: false });
+
+    // Toggle do GM "ocultar dos players" (espelha `revealed` do Trait/Quest). O
+    // fail-closed real fica a cargo da camada de reveal do Codex que ancora a Connection.
+    schema.revealed = new fields.BooleanField({ initial: true });
+
+    // Tipo do alvo: governa o filtro (NPCs/Locais/Facções), a escada de keywords e o
+    // ícone. NPC engloba qualquer Actor-personagem (inclusive um monstro amigável).
+    schema.kind = new fields.StringField({ required: true, initial: "npc", choices: ["npc", "location", "faction"] });
+
+    // UUID do alvo no mundo (Actor NPC/Location/Faction). É a MESMA chave da entrada
+    // codex[] da Party: criar uma Connection sempre atrela (e cria, se faltar) o Codex.
+    schema.target = new fields.StringField({ required: false, blank: true, initial: "" });
+
+    // Keyword de disposição atual (ex.: "Íntimo", "Hostil"). Vazio = derivada na
+    // apresentação de CONFIG.SHIFT.connectionKeywords[kind][statusKey]; preenchida só
+    // quando o GM quer travar uma palavra específica fora da escada.
+    schema.keyword = new fields.StringField({ required: false, blank: true, initial: "" });
+
+    // Links: UUIDs de Actors/Items relacionados (espelha system.codex/links da Quest);
+    // ex.: o Focus Trait de filiação cunhado a partir de uma Connection de Faction.
+    schema.links = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
+
+    // Overrides por-membro: Characters da party que FOGEM da escala de grupo. Cada
+    // player vê o override do SEU personagem (se houver); o GM vê o de grupo + um
+    // breakdown de todos. O die de GRUPO acima continua a verdade rolável — o override
+    // é narrativo/de exibição (não muda a rolagem na v1). `member` = UUID do Character;
+    // `die` vazio = usa o de grupo (ou `exhausted` true pra hostil só com aquele membro).
+    schema.memberOverrides = new fields.ArrayField(new fields.SchemaField({
+      member: new fields.StringField({ required: true, blank: false }),
+      die: new fields.StringField({ required: false, blank: true, initial: "", choices: ["", ...DICE] }),
+      exhausted: new fields.BooleanField({ initial: false }),
+      keyword: new fields.StringField({ required: false, blank: true, initial: "" }),
+      note: new fields.StringField({ required: false, blank: true, initial: "" })
+      // initial como FUNÇÃO (não o literal []): garante um array NOVO por documento, sem
+      // o footgun do Foundry de compartilhar a mesma referência [] entre conexões.
+    }), { initial: () => [] });
+
+    return schema;
+  }
+
+  /** Mantém o dado atual dentro do máximo configurado (max = melhor), igual Trait/Quest. */
+  prepareDerivedData() {
+    super.prepareDerivedData();
+    const maxIdx = DICE.indexOf(this.maxDie);
+    const curIdx = DICE.indexOf(this.currentDie);
+    if (maxIdx >= 0 && curIdx >= 0 && curIdx < maxIdx) this.currentDie = this.maxDie;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Keyword / Drawback (descriptor compartilhado)                       */
 /* ------------------------------------------------------------------ */
 

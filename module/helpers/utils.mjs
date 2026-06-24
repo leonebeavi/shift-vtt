@@ -107,13 +107,9 @@ export function registerHandlebarsHelpers() {
   H.registerHelper("shiftNeq", (a, b) => a !== b);
   H.registerHelper("shiftAnd", (a, b) => !!(a && b));
   H.registerHelper("shiftOr", (a, b) => !!(a || b));
-  H.registerHelper("shiftAdd", (a, b) => (Number(a) || 0) + (Number(b) || 0));
-  H.registerHelper("shiftIncludes", (arr, value) => Array.isArray(arr) && arr.includes(value));
   H.registerHelper("shiftSome", (list, prop) => Array.isArray(list) && list.some(e => e?.[prop]));
 
   H.registerHelper("shiftDieLabel", die => dieLabel(die));
-  H.registerHelper("shiftDieStatus", key => dieStatusLabel(key));
-  H.registerHelper("shiftLocalizeKey", key => (key ? game.i18n.localize(key) : ""));
   H.registerHelper("shiftTypeLabel", (docName, type) => game.i18n.localize(`TYPES.${docName}.${type}`));
 }
 

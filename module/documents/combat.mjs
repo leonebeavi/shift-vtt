@@ -34,7 +34,8 @@ export class ShiftCombatant extends Combatant {
 
   /** Combatants que não são character entram direto na fase dos Adversaries. */
   async _preCreate(data, options, user) {
-    await super._preCreate(data, options, user);
+    const allowed = await super._preCreate(data, options, user);
+    if (allowed === false) return false;
     const update = { "flags.shift-vtt.actionsLeft": null };
     try { update["flags.shift-vtt.actionsLeft"] = this.actionsMax; } catch (err) { /* sem ação */ }
     if (data.initiative === undefined || data.initiative === null) {

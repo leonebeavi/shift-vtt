@@ -10,7 +10,8 @@ export class ShiftActor extends Actor {
   /* ---------------------------------------------------------------- */
 
   async _preCreate(data, options, user) {
-    await super._preCreate(data, options, user);
+    const allowed = await super._preCreate(data, options, user);
+    if (allowed === false) return false;
 
     // Padrões de Token por tipo
     const token = {};
@@ -94,6 +95,15 @@ export class ShiftActor extends Actor {
           { ...core(i18n("SHIFT.Trait.Security"), "d8"), system: { category: "core", maxDie: "d8", currentDie: "d8", locked: true, autoShiftOnRoll: false } }
         );
         break;
+      case "faction":
+        // Factions: Attitude + Influência + Efetivo (espelha a Location). Seus dados
+        // nunca dão ShiftDown a partir das próprias Action Rolls.
+        items.push(
+          attitude(i18n("SHIFT.Trait.Attitude"), "d6", { autoShiftOnRoll: false }),
+          { ...core(i18n("SHIFT.Trait.Influence"), "d8"), system: { category: "core", maxDie: "d8", currentDie: "d8", locked: true, autoShiftOnRoll: false } },
+          { ...core(i18n("SHIFT.Trait.Numbers"), "d8"), system: { category: "core", maxDie: "d8", currentDie: "d8", locked: true, autoShiftOnRoll: false } }
+        );
+        break;
     }
     if (items.length) this.updateSource({ items });
   }
@@ -113,6 +123,12 @@ export class ShiftActor extends Actor {
   /** Quests deste Actor (tipo próprio; a Party é quem normalmente as carrega). */
   get quests() {
     return this.items.filter(i => i.type === "quest");
+  }
+
+  /** Connections deste Actor (relações com NPC/Local/Facção; a Party é quem
+   *  normalmente as carrega, espelhando quests). */
+  get connections() {
+    return this.items.filter(i => i.type === "connection");
   }
 
   getTraits(category) {

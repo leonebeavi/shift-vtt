@@ -63,6 +63,23 @@ export function registerSettings() {
     default: "simple"
   });
 
+  // enableConnections é a chave-mestra do pilar opcional Conexões: desligada, a aba
+  // Conexões some da ficha de Party e o filtro de Facção some do Codex. Estado de
+  // campanha (world, GM decide), default OFF — espelha enableTravel.
+  reg("enableConnections", {
+    name: "SHIFT.Settings.EnableConnections.Name",
+    hint: "SHIFT.Settings.EnableConnections.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => {
+      for (const app of foundry.applications.instances.values()) {
+        if (app.document instanceof Actor) app.render?.();
+      }
+    }
+  });
+
   reg("travelRandomCore", {
     name: "SHIFT.Settings.TravelRandomCore.Name",
     hint: "SHIFT.Settings.TravelRandomCore.Hint",
@@ -152,7 +169,11 @@ export function registerSettings() {
     scope: "world",
     config: false,
     type: Boolean,
-    default: true
+    default: true,
+    // O glow de "Scaled Up pronto" no Action HUD (DOM manual) depende desta setting.
+    // Como o submenu de Scale pode salvar mexendo só neste toggle (sem alterar
+    // enableScale), o onChange daquela não dispara — então rebuildamos a HUD aqui.
+    onChange: () => refreshActionHud()
   });
 
   reg("enableXpScaleUp", {
@@ -219,35 +240,6 @@ export function registerSettings() {
      Por jogador · Interface, escopo de client (cada um define o
      seu; sempre editável, independente de ser GM)
      ============================================================ */
-
-  reg("theme", {
-    name: "SHIFT.Settings.Theme.Name",
-    hint: "SHIFT.Settings.Theme.Hint",
-    scope: "client",
-    config: true,
-    type: String,
-    choices: {
-      dark: "SHIFT.Settings.Theme.dark",
-      light: "SHIFT.Settings.Theme.light"
-    },
-    default: "dark",
-    onChange: () => applyShiftTheme()
-  });
-
-  // EXPERIMENTAL (toggleável, fácil de reverter): pinta a CHROME nativa do
-  // Foundry (sidebar, chat, HUDs, janelas) com a estética "Bunny Glass" das
-  // fichas. Liga/desliga a classe body.shift-ui-theme, que governa um único
-  // bloco isolado no fim de shift.less. Desligue aqui para voltar ao visual
-  // padrão do Foundry sem tocar em nada.
-  reg("uiTheme", {
-    name: "SHIFT.Settings.UiTheme.Name",
-    hint: "SHIFT.Settings.UiTheme.Hint",
-    scope: "client",
-    config: true,
-    type: Boolean,
-    default: true,
-    onChange: () => applyShiftUiTheme()
-  });
 
   // As settings do Action HUD vivem no submenu "Action HUD" (config:false →
   // escondidas da lista plana). Settings config:false ainda disparam onChange no
@@ -347,41 +339,23 @@ export function registerSettings() {
   reg("hudPosition", { scope: "client", config: false, type: Object, default: null });
   // Por jogador: mostra a faixa de distância ao passar o mouse num token na cena.
   reg("showTokenRanges", { scope: "client", config: false, type: Boolean, default: true });
-  // Aplica os temas escolhidos assim que o jogo estiver pronto.
+  // Bunny Glass + tema escuro são o ÚNICO visual do sistema (sem setting nem
+  // toggle): marca o body assim que o jogo está pronto. Todo o tema mora num
+  // bloco isolado de shift.less governado por body.shift-ui-theme.
   Hooks.once("ready", async () => {
-    // Bunny Glass ATIVO POR PADRÃO via default:true da setting "uiTheme": instalações
-    // novas já vêm ligadas. Quem desligou de propósito mantém a escolha — NÃO forçamos
-    // mais o tema ON aqui, só aplicamos o valor atual da setting.
-    applyShiftTheme();
-    applyShiftUiTheme();
+    document.body.classList.add("shift-ui-theme");
     randomizePauseDie();   // garante um dado já no boot (mundo que abre pausado)
   });
 
   // Bunny Glass: sorteia um novo dado do SHIFT toda vez que o jogo é PAUSADO,
-  // para o ícone central do indicador #pause (ver applyShiftUiTheme / seção K).
+  // para o ícone central do indicador #pause (ver a seção K de shift.less).
   Hooks.on("pauseGame", paused => { if ( paused ) randomizePauseDie(); });
-}
-
-function applyShiftTheme() {
-  const light = game.settings.get("shift-vtt", "theme") === "light";
-  document.body.classList.toggle("shift-theme-light", light);
-  // Bunny Glass é PADRÃO obrigatório: assa direto no tema escuro via CSS
-  // (body:not(.shift-theme-light)), sem setting nem classe pra alternar.
-}
-
-/** EXPERIMENTAL: liga/desliga o skin "Bunny Glass" na chrome nativa do Foundry
- *  (sidebar, chat, HUDs, janelas). Tudo mora num único bloco isolado de
- *  shift.less sob `body.shift-ui-theme` — alternar a classe é reverter por
- *  completo, sem reload. Ver setting "uiTheme". */
-function applyShiftUiTheme() {
-  const on = game.settings.get("shift-vtt", "uiTheme") !== false;
-  document.body.classList.toggle("shift-ui-theme", on);
 }
 
 /** Bunny Glass: sorteia um dado do SHIFT (d4..d12) e grava sua imagem na custom
  *  prop --shift-pause-die do body. A seção K do tema (shift.less) lê essa prop
  *  num #pause::before que pulsa com glow, no lugar do relógio/compasso padrão.
- *  Sem o tema ligado a prop fica inerte — o CSS só a consome sob .shift-ui-theme. */
+ *  O CSS consome essa prop num #pause::before sob body.shift-ui-theme (sempre ativo). */
 function randomizePauseDie() {
   const imgs = Object.values(SHIFT.diceImages).filter(Boolean);  // exhausted é null
   if ( !imgs.length ) return;
@@ -403,4 +377,10 @@ export function scaleEnabled() {
  *  o controle de viagem da Party deve aparecer/sumir. */
 export function travelEnabled() {
   return game.settings.get("shift-vtt", "enableTravel") === true;
+}
+
+/** Se o pilar opcional Conexões está ligado (chave-mestra). Importada onde a aba
+ *  Conexões da Party e o filtro de Facção do Codex devem aparecer/sumir. */
+export function connectionsEnabled() {
+  return game.settings.get("shift-vtt", "enableConnections") === true;
 }

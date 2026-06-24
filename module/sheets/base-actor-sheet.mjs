@@ -215,14 +215,7 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
    *  de cada grupo (ex.: "traits", "techniques", "children", "npcs") para o template.
    *  "Protegido" (underscore) para que subclasses (Location) o reusem em Landmarks/NPCs. */
   _groupEntries(layout, entries, { tagOf, categoryOf = () => null, itemsKey, ungroupedLabel = "SHIFT.Groups.Ungrouped" }) {
-    const keyFor = e => {
-      const tag = tagOf(e);
-      if (tag && layout.some(s => s.key === tag)) return tag;
-      const cat = categoryOf(e);
-      const found = layout.find(s => s.categories === null
-        || (Array.isArray(s.categories) && cat != null && s.categories.includes(cat)));
-      return found?.key ?? CATCH_ALL_KEY;
-    };
+    const keyFor = e => BaseShiftActorSheet.#groupKeyFor(layout, { tag: tagOf(e), category: categoryOf(e) });
     const buckets = new Map(layout.map(g => [g.key, []]));
     const orphans = [];
     for (const e of entries) {
@@ -510,19 +503,28 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     return this.document.updateEmbeddedDocuments("Item", updates);
   }
 
+  /** Regra ÚNICA de bucketização de uma subdivisão, compartilhada pela preparação de
+   *  contexto ({@link _groupEntries}) e pelo reorder por drag ({@link #itemGroupKeyFor}),
+   *  para que as duas NUNCA divirjam: a tag explícita vence se o grupo ainda existe; senão
+   *  a `category` cai no primeiro grupo que a reivindica (categories null = todas); senão
+   *  o abrigo {@link CATCH_ALL_KEY}. Recebe {tag, category} já resolvidos, ficando agnóstica
+   *  ao formato do campo (Trait usa `category`; Technique usa `techniqueType`). */
+  static #groupKeyFor(layout, { tag, category }) {
+    if (tag && layout.some(s => s.key === tag)) return tag;
+    const found = layout.find(s => s.categories === null
+      || (Array.isArray(s.categories) && category != null && s.categories.includes(category)));
+    return found?.key ?? CATCH_ALL_KEY;
+  }
+
   /** A key da subdivisão que exibe um dado Item (Trait ou Technique), conforme a layout
    *  efetiva do `kind`: a tag explícita `system.group` vence se o grupo ainda existe;
    *  senão cai pela categoria (Trait = `category`; Technique = `techniqueType`) no
    *  primeiro grupo que a reivindica (categories null = todas); senão o abrigo
    *  {@link CATCH_ALL_KEY}. Usada para agrupar e para manter o reorder por drag. */
   #itemGroupKeyFor(item, kind, layout = this.layoutFor(kind)) {
-    const tag = item.system.group;
-    if (tag && layout.some(s => s.key === tag)) return tag;
-    const cat = kind === "trait" ? item.system.category
+    const category = kind === "trait" ? item.system.category
       : kind === "technique" ? item.system.techniqueType : null;
-    const found = layout.find(s => s.categories === null
-      || (Array.isArray(s.categories) && cat != null && s.categories.includes(cat)));
-    return found?.key ?? CATCH_ALL_KEY;
+    return BaseShiftActorSheet.#groupKeyFor(layout, { tag: item.system.group, category });
   }
 
   /** @override */

@@ -10,7 +10,7 @@
               class="trait-tile has-detail status-{{statusKey}}{{#if open}} is-open{{/if}}{{#if exhausted}} is-exhausted{{/if}}"
               data-tile-id="{{id}}" data-action="toggleTile"
               data-tooltip="{{name}} &middot; {{statusLabel}} &middot; {{localize 'SHIFT.Trait.Max'}} {{maxLabel}}">
-        <span class="tt-die">{{#if dieImg}}<img src="{{dieImg}}" alt="{{statusLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}</span>
+        <span class="tt-die">{{#if dieImg}}<img src="{{dieImg}}" alt="{{statusLabel}}"/>{{else}}<i class="fa-solid fa-xmark exhausted-x"></i>{{/if}}</span>
         <span class="tt-info"><span class="tt-name">{{name}}</span><span class="tt-status">{{statusLabel}}</span></span>
         <span class="tt-pips">
           {{#if kw}}<span class="pip kw" data-tooltip="{{kw}} {{localize 'SHIFT.Keywords.Title'}}"><i class="fa-solid fa-star"></i>{{kw}}</span>{{/if}}
@@ -23,7 +23,7 @@
       <div class="trait-tile status-{{statusKey}}{{#if exhausted}} is-exhausted{{/if}}"
            data-tile-id="{{id}}"
            data-tooltip="{{name}} &middot; {{statusLabel}} &middot; {{localize 'SHIFT.Trait.Max'}} {{maxLabel}}">
-        <span class="tt-die">{{#if dieImg}}<img src="{{dieImg}}" alt="{{statusLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}</span>
+        <span class="tt-die">{{#if dieImg}}<img src="{{dieImg}}" alt="{{statusLabel}}"/>{{else}}<i class="fa-solid fa-xmark exhausted-x"></i>{{/if}}</span>
         <span class="tt-info"><span class="tt-name">{{name}}</span><span class="tt-status">{{statusLabel}}</span></span>
       </div>
     {{/if}}

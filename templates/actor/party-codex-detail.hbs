@@ -9,6 +9,7 @@
     {{#if codexDetail.hasBreadcrumb}}<span class="cd-crumbs">{{#each codexDetail.breadcrumb}}<a data-action="openCodexEntry" data-codex-uuid="{{uuid}}">{{name}}</a><i class="fa-solid fa-chevron-right"></i>{{/each}}</span>{{/if}}
     <span class="cd-title">{{codexDetail.name}}</span>
     <div class="cd-actions">
+      {{#if codexDetail.connectionsEnabled}}{{#if isGM}}{{#if codexDetail.canConnect}}<button type="button" class="cd-open cd-link cd-conn" data-action="codexConnection" data-codex-uuid="{{codexDetail.uuid}}" data-tooltip="{{localize 'SHIFT.Connection.AddFromCodex'}}"><i class="fa-solid fa-heart"></i></button>{{/if}}{{/if}}{{/if}}
       {{#if isGM}}<button type="button" class="cd-open cd-link" data-action="codexCreateMacro" data-codex-uuid="{{codexDetail.uuid}}" data-tooltip="{{localize 'SHIFT.Party.Codex.CreateMacro'}}"><i class="fa-solid fa-wand-magic-sparkles"></i></button>{{/if}}
       {{#if isGM}}<button type="button" class="cd-open cd-link" data-action="codexLinkChat" data-codex-uuid="{{codexDetail.uuid}}" data-tooltip="{{localize 'SHIFT.Party.Codex.LinkChat'}}"><i class="fa-solid fa-comment"></i></button>{{/if}}
       {{#if codexDetail.canOpenSheet}}<button type="button" class="cd-open" data-action="openMember"><i class="fa-solid fa-up-right-from-square"></i> {{localize "SHIFT.Party.Codex.OpenSheet"}}</button>{{/if}}
@@ -20,6 +21,13 @@
       <div class="cd-meta">
         <div class="cd-name">{{codexDetail.name}}</div>
         <div class="cd-rolelabel">{{codexDetail.roleLabel}}</div>
+        {{#if codexDetail.connection}}
+          <span class="cd-conn-status status-{{codexDetail.connection.statusKey}}" data-tooltip="{{localize 'SHIFT.Tabs.Connections'}} &middot; {{codexDetail.connection.statusLabel}}">
+            <i class="fa-solid fa-heart"></i>
+            {{#if codexDetail.connection.dieImg}}<img src="{{codexDetail.connection.dieImg}}" alt=""/>{{/if}}
+            <b>{{codexDetail.connection.keyword}}</b>
+          </span>
+        {{/if}}
         {{#if codexDetail.locationName}}<span class="cc-stat cc-loc cd-loc" data-tooltip="{{codexDetail.locationName}}"><i class="fa-solid fa-location-dot"></i><span class="cc-loc-name">{{codexDetail.locationName}}</span></span>{{/if}}
         {{#if codexDetail.concept}}<div class="cd-concept">{{codexDetail.concept}}</div>{{/if}}
         <div class="cd-statrow">
@@ -88,6 +96,24 @@
           {{/each}}
         </div>
       {{/if}}
+    {{/if}}
+
+    {{#if codexDetail.hasAffiliated}}
+      <div class="cd-section-label">{{localize "SHIFT.Party.Codex.Affiliated"}}</div>
+      <div class="cd-affiliated">
+        {{#each codexDetail.affiliated}}
+          <div class="cd-aff{{#unless revealed}} is-hidden{{/unless}}" data-npc-uuid="{{uuid}}">
+            <div class="cd-aff-portrait">{{#if img}}<img src="{{img}}" alt="{{name}}"/>{{else}}<i class="fa-solid fa-user"></i>{{/if}}</div>
+            <div class="cd-aff-name">{{name}}</div>
+            {{#if @root.codexDetail.canEditReveal}}
+              <a class="cd-aff-reveal{{#if revealed}} on{{/if}}" data-action="toggleCodexNpc" data-npc-uuid="{{uuid}}"
+                 data-tooltip="{{localize 'SHIFT.Party.Codex.RevealNpc'}}">
+                <i class="fa-solid {{#if revealed}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
+              </a>
+            {{/if}}
+          </div>
+        {{/each}}
+      </div>
     {{/if}}
 
     {{#if codexDetail.hasTraits}}

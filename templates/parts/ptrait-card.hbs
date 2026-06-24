@@ -11,10 +11,10 @@
     {{else if canRoll}}
       <a class="ptrait-die" data-action="{{#if quest}}rollQuest{{else}}rollTrait{{/if}}"
          data-tooltip="{{statusLabel}}">
-        {{#if dieImg}}<img src="{{dieImg}}" alt="{{currentLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}
+        {{#if dieImg}}<img src="{{dieImg}}" alt="{{currentLabel}}"/>{{else}}<i class="fa-solid fa-xmark exhausted-x"></i>{{/if}}
       </a>
     {{else}}
-      <span class="ptrait-die" data-tooltip="{{statusLabel}}">{{#if dieImg}}<img src="{{dieImg}}" alt="{{currentLabel}}"/>{{else}}<i class="fa-solid fa-ban"></i>{{/if}}</span>
+      <span class="ptrait-die" data-tooltip="{{statusLabel}}">{{#if dieImg}}<img src="{{dieImg}}" alt="{{currentLabel}}"/>{{else}}<i class="fa-solid fa-xmark exhausted-x"></i>{{/if}}</span>
     {{/if}}
     <div class="ptrait-title">
       <span class="ptrait-namerow">

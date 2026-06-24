@@ -182,11 +182,12 @@ export class ShiftItem extends Item {
   get isTrait() { return this.type === "trait"; }
   get isTechnique() { return this.type === "technique"; }
   get isQuest() { return this.type === "quest"; }
+  get isConnection() { return this.type === "connection"; }
   get isDescriptor() { return this.type === "keyword" || this.type === "drawback"; }
 
-  /** Carrega um Shift Die como clock: Traits E Quests. O motor de shift/exhaust
-   *  abaixo é compartilhado por ambos via este predicado. */
-  get hasClock() { return this.isTrait || this.isQuest; }
+  /** Carrega um Shift Die como clock: Traits, Quests E Connections. O motor de
+   *  shift/exhaust abaixo é compartilhado pelos três via este predicado. */
+  get hasClock() { return this.isTrait || this.isQuest || this.isConnection; }
 
   /** "d4".."d12" ou "exhausted". */
   get statusKey() {

@@ -88,9 +88,7 @@ function rawStatusEffects() {
  * traduzidos no idioma corrente.
  */
 export function getStatusEffects() {
-  const custom = game.settings.get("shift-vtt", "statusEffects") ?? [];
-  const list = custom.length ? custom : DEFAULT_STATUS_EFFECTS;
-  return list.map(s => ({ id: s.id, label: game.i18n.localize(s.label), color: s.color }));
+  return rawStatusEffects().map(s => ({ id: s.id, label: game.i18n.localize(s.label), color: s.color }));
 }
 
 /**

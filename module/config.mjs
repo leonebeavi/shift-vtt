@@ -71,7 +71,8 @@ SHIFT.defaultIcons = {
   technique: "icons/svg/target.svg",
   keyword: "icons/svg/regen.svg",
   drawback: "icons/svg/degen.svg",
-  quest: "icons/svg/book.svg"
+  quest: "icons/svg/book.svg",
+  connection: "icons/svg/heal.svg"
 };
 
 /* Ícones padrão de ACTOR por tipo (SVGs do core do Foundry). Character mantém o
@@ -82,7 +83,8 @@ SHIFT.defaultActorIcons = {
   adversary: "icons/svg/walk.svg",
   vehicle: "icons/svg/wing.svg",
   location: "icons/svg/city.svg",
-  party: "icons/svg/tower-flag.svg"
+  party: "icons/svg/tower-flag.svg",
+  faction: "icons/svg/temple.svg"
 };
 
 /* ------------------------------------------------------------------ */
@@ -155,6 +157,34 @@ SHIFT.locationSizes = {
   3: "SHIFT.Location.Size.region",
   4: "SHIFT.Location.Size.realm"
 };
+
+/** Tier de uma Faction — derivado da Scale (1–4), análogo a locationSizes; tinge/
+ *  rotula o card no Codex (cor pela escala + este nome). */
+SHIFT.factionScales = {
+  1: "SHIFT.Faction.Size.cell",
+  2: "SHIFT.Faction.Size.band",
+  3: "SHIFT.Faction.Size.order",
+  4: "SHIFT.Faction.Size.empire"
+};
+
+/* ------------------------------------------------------------------ */
+/* Connections (pilar opcional)                                        */
+/* ------------------------------------------------------------------ */
+
+/** Escada de keywords de disposição por kind de Connection, do melhor (d4) ao pior
+ *  (d12) + Exhausted (hostil "on sight"). Os valores são chaves i18n
+ *  (SHIFT.Connection.Ladder.<kind>.<rung>) pra respeitar a língua escolhida; é a
+ *  legenda ao lado do dado. O GM pode sobrescrever a keyword por entrada
+ *  (system.keyword no card) com texto livre, que tem prioridade sobre a escada. */
+SHIFT.connectionKeywords = (() => {
+  const rungs = ["d4", "d6", "d8", "d10", "d12", "exhausted"];
+  const out = {};
+  for (const kind of ["npc", "location", "faction"]) {
+    out[kind] = {};
+    for (const r of rungs) out[kind][r] = `SHIFT.Connection.Ladder.${kind}.${r}`;
+  }
+  return out;
+})();
 
 /* ------------------------------------------------------------------ */
 /* Modos de Rest                                                       */

@@ -920,19 +920,19 @@
 .shift-vtt .pill-add:hover {
   color: var(--shift-accent);
 }
-.shift-vtt .pill-text {
+.shift-vtt a.pill-text {
   cursor: pointer;
 }
 .shift-vtt .pill-text.linked {
   text-decoration: none;
 }
-.shift-vtt .pill-text:hover {
+.shift-vtt a.pill-text:hover {
   color: var(--shift-pink);
 }
-.shift-vtt .pill.keyword .pill-text:hover {
+.shift-vtt .pill.keyword a.pill-text:hover {
   color: #2f9fd0;
 }
-.shift-vtt .pill.drawback .pill-text:hover {
+.shift-vtt .pill.drawback a.pill-text:hover {
   color: #de2b54;
 }
 .shift-vtt .adversary-meta {
@@ -3061,26 +3061,6 @@ body.shift-ui-theme .chat-message.whisper {
   background: var(--shift-purple-soft);
   border-style: solid;
 }
-body.shift-theme-light .shift-vtt .bio-display a:not(.content-link):not([data-action]), body.shift-theme-light .shift-vtt prose-mirror .editor-content a:not(.content-link):not([data-action]) {
-  color: var(--shift-pink-ink);
-}
-body.shift-theme-light .shift-vtt .bio-display li::marker, body.shift-theme-light .shift-vtt prose-mirror .editor-content li::marker {
-  color: var(--shift-pink-ink);
-}
-body.shift-theme-light .shift-vtt section.secret {
-  border-color: var(--shift-pink-ink);
-}
-body.shift-theme-light .shift-vtt section.secret > button.reveal {
-  color: var(--shift-pink-ink);
-  border-color: var(--shift-pink-ink);
-}
-body.shift-theme-light .shift-vtt section.secret.revealed {
-  border-color: var(--shift-purple-ink);
-}
-body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
-  color: var(--shift-purple-ink);
-  border-color: var(--shift-purple-ink);
-}
 .combat-tracker li.shift-phase-header, #combat li.shift-phase-header {
   list-style: none;
   display: flex;
@@ -4503,10 +4483,6 @@ body.shift-theme-light .shift-vtt section.secret.revealed > button.reveal {
   background: #221c21;
   color: #f4eef3;
 }
-body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-theme-light .shift-vtt.ranges-config .window-content {
-  background: #f4eff3;
-  color: #241f27;
-}
 .settings-config-body, .ranges-config-body {
   display: flex;
   flex-direction: column;
@@ -5387,112 +5363,6 @@ body.shift-theme-light .shift-vtt.settings-config .window-content, body.shift-th
 .shift-vtt .advancement-strip .adv-chip {
   white-space: nowrap;
 }
-body.shift-theme-light .shift-vtt {
-  --shift-bg: #f4eff3;
-  --shift-bg-soft: #ece3eb;
-  --shift-bg-card: #fff;
-  --shift-bg-raised: #f7f1f6;
-  --shift-border: #dcccd9;
-  --shift-text: #241f27;
-  --shift-text-muted: #6c5f70;
-  --shift-accent: #1a8f4f;
-  --shift-accent-soft: rgba(26,143,79,0.16);
-  --shift-pink-soft: rgba(255,95,162,0.16);
-  --shift-pink-ink: #cf3a80;
-  --shift-purple-ink: #6a3fae;
-  --shift-drag: var(--shift-pink-ink);
-  --tab-accent: var(--shift-pink-ink);
-}
-body.shift-theme-light .shift-vtt.sheet .window-content {
-  background: var(--shift-bg);
-}
-body.shift-theme-light .shift-vtt .status-text, body.shift-theme-light .shift-vtt .die-hero .die-status {
-  color: var(--shift-text-muted);
-}
-body.shift-theme-light .shift-vtt .trait-card {
-  box-shadow: 0 1px 3px rgba(60,40,60,0.08);
-}
-body.shift-theme-light .shift-vtt .trait-card:hover {
-  box-shadow: 0 4px 12px rgba(60,40,60,0.16);
-}
-body.shift-theme-light .shift-vtt .advancement-strip {
-  background: var(--shift-bg-soft);
-}
-body.shift-theme-light .shift-vtt .adv-chip {
-  background: #fff;
-}
-body.shift-theme-light .shift-vtt nav.sheet-tabs {
-  background: var(--shift-bg-soft);
-}
-body.shift-theme-light .shift-vtt .tag {
-  background: var(--shift-bg-soft);
-}
-body.shift-theme-light .shift-vtt .character-header .char-name {
-  color: #fff;
-}
-body.shift-theme-light .shift-vtt .adv-chip b {
-  color: var(--shift-pink-ink);
-}
-body.shift-theme-light .shift-vtt .adv-chip.afford {
-  border-color: var(--shift-pink-ink);
-  color: var(--shift-text);
-  box-shadow: 0 0 6px rgba(184, 45, 111, 0.3);
-}
-body.shift-theme-light .shift-vtt .trait-name:hover, body.shift-theme-light .shift-vtt .tech-name:hover, body.shift-theme-light .shift-vtt .landmark-name:hover, body.shift-theme-light .shift-vtt .npc-name:hover, body.shift-theme-light .shift-vtt .pill-text:hover {
-  color: var(--shift-pink-ink);
-}
-body.shift-theme-light .shift-vtt .character-header .xp-widget.has-xp {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 16px rgba(255, 95, 162, 0.6), 0 3px 10px rgba(0, 0, 0, 0.14);
-  border-color: rgba(255, 150, 190, 0.8);
-}
-body.shift-theme-light .shift-vtt .character-header .xp-dots i.on {
-  background: var(--shift-pink);
-  box-shadow: 0 0 5px rgba(255, 95, 162, 0.85);
-}
-body.shift-ui-theme.shift-theme-light #chat-log .chat-message, body.shift-ui-theme.shift-theme-light #chat .chat-message, body.shift-ui-theme.shift-theme-light .chat-message {
-  --shift-msg-ink: color-mix(in srgb, var(--shift-msg-color) 40%, #1c1320);
-  background:
-    linear-gradient(0deg,
-      color-mix(in srgb, var(--shift-msg-color) 6%, transparent),
-      color-mix(in srgb, var(--shift-msg-color) 6%, transparent)),
-    #fff !important;
-  color: #241f27;
-  border: 1px solid color-mix(in srgb, var(--shift-msg-ink) 28%, #dcccd9);
-  box-shadow: 0 2px 11px rgba(60, 40, 60, 0.14);
-}
-body.shift-ui-theme.shift-theme-light #chat-log .chat-message .message-header, body.shift-ui-theme.shift-theme-light .chat-message .message-header {
-  color: #6c5f70;
-  background: linear-gradient(0deg,
-    color-mix(in srgb, var(--shift-msg-color) 16%, transparent),
-    color-mix(in srgb, var(--shift-msg-color) 9%, transparent));
-}
-body.shift-ui-theme.shift-theme-light .chat-message .message-header::after {
-  background: var(--shift-result-color);
-}
-body.shift-ui-theme.shift-theme-light #chat-log .chat-message .message-sender, body.shift-ui-theme.shift-theme-light .chat-message .message-sender {
-  color: var(--shift-msg-ink);
-  text-shadow: none;
-  filter: none;
-}
-body.shift-ui-theme.shift-theme-light .chat-message .message-sender::before {
-  background: var(--shift-msg-ink);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--shift-msg-color) 22%, transparent);
-}
-body.shift-ui-theme.shift-theme-light #chat-log .chat-message .message-metadata, body.shift-ui-theme.shift-theme-light .chat-message .message-metadata, body.shift-ui-theme.shift-theme-light .chat-message .message-timestamp, body.shift-ui-theme.shift-theme-light .chat-message .whisper-to {
-  color: #6c5f70;
-}
-body.shift-ui-theme.shift-theme-light #chat-log .chat-message .message-content, body.shift-ui-theme.shift-theme-light .chat-message .message-content {
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light .chat-message .message-content .shift-vtt .outcome-line {
-  background: color-mix(in srgb, currentColor 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 34%, transparent);
-}
-body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-link, body.shift-ui-theme.shift-theme-light .chat-message .message-content a.inline-roll {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: #dcccd9;
-  color: #241f27;
-}
 .shift-vtt .adversary-header, .shift-vtt .location-header, .shift-vtt .vehicle-header {
   --header-grad: linear-gradient(120deg, #2f9fd0 0%, #45c465 62%, #8fd23f 100%);
 }
@@ -5985,6 +5855,9 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
 }
 .shift-vtt .vehicle-header {
   --header-grad: linear-gradient(125deg, #2f93d2 0%, #6a6ae6 56%, #9a5cf0 100%);
+}
+.shift-vtt .faction-header {
+  --header-grad: linear-gradient(125deg, #ff9ad1 0%, #ff5fa2 52%, #c43d8f 100%);
 }
 .shift-vtt .character-header .portrait {
   align-self: center;
@@ -7262,6 +7135,12 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   height: 100%;
   object-fit: contain;
 }
+.tt-die > i.exhausted-x {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--shift-text-muted);
+  opacity: 0.75;
+}
 .trait-tile.has-detail:hover .tt-die {
   transform: scale(1.08) rotate(-4deg);
 }
@@ -7666,6 +7545,223 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
 .party-page.active {
   display: flex;
   flex-direction: column;
+}
+.conn-toolbar {
+  display: flex;
+  align-items: center;
+}
+.conn-filters {
+  display: flex;
+  gap: 5px;
+}
+.conn-filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.7;
+  color: var(--shift-text-muted);
+  border: 1px solid var(--shift-border);
+  background: rgba(0, 0, 0, 0.18);
+  transition: color 0.14s, border-color 0.14s, background 0.14s, transform 0.12s;
+}
+.conn-filter:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  border-color: var(--party-accent);
+  color: var(--shift-text);
+}
+.conn-filter.active {
+  opacity: 1;
+  color: #fff;
+  border-color: var(--party-accent);
+  background: color-mix(in oklab, var(--party-accent) 24%, transparent);
+}
+.party-connections .ptrait-grid {
+  grid-template-columns: 1fr;
+}
+.party-connections .ptrait {
+  --ac: var(--die-color, var(--shift-border));
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--ac) 30%, rgba(255, 255, 255, 0.10));
+  border-left: 1px solid color-mix(in oklab, var(--ac) 30%, rgba(255, 255, 255, 0.10));
+  background: linear-gradient(155deg, color-mix(in oklab, var(--ac) 14%, rgba(255, 255, 255, 0.05)), rgba(255, 255, 255, 0.012));
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.11);
+}
+.party-connections .ptrait::before {
+  content: "";
+  position: absolute;
+  right: -40px;
+  top: -60px;
+  width: 240px;
+  height: 210px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--ac) 60%, transparent), transparent 70%);
+  opacity: 0.40;
+  filter: blur(22px);
+  pointer-events: none;
+  z-index: 0;
+}
+.party-connections .ptrait::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.10), transparent 38%);
+  pointer-events: none;
+  z-index: 0;
+}
+.party-connections .ptrait > * {
+  position: relative;
+  z-index: 1;
+}
+.party-connections .ptrait:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  border-left-color: color-mix(in oklab, var(--ac) 30%, rgba(255, 255, 255, 0.10));
+}
+.party-connections .ptrait-die {
+  width: 47px;
+  height: 47px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
+}
+.party-connections .ptrait-sub b {
+  color: var(--ac);
+}
+.party-connections .ptrait-tools {
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.party-connections .ptrait:hover .ptrait-tools {
+  opacity: 1;
+}
+.party-connections .conn-portrait {
+  flex: 0 0 auto;
+  position: relative;
+  display: block;
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--shift-border);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+.party-connections .conn-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.18s ease;
+}
+.party-connections a.conn-portrait {
+  cursor: pointer;
+  transition: border-color 0.16s, box-shadow 0.16s;
+}
+.party-connections a.conn-portrait:hover {
+  border-color: var(--party-accent);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.5);
+}
+.party-connections a.conn-portrait:hover img {
+  transform: scale(1.08);
+}
+.party-connections .conn-portrait-hover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--party-accent) 55%, rgba(0, 0, 0, 0.55));
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+  font-size: 1rem;
+}
+.party-connections a.conn-portrait:hover .conn-portrait-hover {
+  opacity: 1;
+}
+.party-connections .ptrait-namerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.party-connections .conn-kind {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--ac) 60%, var(--shift-text));
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--ac) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--ac) 35%, var(--shift-border));
+}
+.party-connections .conn-overrides {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+.party-connections .conn-ov-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px 1px 1px;
+  border-radius: 999px;
+  border: 1px solid var(--shift-border);
+  background: rgba(0, 0, 0, 0.22);
+}
+.party-connections .conn-ov-chip img {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.party-connections .conn-ov-chip .conn-ov-die {
+  width: 14px;
+  height: 14px;
+  border-radius: 0;
+}
+.party-connections .conn-ov-chip i {
+  font-size: 0.6rem;
+  color: var(--shift-text-muted);
+}
+.conn-ov-dialog .conn-ov {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.conn-ov-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+}
+.conn-ov-row img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+.conn-ov-row .conn-ov-name {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cd-actions .cd-conn:hover {
+  color: var(--die-d12);
+  border-color: color-mix(in oklab, var(--die-d12) 50%, var(--shift-border));
 }
 .party-roster.layout-grid {
   display: grid;
@@ -8278,6 +8374,9 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   width: 42px;
   height: 42px;
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   filter: drop-shadow(0 2px 5px rgba(0,0,0,0.45));
   transition: transform 0.16s ease, filter 0.16s ease;
 }
@@ -8285,6 +8384,12 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.ptrait-die > i.exhausted-x {
+  font-size: 28px;
+  line-height: 1;
+  color: var(--shift-text-muted);
+  opacity: 0.75;
 }
 .ptrait-title {
   flex: 1 1 auto;
@@ -9075,6 +9180,98 @@ body.shift-ui-theme.shift-theme-light .chat-message .message-content a.content-l
   text-align: center;
   color: var(--shift-text-muted);
 }
+.cd-affiliated {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.cd-aff {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px 3px 3px;
+  border-radius: 999px;
+  background: var(--shift-bg-raised);
+  border: 1px solid var(--shift-border);
+}
+.cd-aff.is-hidden {
+  opacity: 0.5;
+}
+.cd-aff-portrait {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+}
+.cd-aff-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cd-aff-portrait i {
+  color: var(--shift-text-muted);
+  font-size: 0.8rem;
+}
+.cd-aff-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.cd-aff-reveal {
+  color: var(--shift-text-muted);
+  opacity: 0.7;
+}
+.cd-aff-reveal.on {
+  color: #45c465;
+  opacity: 1;
+}
+.cd-aff-reveal:hover {
+  opacity: 1;
+}
+.cd-conn-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  padding: 2px 9px 2px 7px;
+  border-radius: 999px;
+  margin: 2px 0;
+  border: 1px solid var(--shift-border);
+  background: rgba(0, 0, 0, 0.22);
+}
+.cd-conn-status i {
+  color: #ff5fa2;
+}
+.cd-conn-status img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+.cd-conn-status b {
+  font-weight: 700;
+}
+.cd-conn-status.status-d4 b {
+  color: #12aa5b;
+}
+.cd-conn-status.status-d6 b {
+  color: #addd27;
+}
+.cd-conn-status.status-d8 b {
+  color: #ffc511;
+}
+.cd-conn-status.status-d10 b {
+  color: #f07d39;
+}
+.cd-conn-status.status-d12 b {
+  color: #de2b54;
+}
+.cd-conn-status.status-exhausted b {
+  color: #de2b54;
+}
 .codex-fieldnotes {
   display: block;
   min-height: 90px;
@@ -9511,11 +9708,6 @@ a.ptrait-die:hover {
   justify-content: center;
   filter: drop-shadow(0 3px 6px rgba(0,0,0,0.55));
 }
-.party-quests .ptrait-die > i {
-  font-size: 30px;
-  line-height: 1;
-  color: var(--shift-text-muted);
-}
 .party-quests .ptrait-sub b {
   color: var(--ac);
 }
@@ -9744,7 +9936,7 @@ a.ptrait-die:hover {
   background: color-mix(in oklab, var(--outcome-crit-success) 14%, transparent);
   border-color: color-mix(in oklab, var(--outcome-crit-success) 40%, transparent);
 }
-body:not(.shift-theme-light) .trait-card, body:not(.shift-theme-light) .ptrait, body:not(.shift-theme-light) .trait-tile, body:not(.shift-theme-light) .detail-card, body:not(.shift-theme-light) .die-hero, body:not(.shift-theme-light) .technique-row, body:not(.shift-theme-light) .landmark-row, body:not(.shift-theme-light) .cd-landmark, body:not(.shift-theme-light) .npc-card {
+body.shift-ui-theme .trait-card, body.shift-ui-theme .ptrait, body.shift-ui-theme .trait-tile, body.shift-ui-theme .detail-card, body.shift-ui-theme .die-hero, body.shift-ui-theme .technique-row, body.shift-ui-theme .landmark-row, body.shift-ui-theme .cd-landmark, body.shift-ui-theme .npc-card {
   --ac: var(--die-color, var(--tile, var(--role, var(--shift-accent))));
   border: 1px solid color-mix(in oklab, var(--ac) 26%, rgba(255,255,255,0.10)) !important;
   background: linear-gradient(155deg,
@@ -9755,47 +9947,47 @@ body:not(.shift-theme-light) .trait-card, body:not(.shift-theme-light) .ptrait, 
   box-shadow: 0 10px 26px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.10);
   transition: transform 0.16s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
-body:not(.shift-theme-light) .technique-row.tech-narrative {
+body.shift-ui-theme .technique-row.tech-narrative {
   --ac: var(--shift-yellow);
 }
-body:not(.shift-theme-light) .technique-row.tech-mechanical {
+body.shift-ui-theme .technique-row.tech-mechanical {
   --ac: var(--shift-blue);
 }
-body:not(.shift-theme-light) .technique-row.tech-scaledUp {
+body.shift-ui-theme .technique-row.tech-scaledUp {
   --ac: var(--shift-pink);
 }
-body:not(.shift-theme-light) .landmark-row.is-safe, body:not(.shift-theme-light) .cd-landmark:not(.unsafe) {
+body.shift-ui-theme .landmark-row.is-safe, body.shift-ui-theme .cd-landmark:not(.unsafe) {
   --ac: var(--shift-safe);
 }
-body:not(.shift-theme-light) .landmark-row.is-unsafe, body:not(.shift-theme-light) .cd-landmark.unsafe {
+body.shift-ui-theme .landmark-row.is-unsafe, body.shift-ui-theme .cd-landmark.unsafe {
   --ac: var(--shift-unsafe);
 }
-body:not(.shift-theme-light) #shift-clocks-panel {
+body.shift-ui-theme #shift-clocks-panel {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
   opacity: 1;
   transition: opacity 0.18s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
-body:not(.shift-theme-light) #shift-clocks-panel .clocks-head {
+body.shift-ui-theme #shift-clocks-panel .clocks-head {
   border-bottom-color: transparent;
 }
-body:not(.shift-theme-light) #shift-clocks-panel .clocks-head > * {
+body.shift-ui-theme #shift-clocks-panel .clocks-head > * {
   opacity: 0;
   transition: opacity 0.18s ease;
 }
-body:not(.shift-theme-light) #shift-clocks-panel:hover {
+body.shift-ui-theme #shift-clocks-panel:hover {
   background: rgba(34, 28, 33, 0.92);
   border-color: #4d4050;
   box-shadow: 0 6px 18px rgba(0,0,0,0.45);
 }
-body:not(.shift-theme-light) #shift-clocks-panel:hover .clocks-head {
+body.shift-ui-theme #shift-clocks-panel:hover .clocks-head {
   border-bottom-color: #4d4050;
 }
-body:not(.shift-theme-light) #shift-clocks-panel:hover .clocks-head > * {
+body.shift-ui-theme #shift-clocks-panel:hover .clocks-head > * {
   opacity: 1;
 }
-body:not(.shift-theme-light) #shift-clocks-panel .clock {
+body.shift-ui-theme #shift-clocks-panel .clock {
   --ac: var(--shift-pink);
   border: 1px solid color-mix(in oklab, var(--ac) 55%, transparent);
   background: linear-gradient(150deg,
@@ -9807,17 +9999,17 @@ body:not(.shift-theme-light) #shift-clocks-panel .clock {
                 inset 0 1px 0 rgba(255,255,255,0.14),
                 inset 0 0 20px color-mix(in oklab, var(--ac) 16%, transparent);
 }
-body:not(.shift-theme-light) .trait-card:hover, body:not(.shift-theme-light) .ptrait:hover, body:not(.shift-theme-light) .die-hero:hover, body:not(.shift-theme-light) .technique-row:hover, body:not(.shift-theme-light) .landmark-row:hover, body:not(.shift-theme-light) .cd-landmark:hover, body:not(.shift-theme-light) .npc-card:hover {
+body.shift-ui-theme .trait-card:hover, body.shift-ui-theme .ptrait:hover, body.shift-ui-theme .die-hero:hover, body.shift-ui-theme .technique-row:hover, body.shift-ui-theme .landmark-row:hover, body.shift-ui-theme .cd-landmark:hover, body.shift-ui-theme .npc-card:hover {
   transform: translateY(-3px);
   border-color: color-mix(in oklab, var(--ac) 55%, rgba(255,255,255,0.14)) !important;
   box-shadow: 0 14px 32px rgba(0,0,0,0.42),
                 0 0 0 1px color-mix(in oklab, var(--ac) 32%, transparent),
                 inset 0 1px 0 rgba(255,255,255,0.12);
 }
-body:not(.shift-theme-light) .technique-row:hover .tech-img, body:not(.shift-theme-light) .landmark-row:hover .landmark-img, body:not(.shift-theme-light) .cd-landmark:hover .cd-lm-portrait, body:not(.shift-theme-light) .npc-card:hover .npc-img {
+body.shift-ui-theme .technique-row:hover .tech-img, body.shift-ui-theme .landmark-row:hover .landmark-img, body.shift-ui-theme .cd-landmark:hover .cd-lm-portrait, body.shift-ui-theme .npc-card:hover .npc-img {
   transform: scale(1.08) rotate(-4deg);
 }
-body:not(.shift-theme-light) .trait-card:hover .die-badge.img, body:not(.shift-theme-light) .die-hero:hover .die-badge.img, body:not(.shift-theme-light) .ptrait:hover .ptrait-die {
+body.shift-ui-theme .trait-card:hover .die-badge.img, body.shift-ui-theme .die-hero:hover .die-badge.img, body.shift-ui-theme .ptrait:hover .ptrait-die {
   transform: scale(1.12) rotate(-6deg);
 }
 .shift-vtt [data-draggable="true"] {
@@ -9897,18 +10089,6 @@ body.shift-ui-theme {
 body.shift-ui-theme :is(button.bright, a.button.bright) {
   --button-hover-background-color: #ff5fa2;
   --button-hover-border-color: #ff5fa2;
-}
-body.shift-ui-theme.shift-theme-light {
-  --color-warm-1: #cf3a80;
-  --color-warm-2: #cf3a80;
-  --color-border-highlight: #cf3a80;
-  --color-text-hyperlink: #cf3a80;
-  --color-shadow-highlight: #cf3a80;
-  --shift-chip-bg: rgba(255, 255, 255, 0.88);
-}
-body.shift-ui-theme.shift-theme-light :is(button.bright, a.button.bright) {
-  --button-hover-background-color: #cf3a80;
-  --button-hover-border-color: #cf3a80;
 }
 body.shift-ui-theme #sidebar .scrollable, body.shift-ui-theme #sidebar .directory-list, body.shift-ui-theme .chat-sidebar .chat-scroll {
   scrollbar-width: thin;
@@ -10476,189 +10656,6 @@ body.shift-ui-theme .category-browser aside nav.tabs > button.active {
 }
 body.shift-ui-theme .category-browser .main .categories section.tab {
   padding: 0.5rem 0.5rem 0.25rem 0.25rem;
-}
-body.shift-ui-theme.shift-theme-light .sidebar-tab:not(.chat-sidebar) {
-  --sidebar-background: linear-gradient(180deg, #fff, #ece3eb);
-}
-body.shift-ui-theme.shift-theme-light #sidebar input[type="text"], body.shift-ui-theme.shift-theme-light #sidebar input[type="search"] {
-  background: #fff;
-  border-color: #dcccd9;
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light #sidebar-tabs > menu {
-  background: none;
-  border: none;
-  box-shadow: none;
-}
-body.shift-ui-theme.shift-theme-light #scene-controls .ui-control, body.shift-ui-theme.shift-theme-light #sidebar-tabs > menu .ui-control {
-  --control-icon-color: #6c5f70;
-  --control-hover-bg-color: rgba(207, 58, 128, 0.22);
-  --control-hover-icon-color: #cf3a80;
-  --control-active-bg-color: rgba(207, 58, 128, 0.18);
-  --control-active-icon-color: #cf3a80;
-  --toggle-active-bg-color: rgba(207, 58, 128, 0.18);
-}
-body.shift-ui-theme.shift-theme-light #scene-controls .ui-control[aria-pressed="true"], body.shift-ui-theme.shift-theme-light #sidebar-tabs > menu .ui-control[aria-pressed="true"] {
-  box-shadow: 0 0 10px rgba(207, 58, 128, 0.25);
-}
-body.shift-ui-theme.shift-theme-light #sidebar-tabs .notification-pip, body.shift-ui-theme.shift-theme-light #scene-controls .notification-pip {
-  background: #cf3a80;
-  border-color: rgba(255, 255, 255, 0.9);
-}
-body.shift-ui-theme.shift-theme-light #scene-navigation .scene:hover {
-  background: rgba(207, 58, 128, 0.22);
-}
-body.shift-ui-theme.shift-theme-light #scene-navigation .scene.active, body.shift-ui-theme.shift-theme-light #scene-navigation .scene.view {
-  background: rgba(207, 58, 128, 0.18);
-  box-shadow: 0 0 10px rgba(207, 58, 128, 0.25);
-}
-body.shift-ui-theme.shift-theme-light #chat-message > .editor-container {
-  background: #fff;
-  border-color: #dcccd9;
-  --placeholder-color: #6c5f70;
-}
-body.shift-ui-theme.shift-theme-light #chat-message .editor-content {
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light .chat-input menu {
-  background: #fff;
-  border-color: #dcccd9;
-}
-body.shift-ui-theme.shift-theme-light #hotbar {
-  --slot-color: rgba(255, 255, 255, 0.72);
-  --key-bg-color-empty: rgba(236, 227, 235, 0.92);
-  --key-bg-color-full: rgba(207, 58, 128, 0.92);
-  --key-text-color: #241f27;
-  --page-control-color: #6c5f70;
-}
-body.shift-ui-theme.shift-theme-light #hotbar #action-bar .slot {
-  border-color: #dcccd9;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 8px rgba(36, 31, 39, 0.14);
-}
-body.shift-ui-theme.shift-theme-light #hotbar #action-bar .slot.full {
-  border-color: rgba(207, 58, 128, 0.35);
-}
-body.shift-ui-theme.shift-theme-light #hotbar #action-bar .slot:hover {
-  border-color: #cf3a80;
-  box-shadow: 0 0 0 3px rgba(207, 58, 128, 0.20), 0 4px 12px rgba(36, 31, 39, 0.18);
-}
-body.shift-ui-theme.shift-theme-light #hotbar #action-bar .slot.drop-target {
-  background: rgba(207, 58, 128, 0.14);
-  border-color: #cf3a80;
-}
-body.shift-ui-theme.shift-theme-light #hotbar button {
-  --button-text-color: #6c5f70;
-  color: #6c5f70;
-}
-body.shift-ui-theme.shift-theme-light #hotbar button:hover {
-  color: #cf3a80;
-}
-body.shift-ui-theme.shift-theme-light #hotbar #hotbar-page-controls .hotbar-page-number {
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light #players #players-active, body.shift-ui-theme.shift-theme-light #players #players-inactive {
-  --background-color: rgba(255, 255, 255, 0.88);
-  --border-color: #dcccd9;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 6px 16px rgba(108, 95, 112, 0.22);
-}
-body.shift-ui-theme.shift-theme-light #players {
-  --text-color: #6c5f70;
-  --player-name-color: #241f27;
-  --player-name-idle-color: #6c5f70;
-  --player-name-self-color: #cf3a80;
-}
-body.shift-ui-theme.shift-theme-light #players .player:hover {
-  background: rgba(207, 58, 128, 0.22);
-  color: #cf3a80;
-}
-body.shift-ui-theme.shift-theme-light #players .player.self {
-  background: rgba(207, 58, 128, 0.10);
-  box-shadow: inset 0 0 0 1px rgba(207, 58, 128, 0.30);
-}
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll), body.shift-ui-theme.shift-theme-light #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll) {
-  --button-background-color: #fff;
-  --button-border-color: #dcccd9;
-  --button-text-color: #241f27;
-  --button-hover-background-color: rgba(207, 58, 128, 0.22);
-  --button-hover-border-color: #dcccd9;
-  --button-hover-text-color: #241f27;
-  --button-focus-outline-color: #cf3a80;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-}
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):is(.active, [aria-pressed="true"]), body.shift-ui-theme.shift-theme-light #sidebar :is(button, a.button):not(.control-icon):not(.ui-control):not(.create-button):not(.shift-init-roll):is(.active, [aria-pressed="true"]) {
-  background: rgba(207, 58, 128, 0.16);
-  border-color: #dcccd9;
-  color: #241f27;
-  box-shadow: 0 0 12px rgba(207, 58, 128, 0.25);
-}
-body.shift-ui-theme.shift-theme-light .ui-control:not(.shift-vtt *) {
-  --control-bg-color: var(--shift-chip-bg);
-  --control-border-color: transparent;
-  --control-icon-color: #6c5f70;
-  --control-hover-bg-color: rgba(207, 58, 128, 0.22);
-  --control-hover-border-color: transparent;
-  --control-hover-icon-color: #cf3a80;
-  --control-active-bg-color: rgba(207, 58, 128, 0.18);
-  --control-active-border-color: transparent;
-  --control-active-icon-color: #cf3a80;
-}
-body.shift-ui-theme.shift-theme-light :is(.ui-control, .placeable-hud, .standard-form, .application):not(.shift-vtt *) {
-  --toggle-bg-color: rgba(220, 204, 217, 0.7);
-  --toggle-border-color: #dcccd9;
-  --toggle-active-bg-color: #cf3a80;
-  --toggle-active-border-color: #cf3a80;
-}
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt) :is(input[type="checkbox"], input[type="radio"]) {
-  --checkbox-checked-color: #cf3a80;
-  --checkbox-background-color: #dcccd9;
-  --input-focus-outline-color: #cf3a80;
-}
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content select, body.shift-ui-theme.shift-theme-light #sidebar select {
-  background: #fff;
-  border-color: #dcccd9;
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light select option, body.shift-ui-theme.shift-theme-light select optgroup {
-  background: #fff;
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light .application:not(.sidebar-tab) .window-header {
-  background: linear-gradient(180deg, #fff, #ece3eb);
-  border-bottom-color: #dcccd9;
-}
-body.shift-ui-theme.shift-theme-light .application:not(.sidebar-tab) .window-header .window-title {
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content {
-  background: #f4eff3;
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(h1, h2, h3, h4, h5, h6, label, p, span) {
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(.hint, .notes) {
-  color: #6c5f70;
-}
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content a:not(.button) {
-  color: #cf3a80;
-}
-body.shift-ui-theme.shift-theme-light .application:not(.shift-vtt):not(.sidebar-tab) .window-content :is(input[type="text"], input[type="number"], input[type="search"], input[type="password"], textarea) {
-  background: #fff;
-  border-color: #dcccd9;
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light .category-browser aside {
-  border-right-color: #dcccd9;
-}
-body.shift-ui-theme.shift-theme-light .category-browser aside input[type="search"] {
-  background: #fff;
-  border-color: #dcccd9;
-  color: #241f27;
-}
-body.shift-ui-theme.shift-theme-light .category-browser aside nav.tabs > button:hover, body.shift-ui-theme.shift-theme-light .category-browser aside nav.tabs > button.active {
-  background: rgba(207, 58, 128, 0.22);
-  color: #cf3a80;
-  box-shadow: inset 0 0 0 1px rgba(207, 58, 128, 0.40);
 }
 body.shift-ui-theme #pause {
   background: none;

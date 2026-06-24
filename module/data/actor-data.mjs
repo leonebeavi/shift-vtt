@@ -116,6 +116,29 @@ export class ShiftLocationData extends ShiftActorBase {
 }
 
 /* ------------------------------------------------------------------ */
+/* Faction                                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Uma Faction é um grupo/organização RICO, espelhado na Location: herda a Scale
+ * (1–4 → tier Célula/Bando/Ordem/Império, em CONFIG.SHIFT.factionScales) e carrega
+ * seus Core Traits como Items embutidos (Attitude + Influência + Efetivo, via o
+ * traitGroupSpec da ShiftFactionSheet), mais Focus Traits e os NPCs-membros (UUIDs).
+ * É alvo de Connection (o standing do grupo, à parte) e entra no Codex com cor/nome
+ * dinâmicos pela Scale, como a Location. Sem safe/children (não é um lugar).
+ */
+export class ShiftFactionData extends ShiftActorBase {
+  static defineSchema() {
+    const schema = super.defineSchema();   // description, source, scale
+    schema.concept = new fields.StringField({ required: false, blank: true, initial: "" });
+    schema.gmNote = gmNoteField();
+    /** UUIDs de Actor dos NPCs-membros da facção (líder, agentes), mostrados como cards. */
+    schema.npcs = new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] });
+    return schema;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Vehicle                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -184,7 +207,11 @@ export class ShiftPartyData extends foundry.abstract.TypeDataModel {
           scale: new fields.BooleanField({ initial: false }),
           description: new fields.BooleanField({ initial: false }) // a Description (system.description) do Actor
         }),
-        revealLandmarks: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] })
+        revealLandmarks: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] }),
+        /** UUIDs dos NPCs afiliados (system.npcs de Location/Faction) que os players
+         *  podem ver no detalhe do Codex. Espelha revealLandmarks, mas o NPC não vira
+         *  card próprio — é só listado como "afiliado". */
+        revealNpcs: new fields.ArrayField(new fields.StringField({ blank: false }), { initial: [] })
       }), { initial: [] }),
 
       /** (Quests não ficam mais aqui: uma quest É um `trait` Item de categoria

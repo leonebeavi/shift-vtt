@@ -6,7 +6,7 @@
   <div class="pills">
     {{#each items}}
       <span class="pill {{../kind}}"{{#if this.tooltip}} data-tooltip="{{this.tooltip}}"{{/if}}>
-        <a class="pill-text{{#if this.linked}} linked{{/if}}" data-action="openDescriptor" data-uuid="{{this.uuid}}">{{#if this.text}}{{this.text}}{{else}}{{this}}{{/if}}</a>
+        {{#if this.uuid}}<a class="pill-text linked" data-action="openDescriptor" data-uuid="{{this.uuid}}">{{this.text}}</a>{{else}}<span class="pill-text">{{#if this.text}}{{this.text}}{{else}}{{this}}{{/if}}</span>{{/if}}
         {{#if ../canEdit}}
           <a class="pill-remove" data-action="{{../removeAction}}" data-index="{{@index}}">
             <i class="fa-solid fa-xmark"></i>

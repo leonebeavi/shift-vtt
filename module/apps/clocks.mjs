@@ -480,6 +480,9 @@ async function rollClockTrait(clock, rollType = "normal") {
     turnOrder: false,
     groupRoll: false,
     scale: clock.scale ?? 1,
+    // Mesma condição do pip de Scale no painel (ver renderClocksPanel): sem isto, um
+    // Global Trait em Scale 2+ mostra o pip na HUD mas nenhuma tag no card.
+    showScaleTag: (game.settings.get("shift-vtt", "enableScale") !== false) && (clock.scale ?? 1) > 1,
     entries: [{
       name: entry.name,
       dieLabel: entry.dieLabel,
@@ -502,13 +505,23 @@ async function rollClockTrait(clock, rollType = "normal") {
   };
 
   const content = await fvtt.renderTemplate("systems/shift-vtt/templates/chat/roll-card.hbs", cardData);
+  // Respeita o modo de rolagem do GM (como o Action Roll normal em shift-roll.mjs). Um
+  // Global Trait oculto (visible:false), que o painel já esconde dos players, rola SEMPRE
+  // em Private GM Roll — senão o card público vazaria nome/dado/resultado de algo deliberadamente
+  // escondido (fail-closed, igual ao reveal do Codex).
+  // `!clock.visible` (não `=== false`) casa exatamente o filtro do painel
+  // (isGM || c.visible): qualquer clock que os players não veem na lista também
+  // não vaza o card, inclusive um clock legado sem o campo (visible === undefined).
+  const rollMode = !clock.visible
+    ? CONST.DICE_ROLL_MODES.PRIVATE
+    : game.settings.get("core", "rollMode");
   await ChatMessage.create({
     speaker: { alias: game.user.name },
     content,
     rolls: [roll],
     sound: CONFIG.sounds.dice,
     flags: { "shift-vtt": { kind: "clockRoll" } }
-  });
+  }, { rollMode });
 }
 
 /* ------------------------------------------------------------------ */

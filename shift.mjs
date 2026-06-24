@@ -9,15 +9,15 @@ import { ShiftItem } from "./module/documents/item.mjs";
 import { ShiftCombat, ShiftCombatant } from "./module/documents/combat.mjs";
 import { registerTrackerDecorations } from "./module/combat/tracker.mjs";
 import {
-  ShiftCharacterData, ShiftAdversaryData, ShiftVehicleData, ShiftLocationData, ShiftPartyData
+  ShiftCharacterData, ShiftAdversaryData, ShiftVehicleData, ShiftLocationData, ShiftPartyData, ShiftFactionData
 } from "./module/data/actor-data.mjs";
 import {
-  ShiftTraitData, ShiftDescriptorData, ShiftTechniqueData, ShiftQuestData
+  ShiftTraitData, ShiftDescriptorData, ShiftTechniqueData, ShiftQuestData, ShiftConnectionData
 } from "./module/data/item-data.mjs";
 import { ShiftRoll } from "./module/dice/shift-roll.mjs";
 import { registerChatHooks } from "./module/chat/chat.mjs";
 import {
-  ShiftCharacterSheet, ShiftAdversarySheet, ShiftVehicleSheet, ShiftLocationSheet, ShiftPartySheet, promptGrantXp, promptRequestRoll
+  ShiftCharacterSheet, ShiftAdversarySheet, ShiftVehicleSheet, ShiftLocationSheet, ShiftPartySheet, ShiftFactionSheet, promptGrantXp, promptRequestRoll
 } from "./module/sheets/actor-sheets.mjs";
 import { ShiftActorDirectory } from "./module/apps/party-directory.mjs";
 import { registerParty, resolveActiveParty } from "./module/apps/party.mjs";
@@ -37,7 +37,7 @@ import { registerStatusEffects } from "./module/helpers/status-effects.mjs";
 import { registerUserConfig } from "./module/helpers/user-config.mjs";
 import { ShiftBrowser } from "./module/apps/browser.mjs";
 import {
-  ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftQuestSheet
+  ShiftTraitSheet, ShiftTechniqueSheet, ShiftDescriptorSheet, ShiftQuestSheet, ShiftConnectionSheet
 } from "./module/sheets/item-sheets.mjs";
 import { seedCompendium, seedTechniques, seedMacros, ensureCompendiumFolder, organizeTraitsCompendium, migrateQuestType, migrateAttitudeTransform, migrateTraitFeatures, migrateCodexNote, migrateRemoveLandmarks } from "./module/helpers/migrations.mjs";
 
@@ -65,8 +65,15 @@ Hooks.once("init", async () => {
        *  do mundo (ou de uma lista específica de Actors), atualiza as Techniques. */
       newSession: async actors => {
         if (actors) {
-          for (const a of actors) await a.newSession();
-          ui.notifications.info(game.i18n.localize("SHIFT.Session.Started"));
+          // Por-actor try/catch, como startSession (session.mjs): um Actor sobre o qual o
+          // GM não tem permissão (ou um update inválido) não pode abortar o resto da lista.
+          let reset = 0;
+          for (const a of actors) {
+            try { await a.newSession(); reset += 1; }
+            catch (err) { console.warn(`SHIFT | newSession falhou para o Actor "${a?.name}":`, err); }
+          }
+          if (reset) ui.notifications.info(game.i18n.localize("SHIFT.Session.Started"));
+          else ui.notifications.warn(game.i18n.format("SHIFT.Session.NoneReset", { failed: actors.length }));
           return;
         }
         await startSession();
@@ -132,14 +139,16 @@ Hooks.once("init", async () => {
     adversary: ShiftAdversaryData,
     vehicle: ShiftVehicleData,
     location: ShiftLocationData,
-    party: ShiftPartyData
+    party: ShiftPartyData,
+    faction: ShiftFactionData
   });
   Object.assign(CONFIG.Item.dataModels, {
     trait: ShiftTraitData,
     keyword: ShiftDescriptorData,
     drawback: ShiftDescriptorData,
     technique: ShiftTechniqueData,
-    quest: ShiftQuestData
+    quest: ShiftQuestData,
+    connection: ShiftConnectionData
   });
 
   // Barras de recurso do Token
@@ -147,7 +156,8 @@ Hooks.once("init", async () => {
     character: { bar: [], value: ["xp.value", "scale"] },
     adversary: { bar: ["defeat"], value: ["power", "scale"] },
     vehicle: { bar: [], value: ["scale"] },
-    location: { bar: [], value: ["scale"] }
+    location: { bar: [], value: ["scale"] },
+    faction: { bar: [], value: ["scale"] }
   };
 
   // Sheets
@@ -172,6 +182,9 @@ Hooks.once("init", async () => {
   ActorsC.registerSheet("shift-vtt", ShiftLocationSheet, {
     types: ["location"], makeDefault: true, label: "SHIFT.SheetLabels.Location"
   });
+  ActorsC.registerSheet("shift-vtt", ShiftFactionSheet, {
+    types: ["faction"], makeDefault: true, label: "SHIFT.SheetLabels.Faction"
+  });
   ActorsC.registerSheet("shift-vtt", ShiftPartySheet, {
     types: ["party"], makeDefault: true, label: "SHIFT.SheetLabels.Party"
   });
@@ -191,6 +204,9 @@ Hooks.once("init", async () => {
   });
   ItemsC.registerSheet("shift-vtt", ShiftQuestSheet, {
     types: ["quest"], makeDefault: true, label: "SHIFT.SheetLabels.Quest"
+  });
+  ItemsC.registerSheet("shift-vtt", ShiftConnectionSheet, {
+    types: ["connection"], makeDefault: true, label: "SHIFT.SheetLabels.Connection"
   });
 
   registerSettings();
