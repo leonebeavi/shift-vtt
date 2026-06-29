@@ -19,7 +19,8 @@ export const PHASE_META = [
 ];
 
 // Construído lazy: CONFIG.SHIFT.phases só é populado no init, depois deste módulo carregar.
-export function phases() {
+// Uso interno do módulo (phaseFor); PHASE_META e phaseFor são o que os outros módulos importam.
+function phases() {
   const cfg = CONFIG.SHIFT?.phases ?? {};
   return PHASE_META.map(p => ({ ...p, init: p.phase ? (cfg[p.phase] ?? null) : null }));
 }

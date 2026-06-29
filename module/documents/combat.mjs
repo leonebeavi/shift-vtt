@@ -128,6 +128,18 @@ export class ShiftCombat extends Combat {
     return this.rollInitiative(ids, { ...options, bulk: true });
   }
 
+  /** Rola a ordem de turno dos characters DESTE usuário que ainda não rolaram
+   *  (próprios, sem iniciativa). Avisa se não há nada a rolar. Fonte única usada
+   *  pelo botão de player da Combat HUD e pelo botão da mensagem de round no chat. */
+  async rollOwnTurnOrder() {
+    const mine = this.combatants.filter(c =>
+      c.actor?.type === "character" && c.isOwner && c.initiative === null);
+    if (!mine.length) {
+      return void ui.notifications.info(game.i18n.localize("SHIFT.Combat.NothingToRoll"));
+    }
+    for (const c of mine) await this.rollInitiative([c.id]);
+  }
+
   /** Inicializa os recursos de ação por round de cada Combatant. */
   async resetActionResources() {
     const updates = this.combatants.map(c => ({

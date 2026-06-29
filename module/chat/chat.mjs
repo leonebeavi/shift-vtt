@@ -84,7 +84,13 @@ export function registerChatHooks() {
       try { fillCodexChip(el); } catch (_) { /* um chip ruim não quebra o resto do bind */ }
       el.addEventListener("click", ev => {
         ev.preventDefault();
-        game.shift?.api?.openCodex?.(el.dataset.codexUuid, el.dataset.partyUuid || null);
+        const open = game.shift?.api?.openCodex;
+        // A API é registrada no init, então normalmente existe; se faltar (ordem de
+        // carga/renome), avisa no console em vez de engolir o clique silenciosamente.
+        if (typeof open !== "function") {
+          return void console.warn("shift-vtt | openCodex indisponível ao clicar no chip de Codex");
+        }
+        open(el.dataset.codexUuid, el.dataset.partyUuid || null);
       });
     });
     // Preenche os chips de alvo a partir dos uuids persistidos (um único builder,
@@ -248,7 +254,7 @@ function populateTargetPanel(panel) {
     const cls = canView ? "target-chip clickable" : "target-chip";
     const link = canView ? ` data-target-uuid="${esc(u)}" data-tooltip="${esc(openWord)}"` : "";
     return `<span class="${cls}" data-scale="${scale}"${link}>`
-      + `<img src="${a.img}" alt=""/>`
+      + `<img src="${esc(a.img)}" alt=""/>`
       + `<span class="t-name">${esc(a.name)}</span>`
       + pip
       + `</span>`;
@@ -299,12 +305,20 @@ async function onRetarget(event, message) {
 
 /** Resultado de um roll sem efeito por causa da Scale, escrito como nota persistente
  *  no chat (não um toast que some), para que o log registre que um Success não causou nada. */
-async function noEffectNote(sourceActor, target, gap, trait = null) {
+async function noEffectNote(sourceActor, gap, trait = null) {
   const text = trait
     ? game.i18n.format(gap <= -2 ? "SHIFT.Scale.NoEffectTrait" : "SHIFT.Scale.TooSmallTrait", { trait: trait.name })
     : game.i18n.localize(gap <= -2 ? "SHIFT.Scale.NoEffect" : "SHIFT.Scale.TooSmall");
   ui.notifications.warn(text);
   await followUp(sourceActor, text, "warn");
+}
+
+/** Resolve em documentos os alvos pré-travados no momento do roll (flags.targetUuids),
+ *  pulando uuids mortos. Devolve o array (não-vazio) ou null quando não há pré-mira. */
+async function preTargetCandidates(flags) {
+  if (!Array.isArray(flags?.targetUuids) || !flags.targetUuids.length) return null;
+  const docs = (await Promise.all(flags.targetUuids.map(u => fromUuid(u).catch(() => null)))).filter(Boolean);
+  return docs.length ? docs : null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -654,7 +668,7 @@ async function applyShiftDownToTarget(sourceActor, { steps = 1, candidates = nul
     const pool = (target.items?.filter(i => i.type === "trait" && filter(i)) ?? []);
     if (pool.length && !pool.some(t => scaleEffect(rollerScale - (t.effectiveScale ?? 1), { isCrit }) !== "none")) {
       const worstGap = Math.max(...pool.map(t => rollerScale - (t.effectiveScale ?? 1)));
-      await noEffectNote(sourceActor, target, worstGap);
+      await noEffectNote(sourceActor, worstGap);
       return { landed: false };
     }
   }
@@ -686,7 +700,7 @@ async function applyShiftDownToTarget(sourceActor, { steps = 1, candidates = nul
     if (effect === "none") {
       // gap <= -2: sem efeito algum; gap === -1 sem crit: um Success comum conta
       // como Failure contra o Trait de Scale maior.
-      await noEffectNote(sourceActor, target, gap, trait);
+      await noEffectNote(sourceActor, gap, trait);
       return { landed: false };
     }
     // Uma ou mais Scale acima num Critical Success: Exhaust o Trait de imediato.
@@ -755,11 +769,7 @@ async function onApplyToTarget(event, message) {
   const steps = Number(btn?.dataset?.steps) || 1;
 
   // Pré-mira no(s) alvo(s) pré-selecionado(s) do roll, se algum foi travado no momento do roll.
-  let candidates = null;
-  if (Array.isArray(flags.targetUuids) && flags.targetUuids.length) {
-    candidates = (await Promise.all(flags.targetUuids.map(u => fromUuid(u).catch(() => null)))).filter(Boolean);
-    if (!candidates.length) candidates = null;
-  }
+  const candidates = await preTargetCandidates(flags);
 
   const res = await applyShiftDownToTarget(actor, {
     steps,
@@ -930,9 +940,7 @@ async function onCritBonus(event, message) {
         // resolva alto.
         const res = await applyShiftDownToTarget(actor, {
           steps: 1,
-          candidates: (Array.isArray(flags.targetUuids) && flags.targetUuids.length)
-            ? (await Promise.all(flags.targetUuids.map(u => fromUuid(u).catch(() => null)))).filter(Boolean)
-            : null,
+          candidates: await preTargetCandidates(flags),
           rollerScale: effectiveRollerScale(message),
           isCrit: true,
           random
@@ -1126,12 +1134,5 @@ async function onChatTurnOrder(event) {
   event.preventDefault();
   const combat = game.combat;
   if (!combat) return;
-  const mine = combat.combatants.filter(c =>
-    c.actor?.type === "character" && c.isOwner && c.initiative === null);
-  if (!mine.length) {
-    return void ui.notifications.info(game.i18n.localize("SHIFT.Combat.NothingToRoll"));
-  }
-  for (const c of mine) {
-    await combat.rollInitiative([c.id]);
-  }
+  await combat.rollOwnTurnOrder();
 }

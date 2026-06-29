@@ -85,7 +85,6 @@ export class ShiftActorDirectory extends ActorDirectory {
       name: party.name,
       img: party.img,
       expanded: !!game.folders._expanded[party.uuid],
-      canModify: party.isOwner,
       members: party.partyMembers.map(m => ({
         id: m.id,
         uuid: m.uuid,

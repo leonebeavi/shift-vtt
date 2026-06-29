@@ -142,16 +142,27 @@ export function registerParty() {
   // escritor-único em session.mjs / socket.mjs) para evitar updates concorrentes
   // redundantes quando há mais de um GM conectado.
   Hooks.on("deleteActor", actor => {
-    if (!game.user.isGM || actor.type === "party") return;
+    if (!game.user.isGM) return;
     const activeGM = game.users?.activeGM;
     if (activeGM && activeGM.id !== game.user.id) return;
+    const uuid = actor.uuid;
     for (const party of game.actors) {
-      if (party.type === "party" && (party.system.members ?? []).includes(actor.uuid)) {
-        party.removePartyMembers(actor.uuid);
+      if (party.type === "party") {
+        // Roster: tira o character deletado dos membros.
+        if ((party.system.members ?? []).includes(uuid)) party.removePartyMembers(uuid);
+        // Codex/Location: descataloga o uuid órfão. Vale para qualquer tipo
+        // catalogável (Location/Faction/Vehicle/Party) — sem isto a entrada ficava
+        // pendurada no banco e crescia indefinidamente. Espelha #onRemoveCodexEntry.
+        const update = {};
+        if ((party.system.codex ?? []).some(e => e.uuid === uuid)) {
+          update["system.codex"] = (party.system.codex ?? []).filter(e => e.uuid !== uuid);
+        }
+        if (party.system.location === uuid) update["system.location"] = "";
+        if (Object.keys(update).length) party.update(update);
       }
       // Location-filha deletada: tira o uuid órfão dos children da(s) mãe(s).
-      if (party.type === "location" && (party.system.children ?? []).includes(actor.uuid)) {
-        party.update({ "system.children": (party.system.children ?? []).filter(u => u !== actor.uuid) });
+      else if (party.type === "location" && (party.system.children ?? []).includes(uuid)) {
+        party.update({ "system.children": (party.system.children ?? []).filter(u => u !== uuid) });
       }
     }
   });

@@ -27,10 +27,21 @@ class BaseShiftItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     }
   };
 
+  /** Pode ver a narrativa (descrição) deste Item? Espelha a regra da ficha de Actor
+   *  (canViewNotes → OBSERVER): um Item EMBUTIDO herda a ownership do Actor, então um
+   *  player LIMITED não deve ler pela ficha do Item a narrativa que a ficha do Actor
+   *  esconde dele. Item de MUNDO: a própria ownership já governa o acesso → visível. */
+  get canViewNotes() {
+    return this.document.actor
+      ? this.document.testUserPermission(game.user, "OBSERVER")
+      : true;
+  }
+
   /** @override */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const item = this.document;
+    const canViewNotes = this.canViewNotes;
     Object.assign(context, {
       item,
       system: item.system,
@@ -44,19 +55,20 @@ class BaseShiftItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
       enableScale: scaleEnabled(),
       diceList: CONFIG.SHIFT.dice,
       scaleOptions: [1, 2, 3, 4],
-      enrichedDescription: await enrich(item.system.description, {
-        // O GM sempre vê os blocos secretos; o botão Revelar/Esconder é ligado
-        // pelo core no <prose-mirror> (modo de edição) e por bindDescriptionSecrets
-        // na visão de leitura (.bio-display, ficha travada). Veja _onRender abaixo.
-        secrets: game.user.isGM,
-        rollData: item.actor?.getRollData?.() ?? {},
-        relativeTo: item
-      })
+      // A narrativa só é enriquecida/exposta para quem pode vê-la (OBSERVER+); um
+      // player LIMITED recebe "" e o template esconde a .bio-display, igual à ficha
+      // de Actor. Os blocos secretos continuam sendo gateados por isGM acima.
+      enrichedDescription: canViewNotes
+        ? await enrich(item.system.description, {
+          // O GM sempre vê os blocos secretos; o botão Revelar/Esconder é ligado
+          // pelo core no <prose-mirror> (modo de edição) e por bindDescriptionSecrets
+          // na visão de leitura (.bio-display, ficha travada). Veja _onRender abaixo.
+          secrets: game.user.isGM,
+          rollData: item.actor?.getRollData?.() ?? {},
+          relativeTo: item
+        })
+        : ""
     });
-
-    // GM Note (só GM): o MESMO system.gmNote que o Codex do Party lê/edita, então a
-    // ficha do Item e o Codex sincronizam. Nota SIMPLES: textarea de texto puro com
-    // auto-save (submitOnChange) — o partial usa source.gmNote direto, sem enrich.
     return context;
   }
 

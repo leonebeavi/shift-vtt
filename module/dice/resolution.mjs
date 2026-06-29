@@ -9,7 +9,7 @@
  *  - Critical Success: um dado mostra 1 (variantes: allOnes / everyOne).
  *  - Um dado que cai na face mais alta faz seu Trait dar ShiftDown, em toda
  *    rolagem, qualquer que seja o resultado.
- *  - Critical Failure: nenhum sucesso E um ou mais dados na face máxima (NÃO todos no máximo).
+ *  - Critical Failure: nenhum sucesso E um ou mais dados na face máxima.
  *  - Risky: o resultado é decidido normalmente; além disso, todo dado que não
  *    teve sucesso dá ShiftDown. Risky só amplia o conjunto de shift; não promove
  *    um Success a Mitigated nem uma Failure a Critical Failure.

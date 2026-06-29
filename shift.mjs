@@ -288,7 +288,12 @@ Hooks.once("init", async () => {
 Hooks.once("ready", async () => {
   registerSocket();
   cleanStoredColorValues();
-  if (game.user.isGM) {
+  // Migrações e seeding: apenas o GM ATIVO executa. Com dois ou mais GMs logando ao
+  // mesmo tempo, gatear só por isGM faria cada um rodar a migração/seed em paralelo
+  // (o flag de mundo não é gravado atomicamente), duplicando quests/Traits/folders.
+  // Mesmo idioma de single-writer usado em session.mjs, party.mjs e item.mjs.
+  const activeGM = game.users?.activeGM;
+  if (game.user.isGM && (!activeGM || activeGM.id === game.user.id)) {
     await migrateQuestType();
     await migrateAttitudeTransform();
     await migrateTraitFeatures();

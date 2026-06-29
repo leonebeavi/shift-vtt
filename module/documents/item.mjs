@@ -209,10 +209,6 @@ export class ShiftItem extends Item {
     return dieIndex(this.system.currentDie) > dieIndex(this.system.maxDie);
   }
 
-  get isAtMax() {
-    return this.hasClock && !this.system.exhausted && this.system.currentDie === this.system.maxDie;
-  }
-
   /** Há uma próxima forma na fila à frente do estágio atual (usado pelo auto-advance). */
   get hasNextForm() {
     const t = this.system.transform ?? {};
@@ -451,13 +447,19 @@ export class ShiftItem extends Item {
     await ShiftItem.#syncOvercome(this.actor);
   }
 
-  /** Quando um Adversary fica Overcome, marca seus Combatants como derrotados. */
+  /** Quando um Adversary fica Overcome, marca seus Combatants como derrotados e
+   *  aplica o overlay de status DEFEATED no token (como o defeat manual da Combat HUD):
+   *  o campo Combatant#defeated não pinta o marker no token por si só. */
   static async #syncOvercome(actor) {
     if (!actor || actor.type !== "adversary" || !actor.system.overcome) return;
+    const status = CONFIG.specialStatusEffects?.DEFEATED;
     for (const combat of game.combats ?? []) {
       const matches = combat.combatants.filter(c => c.actor === actor && !c.defeated);
       for (const c of matches) {
-        try { await c.update({ defeated: true }); } catch (err) { /* sem permissão */ }
+        try {
+          await c.update({ defeated: true });
+          if (status) await c.actor?.toggleStatusEffect(status, { active: true, overlay: true });
+        } catch (err) { /* sem permissão */ }
       }
     }
   }

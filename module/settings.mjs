@@ -65,7 +65,9 @@ export function registerSettings() {
 
   // enableConnections é a chave-mestra do pilar opcional Conexões: desligada, a aba
   // Conexões some da ficha de Party e o filtro de Facção some do Codex. Estado de
-  // campanha (world, GM decide), default OFF — espelha enableTravel.
+  // campanha (world, GM decide), default OFF como enableTravel/enableScale. Ao
+  // contrário desses, Conexões não tem submenu próprio, então fica visível direto na
+  // lista (config:true) — por escolha, não por engano.
   reg("enableConnections", {
     name: "SHIFT.Settings.EnableConnections.Name",
     hint: "SHIFT.Settings.EnableConnections.Hint",
@@ -278,7 +280,7 @@ export function registerSettings() {
     onChange: () => refreshActionHud()
   });
 
-  // Combat HUD flutuante (carrossel de combatentes no centro-topo). Sem submenu
+  // Combat HUD flutuante (fila de combatentes no topo, agrupada por fase). Sem submenu
   // próprio, então fica visível na lista (config:true); cada jogador liga/desliga
   // a sua. A HUD é DOM manual (não ApplicationV2), então o onChange a reavalia.
   reg("enableCombatHud", {

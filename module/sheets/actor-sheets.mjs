@@ -343,7 +343,9 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
         name: child.name,
         img: child.img,
         safe: !!child.system.safe,
-        childCount: (child.system.children ?? []).length
+        // Conta as netas RESOLVIDAS (o getter pula refs mortas/órfãs), coerente com
+        // o landmarkCount do resto do Codex em vez do array cru de UUIDs.
+        childCount: child.childLocations.length
       });
     }
     return out;
@@ -351,15 +353,18 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
 
   /** Resolve os UUIDs dos NPCs em dados de card, descartando os que já não existem. */
   async #prepareNpcs() {
+    // Resolve todos os docs em paralelo (evita N awaits seriais de fromUuid), como o Codex.
+    const uuids = this.document.system.npcs ?? [];
+    const docs = await Promise.all(uuids.map(u => fromUuid(u).catch(() => null)));
     const out = [];
-    for (const uuid of this.document.system.npcs ?? []) {
-      const a = await fromUuid(uuid);
+    for (let i = 0; i < uuids.length; i++) {
+      const a = docs[i];
       if (!a) continue;
       // Mesmas role/cor/legenda do Codex (deriveCodexRole/codexRoleLabel/codexAccent).
       const role = deriveCodexRole(a);
       const kind = codexKind(a);
       out.push({
-        uuid, name: a.name, img: a.img, role,
+        uuid: uuids[i], name: a.name, img: a.img, role,
         roleLabel: codexRoleLabel(a, role, kind),
         accent: codexAccent(a, role, kind)
       });
@@ -441,6 +446,13 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
       await this.document.addChildLocation(actor.uuid);
       return true;
     }
+    // Só character/adversary entram como NPC ("habitantes" do lugar). Party/Faction/
+    // Vehicle não são pessoas de uma Location — sem este filtro caíam silenciosamente
+    // em system.npcs (espelha o filtro de ShiftFactionSheet._onDropFolder).
+    if (["party", "faction", "vehicle"].includes(actor.type)) {
+      console.warn(`shift-vtt | Location não cataloga ${actor.type} como NPC: ${actor.name}`);
+      return false;
+    }
     const npcs = [...(this.document.system.npcs ?? [])];
     npcs.push(actor.uuid);
     await this.document.update({ "system.npcs": npcs });
@@ -460,7 +472,7 @@ export class ShiftLocationSheet extends BaseShiftActorSheet {
     for (const a of folder.contents) {
       if (!(a instanceof Actor) || a.uuid === this.document.uuid) continue;
       if (a.type === "location") { await this.document.addChildLocation(a.uuid); children++; }
-      else if (a.type !== "party" && !have.has(a.uuid)) { have.add(a.uuid); npcAdd.push(a.uuid); }
+      else if (!["party", "faction", "vehicle"].includes(a.type) && !have.has(a.uuid)) { have.add(a.uuid); npcAdd.push(a.uuid); }
     }
     if (npcAdd.length) await this.document.update({ "system.npcs": [...(this.document.system.npcs ?? []), ...npcAdd] });
     if (!npcAdd.length && !children) return false;
@@ -648,6 +660,12 @@ export class ShiftFactionSheet extends BaseShiftActorSheet {
       if (event.target?.closest?.("[data-tab='npcs']")) return this.#regroupNpc(actor.uuid, event);
       return false;
     }
+    // NPC-membro de uma Facção é uma PESSOA (character/adversary); Party/Faction/
+    // Vehicle/Location não entram (antes qualquer tipo virava membro silenciosamente).
+    if (["party", "faction", "vehicle", "location"].includes(actor.type)) {
+      console.warn(`shift-vtt | Facção não cataloga ${actor.type} como NPC: ${actor.name}`);
+      return false;
+    }
     const npcs = [...(this.document.system.npcs ?? []), actor.uuid];
     await this.document.update({ "system.npcs": npcs });
     ui.notifications.info(game.i18n.format("SHIFT.Faction.MemberAdded", {
@@ -662,7 +680,7 @@ export class ShiftFactionSheet extends BaseShiftActorSheet {
     if (!this.isEditable || folder?.type !== "Actor") return false;
     const have = new Set(this.document.system.npcs ?? []);
     const add = folder.contents
-      .filter(a => a instanceof Actor && a.uuid !== this.document.uuid && !["party", "faction"].includes(a.type))
+      .filter(a => a instanceof Actor && a.uuid !== this.document.uuid && !["party", "faction", "vehicle", "location"].includes(a.type))
       .map(a => a.uuid)
       .filter(u => !have.has(u));
     if (!add.length) return false;
@@ -966,7 +984,7 @@ export async function promptGrantXp(characters) {
   const rows = chars.map(m => `
       <label class="party-xp-row">
         <input type="checkbox" name="pick" value="${m.id}" checked/>
-        <img src="${m.img}" alt=""/> <span class="pxr-name">${esc(m.name)}</span>
+        <img src="${esc(m.img)}" alt=""/> <span class="pxr-name">${esc(m.name)}</span>
         <span class="pxr-xp">${m.system.xp?.value ?? 0} XP</span>
       </label>`).join("");
   const content = `
@@ -1277,18 +1295,18 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
   /* --- Roster --------------------------------------------------- */
 
   async #rosterContext() {
-    const out = [];
-    for (const member of this.document.partyMembers) {
+    // Membros já vêm resolvidos (getter partyMembers); monta o tile de cada um em
+    // paralelo (Promise.all preserva a ordem) em vez de aguardar membro a membro.
+    return Promise.all(this.document.partyMembers.map(async member => {
       const canView = member.testUserPermission(game.user, "OBSERVER");
       const traits = await Promise.all(member.items.filter(i => i.type === "trait").sort(byTraitOrder)
         .map(t => this.#traitTile(t, member, canView, member.uuid)));
-      out.push({
+      return {
         uuid: member.uuid, id: member.id, name: member.name, img: member.img,
         typeLabel: game.i18n.localize(`TYPES.Actor.${member.type}`),
         traits, hasTraits: traits.length > 0
-      });
-    }
-    return out;
+      };
+    }));
   }
 
   /** Monta um "tile" de Trait (dado + nome + status + description + detalhe de
@@ -1500,8 +1518,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
     const active = this._connectionFilters;
     let list = active.size ? visible.filter(c => active.has(c.system.kind)) : visible;
     list = [...list].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
-    const cards = [];
-    for (const c of list) cards.push(await this.#connectionContext(c));
+    // Monta os cards em paralelo (cada um resolve o alvo via fromUuid); Promise.all
+    // preserva a ordem já calculada acima, como o Codex faz.
+    const cards = await Promise.all(list.map(c => this.#connectionContext(c)));
     return { cards, total: visible.length };
   }
 
@@ -2144,9 +2163,9 @@ export class ShiftPartySheet extends BaseShiftActorSheet {
       // data-action="openCodexEntry" segue funcionando no clique.)
       if (game.user.isGM) {
         for (const card of this.element.querySelectorAll(".codex-card[data-codex-uuid]")) {
-          card.setAttribute("draggable", "true");
           if (card.dataset.shiftDragBound) continue;
           card.dataset.shiftDragBound = "1";
+          card.setAttribute("draggable", "true");
           card.addEventListener("dragstart", ev => {
             const data = ShiftPartySheet.#codexDragData(card.dataset.codexUuid);
             if (!data) return;

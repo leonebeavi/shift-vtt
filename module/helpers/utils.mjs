@@ -22,7 +22,7 @@ export const fvtt = {
 export async function enrich(html, options = {}) {
   if (!html) return "";
   try {
-    return await fvtt.TextEditor.enrichHTML(html, { async: true, ...options });
+    return await fvtt.TextEditor.enrichHTML(html, { ...options });
   } catch (err) {
     console.warn("shift-vtt | enrichHTML failed", err);
     return html;

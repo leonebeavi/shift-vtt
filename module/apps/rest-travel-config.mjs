@@ -45,11 +45,17 @@ export class RestTravelConfig extends HandlebarsApplicationMixin(ApplicationV2) 
     // Tuner dos pesos de Legs: 4 distribuições (SS/US/SU/UU) × 5 Legs. Mostra a
     // setting atual, com os defaults de fábrica como fallback de cada chave.
     const weights = get("travelLegWeights") || CONFIG.SHIFT.travelLegWeights;
-    context.legWeights = ["SS", "US", "SU", "UU"].map(key => ({
-      key,
-      label: `SHIFT.Settings.TravelLegWeights.${key}`,
-      values: (Array.isArray(weights[key]) ? weights[key] : CONFIG.SHIFT.travelLegWeights[key]).slice(0, 5)
-    }));
+    context.legWeights = ["SS", "US", "SU", "UU"].map(key => {
+      // Normaliza SEMPRE para 5 entradas (0..4): se a setting salva estiver curta
+      // ou ausente, completa com o default de fábrica/0 para casar com o cabeçalho
+      // fixo de 5 colunas e com os índices lidos em #onSubmit/#onResetLegWeights.
+      const arr = Array.isArray(weights[key]) ? weights[key] : CONFIG.SHIFT.travelLegWeights[key];
+      return {
+        key,
+        label: `SHIFT.Settings.TravelLegWeights.${key}`,
+        values: [0, 1, 2, 3, 4].map(i => Number(arr?.[i]) || 0)
+      };
+    });
     context.buttons = [
       { type: "submit", icon: "fa-solid fa-save", label: "SHIFT.Common.Confirm" }
     ];

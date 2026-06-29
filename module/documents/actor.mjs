@@ -26,6 +26,18 @@ export class ShiftActor extends Actor {
       case "location":
         Object.assign(token, { actorLink: true, disposition: D.NEUTRAL });
         break;
+      case "vehicle":
+        // Vehicle é um recurso COMPARTILHADO (crew/cargo, gasto/restaurado em rest e
+        // sincronizado por syncActiveVehicleCrew), sempre referenciado pelo Actor de
+        // MUNDO via UUID. Linkado para que um token nunca vire uma cópia sintética que
+        // dessincronize o Cargo do veículo que a party realmente usa.
+        Object.assign(token, { actorLink: true, disposition: D.NEUTRAL });
+        break;
+      case "faction":
+        // Faction vive no Codex/Connections, referenciada por UUID de mundo; linkar
+        // mantém a paridade com Location/Vehicle e evita cópias sintéticas.
+        Object.assign(token, { actorLink: true, disposition: D.NEUTRAL });
+        break;
       case "party":
         // Uma party é um Roster, não um Combatant; seu próprio Token raramente é
         // colocado, mas mantemos linkado e friendly para o caso raro em que for.
@@ -501,11 +513,12 @@ export class ShiftActor extends Actor {
   /* ---------------------------------------------------------------- */
 
   /**
-   * Safe Rest: todo dado de Core, Focus e Pack Trait dá ShiftUp de volta ao seu
-   * Max Die e Techniques recuperam todos os usos. Focus Traits temporários
-   * expiram. O modo challenging limita a restauração ao dado de Wealth da Location;
-   * só o Pack Trait é isento (sempre volta ao seu máximo D6). O Cargo de um Vehicle,
-   * como Core/Focus, respeita o teto de Wealth.
+   * Safe Rest: todo dado de Core, Focus, Pack e Cargo Trait dá ShiftUp de volta ao
+   * seu Max Die e Techniques recuperam todos os usos. Focus Traits temporários
+   * expiram. Special Traits NÃO restauram em rest (mesmo carve-out de
+   * ShiftItem#needsRestore) — exigem restauração específica. O modo challenging limita
+   * a restauração ao dado de Wealth da Location; só o Pack Trait é isento (sempre volta
+   * ao seu máximo D6). O Cargo de um Vehicle, como Core/Focus, respeita o teto de Wealth.
    */
   async safeRest({ wealthDie = null } = {}) {
     const mode = game.settings.get("shift-vtt", "restMode");
@@ -534,6 +547,9 @@ export class ShiftActor extends Actor {
 
     const updates = [];
     for (const t of this.traits) {
+      // Special Traits não restauram em rest (mesmo carve-out de needsRestore);
+      // os Temporary já foram removidos acima.
+      if (t.system.category === "special") continue;
       const maxIdx = dieIndex(t.system.maxDie);
       // Só o Pack é isento do teto de Wealth; o Cargo (como Core/Focus) o respeita.
       const isPack = t.system.category === "pack";
@@ -609,8 +625,10 @@ export class ShiftActor extends Actor {
 
     if (mode === "simple") {
       await pack.shiftDown({ force: true });
+      // Restaura todos os Traits restauráveis: exclui o que é gasto (Pack/Cargo) e os
+      // Special (carve-out de needsRestore), consistente com o Safe Rest.
       const updates = this.traits
-        .filter(t => !["pack", "cargo"].includes(t.system.category))
+        .filter(t => !["pack", "cargo", "special"].includes(t.system.category))
         .map(t => ({ _id: t.id, "system.currentDie": t.system.maxDie, "system.exhausted": false }));
       if (updates.length) await this.updateEmbeddedDocuments("Item", updates);
       summarize.push(game.i18n.localize("SHIFT.Rest.AllRestored"));

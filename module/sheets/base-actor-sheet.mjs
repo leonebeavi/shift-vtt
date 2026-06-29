@@ -202,7 +202,11 @@ export class BaseShiftActorSheet extends HandlebarsApplicationMixin(ActorSheetV2
     context.hasGmNote = "gmNote" in actor.system;
 
     context.traitGroups = await this.#prepareTraitGroups();
-    context.techniqueGroups = await this.#prepareTechniqueGroups();
+    // techniqueGroups só é consumido pelo PART "techniques" (hoje só a ficha de
+    // Character o tem); não desperdiça a preparação em Adversary/Vehicle/Location/etc.
+    if (this.constructor.PARTS?.techniques) {
+      context.techniqueGroups = await this.#prepareTechniqueGroups();
+    }
     return context;
   }
 

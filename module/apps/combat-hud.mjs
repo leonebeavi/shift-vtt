@@ -238,7 +238,11 @@ function render(combat) {
   // num "primeiro da fila" automático.
   const wasResync = resync;
   if (resync || !order.includes(spotlightId)) {
-    spotlightId = combat.combatant?.id ?? null;
+    // Só destaca o turno corrente se ele estiver VISÍVEL para este usuário: um
+    // combatente hidden não entra em `order`, então re-apontar para ele faria o
+    // ramo reentrar a cada repintura. Sem alvo visível → sem spotlight (estado limpo).
+    const cur = combat.combatant?.id;
+    spotlightId = (cur && order.includes(cur)) ? cur : null;
   }
   resync = false;
 
@@ -428,10 +432,7 @@ function onCap(action) {
  *  um player rola a ordem dos próprios characters ainda sem iniciativa. */
 async function rollTurnOrder(combat) {
   if (game.user.isGM) return void combat.resetTurnOrder({ announce: true });
-  const mine = combat.combatants.filter(c =>
-    c.actor?.type === "character" && c.isOwner && c.initiative === null);
-  if (!mine.length) return void ui.notifications.info(game.i18n.localize("SHIFT.Combat.NothingToRoll"));
-  for (const c of mine) await combat.rollInitiative([c.id]);
+  await combat.rollOwnTurnOrder();
 }
 
 function onTarget(combatant) {
